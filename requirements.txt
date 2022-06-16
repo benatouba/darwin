@@ -3,10 +3,9 @@ xarray
 numpy
 black
 flake8
+pylint
 matplotlib
 pandas
 pandas-stubs
 geopandas
-jupyter
-jupyter-nbutils
-jupyter_contrib_nbextensions
+jupyterlab
