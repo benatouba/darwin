@@ -9,3 +9,8 @@ pandas
 pandas-stubs
 geopandas
 jupyterlab
+scipy
+netcdf4
+joblib
+cftime
+scikit-image
