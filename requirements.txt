@@ -10,3 +10,11 @@ geopandas
 jupyter
 jupyter-nbutils
 jupyter_contrib_nbextensions
+scikit-image
+scipy
+netcdf4
+joblib
+geopandas
+descartes
+jupyterlab
+dask
