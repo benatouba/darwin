@@ -3,6 +3,7 @@ xarray
 numpy
 black
 flake8
+pylint
 matplotlib
 pandas
 pandas-stubs
