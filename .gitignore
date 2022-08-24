@@ -1,3 +1,9 @@
 *.pdf
 *.png
 data/
+*.zip
+*.nc
+*.nc4
+.python-version
+.log
+.ipynb_checkpoints/
