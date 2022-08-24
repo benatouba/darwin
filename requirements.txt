@@ -18,4 +18,9 @@ joblib
 geopandas
 descartes
 jupyterlab
+scipy
+netcdf4
+joblib
+cftime
+scikit-image
 dask
