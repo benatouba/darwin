@@ -6,7 +6,9 @@ import pandas as pd
 import salem
 import xarray as xr
 from matplotlib.colors import LinearSegmentedColormap
-from shapely.geometry import Point
+from metpy.calc import relative_humidity_from_mixing_ratio
+from metpy.units import units
+from windrose import WindroseAxes
 
 coordinates = {
     "minasrojas": (-0.618625, -90.3673),
@@ -34,6 +36,10 @@ def remove_nonalphanumerics(string: str) -> str:
     return "".join(ch for ch in string if ch.isalnum())
 
 
+def transform_k_to_c(ds):
+    return ds[ds.VARNAME].data - 273.15
+
+
 def open_dataset(
     experiment,
     variable,
@@ -45,15 +51,19 @@ def open_dataset(
     **kwargs,
 ):
     file = glob(
-        f"{base_folder}/{experiment}/products/{domain}/{frequency}/{dimensions}/{experiment}*{variable}*{year}.nc*"
+        f"{base_folder}/{experiment}/products/{domain}/{frequency}/{dimensions}/"
+        f"{experiment}*{variable}*{year}.nc*"
     )[0]
+
     ds = xr.open_dataset(file, decode_cf=False, **kwargs)
     ds = ds.isel(west_east=slice(10, -10), south_north=slice(10, -10))
+    if ds.VARNAME.lower() in ["t2", "t"]:
+        ds[ds.VARNAME].data = transform_k_to_c(ds)
+
     split = file.split("/")[-1].split("_")
     var = split[-2]
     if var == "lu":
         var = split[-2] + "_" + split[-1].split(".")[0]
-    # TODO: Implement other projections
     projection = {
         "lat_0": float(ds.attrs["PROJ_ENVI_STRING"].split(",")[3]),
         "lon_0": float(ds.attrs["PROJ_ENVI_STRING"].split(",")[4]),
@@ -64,16 +74,18 @@ def open_dataset(
             str(ds.attrs["PROJ_ENVI_STRING"].split(",")[8])
         ),
     }
-    if projection["name"].lower() == "wrfmercator":
-        proj = "merc"
+
+    proj = "merc" if projection["name"].lower() == "wrfmercator" else "lcc"
     pyproj_srs = (
         f"+proj={proj} +lat_0={str(projection['lat_0'])} +lon_0={str(projection['lon_0'])} +k=1 "
         f"+x_0={str(projection['x_0'])} +y_0={str(projection['y_0'])} +ellps={projection['ellps']} "
         f"+datum={projection['ellps']} +units=m +no_defs"
     )
+
     ds[var].attrs["pyproj_srs"] = pyproj_srs
     ds[var].attrs["projection_info"] = projection
     ds.attrs["experiment"] = experiment
+    ds.attrs["year"] = year
     return ds
 
 
@@ -86,38 +98,94 @@ def open_experiment(**kwargs):
 
 class Experiment:
     def __init__(self, ds):
-        self.wrf_product = ds
-        self.variable = self.__rename_wrf_to_measured()
+        self.wrf_product = {ds.VARNAME: ds}
+        self.variable = self.__translate_varname(ds.VARNAME)
+        self.__added_variables = []
+        self.experiment = ds.attrs["experiment"]
+        self.year = ds.attrs["year"]
         self.__add_measurements()
 
-    def __rename_wrf_to_measured(self):
-        if self.wrf_product.VARNAME == "prcp":
-            return "PCP"
-        elif self.wrf_product.VARNAME == "t2":
-            return "T"
-        elif self.wrf_product.VARNAME == "q2":
-            return "RH"
-        elif self.wrf_product.VARNAME == "ws10":
-            return "WS"
-        else:
-            raise "Please add variable name translation"
+    def add_product(self, variable=None, ds=None):
+        if ds:
+            self.wrf_product[ds.VARNAME] = ds
+            return
+        ds = open_dataset(self.experiment, variable, self.year)
+        if ds.VARNAME not in self.wrf_product.keys():
+            self.wrf_product[ds.VARNAME] = ds
+            self.__added_variables.append(ds.VARNAME)
 
-    def __add_measurements(self):
+    def __translate_varname(self, varname):
+        varname = varname.lower()
+        if varname == "prcp":
+            return "PCP"
+        elif varname.startswith("pcp"):
+            return "prcp"
+        elif varname in ["t2", "t"]:
+            return "T"
+        elif varname == "q2":
+            return "RH"
+        elif varname == "rh":
+            return "q2"
+        elif varname == "ws10":
+            return "WS"
+        elif varname == "ws":
+            return "ws10"
+        elif varname == "press":
+            return "P"
+        else:
+            raise NameError("Please add variable name translation")
+
+    def __add_measurements(self, variable=None):
+        if not variable:
+            variable = self.variable
         self.measurements_files = glob_measurements()
         self.measurements = {}
         for f in self.measurements_files:
-            ds = load_measurements(f, self.variable)
+            ds = load_measurements(f, variable)
             self.measurements[ds.attrs["name"]] = ds
 
-    def plot_station(self, station, sample_rate="D", **kwargs):
+    def compute_rh(self):
+        if self.variable.lower() not in ["q", "q2", "qv", "rh"]:
+            raise NameError("Can only be calculated from any of 'q', 'qv', 'q2', 'RH'")
+        if self.variable.lower() in ["rh", "q2"] and "t2" not in self.__added_variables:
+            self.add_product("t2")
+        if (
+            self.variable.lower() in ["rh", "q2"]
+            and "psfc" not in self.__added_variables
+        ):
+            self.add_product("psfc")
+        rh = self.wrf_product["q2"].copy()
+        psfc = self.wrf_product["psfc"].psfc * units("mbar")
+        t2 = (self.wrf_product["t2"].t2 + 273.15) * units("K")
+        q2 = self.wrf_product["q2"].q2 * units("kg/kg")
+        rh["rh"] = relative_humidity_from_mixing_ratio(
+            pressure=psfc,
+            temperature=t2,
+            mixing_ratio=q2,
+        )
+        return xr.Dataset(
+            rh, coords=self.wrf_product["q2"].coords, attrs=self.wrf_product["q2"].attrs
+        )
+
+    def plot_station(self, station, sample_rate="D", save=False, **kwargs):
         timeseries = {}
         data = self.measurements[station]
         # Check for multiple measurement types of precipitation
         if self.variable == "PCP":
-            variables = ["PCP_diff_radar", "PCP_diffmin_radar", "PCP_acoustic"]
+            variables = [
+                "PCP_diff_radar",
+                "PCP_tot_bucket",
+                "PCP_diffmin_radar",
+                "PCP_acoustic",
+            ]
         else:
             variables = [self.variable]
-        fig, ax = plt.subplots(figsize=(12, 10))
+        _, ax = plt.subplots(figsize=(12, 10))
+        # if isinstance(data, pd.DataFrame):
+        #     names = data.columns
+        if isinstance(data, pd.Series):
+            data = data.to_frame(name=data.name)
+        var = ""
         for var in data.columns:
             if var in variables and self.variable == "PCP":
                 timeseries[var] = data[var].resample(sample_rate).sum()
@@ -135,13 +203,15 @@ class Experiment:
             plt.legend()
             plt.title(station)
             plt.xlabel("")
+        if save:
+            plt.savefig(f"{self.variable.lower()}_{station.lower()}.png")
 
     def plot_stations(self, **kwargs):
         for station in self.measurements.keys():
             self.plot_station(station, sample_rate="D", **kwargs)
 
     def __find_closest_gridpoint(self, station):
-        ds = self.wrf_product
+        ds = self.wrf_product[self.variable[0]]
         # for var in self.measurements.keys():
         #     df = self.measurements[var]
         #     break
@@ -152,61 +222,58 @@ class Experiment:
 
     def __get_closest_gridpoint_values(self, station):
         ([xlon], [xlat]) = self.__find_closest_gridpoint(station)
-        selected = self.wrf_product.isel(west_east=xlon, south_north=xlat)
-        selected = pd.Series(selected[self.wrf_product.VARNAME])
+        selected = self.wrf_product[self.variable[0]].isel(
+            west_east=xlon, south_north=xlat
+        )
+        selected = pd.Series(selected[self.wrf_product[self.variable].VARNAME])
         selected.index = pd.DatetimeIndex(pd.date_range("2022-04-01", "2022-06-30"))
-        selected.name = self.wrf_product.attrs["experiment"]
+        selected.name = self.wrf_product[self.variable[0]].attrs["experiment"]
         return selected
 
-    def plot_map(self, ax=None, aggregation="mean", **kwargs):
+    def plot_map(
+        self, variable=None, ax=None, aggregation="mean", save=False, **kwargs
+    ):
         """
         kwargs: args for  salem's quick_map
         """
-        if "cmap" not in locals() or "cmap" not in globals():
-            cmap = color_map
+        variable = variable or self.__translate_varname(self.variable)
+        cmap = color_map if "cmap" not in locals() or "cmap" not in globals() else None
         if aggregation == "mean":
-            data = self.wrf_product[self.wrf_product.VARNAME].mean(
+            data = self.wrf_product[variable][self.wrf_product[variable].VARNAME].mean(
                 dim="time", skipna=True, keep_attrs=True
             )
+
         elif aggregation == "sum":
-            data = self.wrf_product[self.wrf_product.VARNAME].sum(
+            data = self.wrf_product[variable][self.wrf_product[variable].VARNAME].sum(
                 dim="time", skipna=True, keep_attrs=True
             )
         else:
-            raise "aggregation not implemented"
+            raise NameError("aggregation not implemented")
         base_map = data.salem.get_map(**kwargs)
         base_map.set_data(data)
-        lats = []
-        lons = []
-        stations = []
-        points = []
         for key, value in coordinates.items():
-            (lat, lon) = value
-            lats.append(lat)
-            lons.append(lon)
-            stations.append(key)
-            points.append(Point(lon, lat))
-            base_map.set_points(
-                lon,
-                lat,
-                text=key,
-            )
+            lat, lon = value
+            base_map.set_points(lon, lat, text=key)
         base_map.set_cmap(cmap)
+        base_map.set_scale_bar()
         if ax:
             base_map.plot(ax=ax)
+            base_map.append_colorbar(ax=ax)
         else:
-            base_map.visualize()
+            base_map.visualize(add_cbar=True)
+        if save:
+            plt.savefig(f"{self.variable.lower()}_{aggregation.lower()}_map.png")
         return base_map
 
 
 def plot_pcp(data, title=None, sample_rate="D", **kwargs):
     timeseries = {}
     variables = ["PCP_diff_radar", "PCP_diffmin_radar", "PCP_acoustic"]
-    fig, ax = plt.subplots()
+    var = ""
     for var in data.columns:
         if var in variables:
             timeseries[var] = data[var].resample(sample_rate).sum()
-            timeseries[var].cumsum().plot(ax=ax)
+            timeseries[var].cumsum().plot(**kwargs)
     if var in variables:
         plt.legend()
         if title:
@@ -214,8 +281,10 @@ def plot_pcp(data, title=None, sample_rate="D", **kwargs):
         plt.xlabel("")
 
 
-def glob_measurements(path="/home/ben/data", ds_number="??"):
-    files = glob(f"{path}/darwin_measured/{ds_number}_AWS*/*[!xlsx_complete]")
+def glob_measurements(
+    path="/home/ben/data/darwin_measured", ds_number="??", type="AWS-P"
+):
+    files = glob(f"{path}/{ds_number}_{type}*/*[!xlsx_complete]")
     return [file for file in files if not file.count("xlsx") and not file.count("_-_")]
 
 
@@ -224,6 +293,8 @@ def load_measurements(path, variable):
     ds = ds.loc["2022-04-01":"2022-06-30"]
     if variable == "PCP":
         filter_col = [col for col in ds if col.startswith(variable)]
+    else:
+        filter_col = variable
     ds.attrs["name"] = path.split("/")[-1].split("_")[-3]
     ds.attrs["coordinates"] = [
         value
@@ -231,6 +302,3 @@ def load_measurements(path, variable):
         if key.split("_")[-1] in ds.attrs["name"].lower()
     ]
     return ds[filter_col]
-
-
-# plt.savefig(f'pcp_{title}.png')
