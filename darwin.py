@@ -3,7 +3,7 @@ from glob import glob
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-# import salem
+import salem
 import xarray as xr
 from matplotlib.colors import LinearSegmentedColormap
 from shapely.geometry import Point
@@ -117,7 +117,7 @@ class Experiment:
             variables = ["PCP_diff_radar", "PCP_diffmin_radar", "PCP_acoustic"]
         else:
             variables = [self.variable]
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(12, 10))
         for var in data.columns:
             if var in variables and self.variable == "PCP":
                 timeseries[var] = data[var].resample(sample_rate).sum()
