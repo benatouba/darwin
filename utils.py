@@ -1,0 +1,31 @@
+from glob import glob
+
+
+def normalize_whitespace(text):
+    """Remove redundant whitespace from a string."""
+    return " ".join(text.split())
+
+
+def isnt_str_or_basestring(obj):
+    """
+    check if the passed in object is a str
+    """
+
+    return isinstance(obj, str)
+
+
+def remove_nonalphanumerics(string):
+    return "".join(ch for ch in string if ch.isalnum())
+
+
+def transform_k_to_c(ds):
+    return ds[ds.VARNAME].data - 273.15
+
+
+def glob_files(*args, **kwargs):
+    return glob(*args, **kwargs)
+
+
+def get_basename(path, suffix=False):
+    name = path.split("/")[-1]
+    return name if suffix else name.split(".")[0]

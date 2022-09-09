@@ -1,4 +1,5 @@
 from glob import glob
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,6 +10,7 @@ from matplotlib.colors import LinearSegmentedColormap
 from metpy.calc import relative_humidity_from_mixing_ratio
 from metpy.units import units
 from windrose import WindroseAxes
+from utils import glob_files, remove_nonalphanumerics, transform_k_to_c
 
 coordinates = {
     "minasrojas": (-0.618625, -90.3673),
@@ -32,60 +34,93 @@ color_map = LinearSegmentedColormap.from_list(
 )
 
 
-def remove_nonalphanumerics(string: str) -> str:
-    return "".join(ch for ch in string if ch.isalnum())
+class FilePath(type(Path())):
+    def __init__(self, *args):
+        super().__init__()
+        self.a = args[0] if args else ''
+        if self.suffix.lower() in [".nc", ".nc4", ".netcdf"]:
+            self.__assign_file_infos(self.stem.split("_"))
+
+    def __assign_file_infos(self, file_infos: list):
+        if "static" not in self.stem:
+            self.year = self.file_infos.pop()
+        self.var = self.file_infos.pop()
+        if "3d" not in self.file_infos:
+            self.dimensionality = self.file_infos.pop()
+        else:
+            self.dimensionality = f"{self.file_infos.pop()}_{self.file_infos.pop()}"
+        self.frequency = self.file_infos.pop()
+        self.project = "_".join(self.file_infos, "_")
 
 
-def transform_k_to_c(ds):
-    return ds[ds.VARNAME].data - 273.15
+basepath = FilePath("/home/ben/data/GAR/")
 
 
 def open_dataset(
-    experiment,
-    variable,
-    year,
+    experiment=None,
+    variable=None,
+    year=None,
     domain="d02",
     dimensions="2d",
     frequency="d",
-    base_folder="/home/ben/data/GAR/",
+    from_path=None,
+    basepath=basepath,
+    engine="salem",
     **kwargs,
 ):
-    file = glob(
-        f"{base_folder}/{experiment}/products/{domain}/{frequency}/{dimensions}/"
-        f"{experiment}*{variable}*{year}.nc*"
-    )[0]
-
-    ds = xr.open_dataset(file, decode_cf=False, **kwargs)
+    if engine == "xarray":
+        if from_path:
+            file = from_path
+            ds = xr.open_dataset(from_path, decode_cf=False, **kwargs)
+        else:
+            file = glob_files(
+                f"{basepath}/{experiment}/products/{domain}/{frequency}/{dimensions}/"
+                f"{experiment}*{variable}*{year}.nc*"
+            )[0]
+            ds = xr.open_dataset(file, decode_cf=False, **kwargs)
+    elif engine == "salem":
+        if from_path:
+            file = from_path
+            ds = salem.open_xr_dataset(from_path, **kwargs)
+        else:
+            file = glob_files(
+                f"{basepath}/{experiment}/products/{domain}/{frequency}/{dimensions}/"
+                f"{experiment}*{variable}*{year}.nc*"
+            )[0]
+            ds = salem.open_xr_dataset(file, **kwargs)
+        ds.attrs["experiment"] = experiment
+        ds.attrs["year"] = year
+    else:
+        raise ValueError("Engine type not supported.")
     ds = ds.isel(west_east=slice(10, -10), south_north=slice(10, -10))
     if ds.VARNAME.lower() in ["t2", "t"]:
         ds[ds.VARNAME].data = transform_k_to_c(ds)
 
     split = file.split("/")[-1].split("_")
+    print(split)
     var = split[-2]
     if var == "lu":
         var = split[-2] + "_" + split[-1].split(".")[0]
-    projection = {
-        "lat_0": float(ds.attrs["PROJ_ENVI_STRING"].split(",")[3]),
-        "lon_0": float(ds.attrs["PROJ_ENVI_STRING"].split(",")[4]),
-        "x_0": float(ds.attrs["PROJ_ENVI_STRING"].split(",")[5]),
-        "y_0": float(ds.attrs["PROJ_ENVI_STRING"].split(",")[5]),
-        "ellps": remove_nonalphanumerics(ds.attrs["PROJ_ENVI_STRING"].split(",")[7]),
-        "name": remove_nonalphanumerics(
-            str(ds.attrs["PROJ_ENVI_STRING"].split(",")[8])
-        ),
-    }
-
-    proj = "merc" if projection["name"].lower() == "wrfmercator" else "lcc"
-    pyproj_srs = (
-        f"+proj={proj} +lat_0={str(projection['lat_0'])} +lon_0={str(projection['lon_0'])} +k=1 "
-        f"+x_0={str(projection['x_0'])} +y_0={str(projection['y_0'])} +ellps={projection['ellps']} "
-        f"+datum={projection['ellps']} +units=m +no_defs"
-    )
-
-    ds[var].attrs["pyproj_srs"] = pyproj_srs
-    ds[var].attrs["projection_info"] = projection
-    ds.attrs["experiment"] = experiment
-    ds.attrs["year"] = year
+    # projection = {
+    #     "lat_0": float(ds.attrs["PROJ_ENVI_STRING"].split(",")[3]),
+    #     "lon_0": float(ds.attrs["PROJ_ENVI_STRING"].split(",")[4]),
+    #     "x_0": float(ds.attrs["PROJ_ENVI_STRING"].split(",")[5]),
+    #     "y_0": float(ds.attrs["PROJ_ENVI_STRING"].split(",")[5]),
+    #     "ellps": remove_nonalphanumerics(ds.attrs["PROJ_ENVI_STRING"].split(",")[7]),
+    #     "name": remove_nonalphanumerics(
+    #         str(ds.attrs["PROJ_ENVI_STRING"].split(",")[8])
+    #     ),
+    # }
+    #
+    # proj = "merc" if projection["name"].lower() == "wrfmercator" else "lcc"
+    # pyproj_srs = (
+    #     f"+proj={proj} +lat_0={str(projection['lat_0'])} +lon_0={str(projection['lon_0'])} +k=1 "
+    #     f"+x_0={str(projection['x_0'])} +y_0={str(projection['y_0'])} +ellps={projection['ellps']} "
+    #     f"+datum={projection['ellps']} +units=m +no_defs"
+    # )
+    #
+    # ds[var].attrs["pyproj_srs"] = pyproj_srs
+    # ds[var].attrs["projection_info"] = projection
     return ds
 
 
