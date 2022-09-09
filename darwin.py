@@ -6,38 +6,18 @@ import numpy as np
 import pandas as pd
 import salem
 import xarray as xr
-from matplotlib.colors import LinearSegmentedColormap
 from metpy.calc import relative_humidity_from_mixing_ratio
 from metpy.units import units
 from windrose import WindroseAxes
-from utils import glob_files, remove_nonalphanumerics, transform_k_to_c
 
-coordinates = {
-    "minasrojas": (-0.618625, -90.3673),
-    "militar": (-0.489962, -90.2808),
-    "puertoayora": (-0.743708, -90.3027),
-    "puertovillamil": (-0.946400, -90.9741),
-    "puertobacceriomoreno": (-0.89515, -89.6068),
-    "eljunco": (-0.893768, -89.4804),
-    "lagalapaguera": (-0.91197, -89.4387),
-    "cuevadesucre": (-0.843216, -91.0284),
-    "negra": (-0.848344, -91.1312),
-    "crocker": (-0.642398, -90.326),
-    "rosa": (-0.65453, -90.4035),
-    # "met-e_bellavista": (-0.692384, -90.3282),
-    # "met-e_puerto_ayora": (-0.743708, -90.3027)
-}
-
-color_map = LinearSegmentedColormap.from_list(
-    "temperature",
-    ["white", "steelblue", "c", "khaki", "orange", "orangered", "r", "darkred"],
-)
+from constants import basepath, color_map, coordinates
+from utils import glob_files, transform_k_to_c
 
 
 class FilePath(type(Path())):
     def __init__(self, *args):
         super().__init__()
-        self.a = args[0] if args else ''
+        self.a = args[0] if args else ""
         if self.suffix.lower() in [".nc", ".nc4", ".netcdf"]:
             self.__assign_file_infos(self.stem.split("_"))
 
@@ -53,7 +33,7 @@ class FilePath(type(Path())):
         self.project = "_".join(self.file_infos, "_")
 
 
-basepath = FilePath("/home/ben/data/GAR/")
+basepath = FilePath(basepath)
 
 
 def open_dataset(
@@ -92,7 +72,6 @@ def open_dataset(
         ds.attrs["year"] = year
     else:
         raise ValueError("Engine type not supported.")
-    ds = ds.isel(west_east=slice(10, -10), south_north=slice(10, -10))
     if ds.VARNAME.lower() in ["t2", "t"]:
         ds[ds.VARNAME].data = transform_k_to_c(ds)
 
@@ -115,8 +94,8 @@ def open_dataset(
     # proj = "merc" if projection["name"].lower() == "wrfmercator" else "lcc"
     # pyproj_srs = (
     #     f"+proj={proj} +lat_0={str(projection['lat_0'])} +lon_0={str(projection['lon_0'])} +k=1 "
-    #     f"+x_0={str(projection['x_0'])} +y_0={str(projection['y_0'])} +ellps={projection['ellps']} "
-    #     f"+datum={projection['ellps']} +units=m +no_defs"
+    #     f"+x_0={str(projection['x_0'])} +y_0={str(projection['y_0'])} "
+    #     f"+ellps={projection['ellps']} +datum={projection['ellps']} +units=m +no_defs"
     # )
     #
     # ds[var].attrs["pyproj_srs"] = pyproj_srs
@@ -139,6 +118,11 @@ class Experiment:
         self.experiment = ds.attrs["experiment"]
         self.year = ds.attrs["year"]
         self.__add_measurements()
+
+    def remove_boundaries(self, ds):
+        self.wrf_product[ds.VARNAME] = ds.isel(
+            west_east=slice(10, -10), south_north=slice(10, -10)
+        )
 
     def add_product(self, variable=None, ds=None):
         if ds:

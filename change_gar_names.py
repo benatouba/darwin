@@ -1,15 +1,21 @@
 from argparse import ArgumentParser
 from pprint import PrettyPrinter
-from utils import remove_nonalphanumerics
+from utils import remove_nonalphanumerics, glob_files
 
-import darwin
+from darwin import open_dataset, FilePath
 
 parser = ArgumentParser(description="Description of your program")
 parser.add_argument(
     "-f",
     "--folder",
     help="Topfolder to search for files to process",
-    default=darwin.FilePath("."),
+    default=".",
+)
+parser.add_argument(
+    "-g",
+    "--glob",
+    help="glob pattern to search for files",
+    default="**/*.nc",
 )
 args = vars(parser.parse_args())
 
@@ -17,19 +23,16 @@ args = vars(parser.parse_args())
 pp = PrettyPrinter(indent=2)
 
 
-def change_all_projections(path):
+def change_all_projections(path, *args, **kwargs):
     """path: path from darwin's base folder or absolute path"""
-    path = darwin.FilePath(path)
-    if not path.is_absolute():
-        path = darwin.base_folder / path
-    files = list(path.glob("**/*.nc"))
+    files = glob_files(path, *args, **kwargs)
     print(f"Base folder: {path.as_posix()}")
     print("Found the following files:")
     pp.pprint(files)
     for f in files:
         print("Working on:")
         print(f.as_posix())
-        with darwin.open_dataset(
+        with open_dataset(
             from_path=f.as_posix(), engine="xarray", mode="a"
         ) as ds:
             print(ds.coords["west_east"].size)
@@ -40,10 +43,9 @@ def change_all_projections(path):
             print("setting projection")
             ds = set_projection(ds)
             print("Saving dataset")
-            f_new = f.parent / "new" / f.name
-            ds.to_netcdf(f"{f_new}")
+            # f_new = f.parent / "new" / f.name
+            ds.to_netcdf(f"{f}")
             print("Dataset processed")
-        break
 
 
 def set_calendar(ds):
@@ -171,4 +173,5 @@ def assign_projection_info(ds):
 
 
 if __name__ == "__main__":
-    change_all_projections(args["folder"])
+    path = FilePath(args["folder"])
+    change_all_projections(path, args["glob"])
