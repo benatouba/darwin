@@ -59,7 +59,7 @@ def reproject_all(
     *args,
     **kwargs,
 ):
-    """path: path from darwin's base folder or absolute path"""
+    """path: path from darwin's base folder or absolute path."""
     files = glob_files(path, glob_pattern, **kwargs)
     print(f"Base folder: {path.as_posix()}")
     print("Found the following files:")
