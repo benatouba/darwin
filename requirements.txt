@@ -27,3 +27,5 @@ scikit-image
 dask
 metpy
 windrose
+rasterio
+nc-time-axis
