@@ -29,3 +29,5 @@ metpy
 windrose
 rasterio
 nc-time-axis
+cdo
+prettyprint
