@@ -1,11 +1,11 @@
 from matplotlib.colors import LinearSegmentedColormap
 basepath = "/home/ben/data/GAR/"
 coordinates = {
-    "minasrojas": (-0.618625, -90.3673),
+    "rojas": (-0.618625, -90.3673),
     "militar": (-0.489962, -90.2808),
     "puertoayora": (-0.743708, -90.3027),
     "puertovillamil": (-0.946400, -90.9741),
-    "puertobacceriomoreno": (-0.89515, -89.6068),
+    "puertobaccerizomoreno": (-0.89515, -89.6068),
     "eljunco": (-0.893768, -89.4804),
     "lagalapaguera": (-0.91197, -89.4387),
     "cuevadesucre": (-0.843216, -91.0284),

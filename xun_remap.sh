@@ -88,14 +88,17 @@ echo "Stations file         = ${COORDS}"
 declare -a lon
 declare -a lat
 declare -a coord
-read -ra lon < <(awk -F "\"*,\"*" '{print $7}' "$COORDS") # 7th column in the csv contains longitude information
-read -ra lat < <(awk -F "\"*,\"*" '{print $6}' "$COORDS") # 6th column in the csv contains latitude information
-# lon=($LON)
-# lat=<($LAT)
+
+stations=($(awk -F "," '{print $1}' "$COORDS"))
+lon=($(awk -F "," '{print $3}' "$COORDS"))
+lat=($(awk -F "," '{print $2}' "$COORDS"))
+# read -ra lon <<<$(awk -F "\"*,\"*" '{print $3}' "$COORDS") # 7th column in the csv contains longitude information
+# read -ra lat <<<$(awk -F "\"*,\"*" '{print $2}' "$COORDS") # 6th column in the csv contains latitude information
 
 echo "-----Run Run-----"
 for ((i = 0; i < ${#lon[@]}; i++)); do
 	coord[i]="lon=${lon[i]}/lat="${lat[i]}
+	STATIONS+=","${stations[i]}
 done
 
 for ((i = 0; i < ${#coord[@]}; i++)); do
@@ -111,8 +114,10 @@ for ((i = 0; i < ${#coord[@]}; i++)); do
 	paste list3.txt >>sta_"$i".txt # change here for different layer
 	rm list3.txt
 done
-cdo info inter.nc | grep -v Date | awk '{ print $3 }' | sed -e 's/-/,/g' >>list1.txt
-paste -d , list1.txt "$(ls -v sta_*)" >"$OUTPUT" # change here for different layer
+# cdo info inter.nc | grep -v Date | awk '{ print $3 }' | sed -e 's/-/,/g' >>list1.txt
+cdo info inter.nc | grep -v Date | awk '{ print $3 }' >>list1.txt
+echo "datetime$STATIONS" >"$OUTPUT"
+paste -d , list1.txt $(ls -v sta_*) >>"$OUTPUT" # change here for different layer
 rm inter.nc list1.txt sta_*.txt
 
 echo "-----Done!!!-----"

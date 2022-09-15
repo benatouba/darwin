@@ -56,13 +56,15 @@ def open_dataset(
     if engine == "xarray":
         if from_path:
             file = from_path
-            gar_ds = xr.open_dataset(from_path, decode_cf=False, **kwargs)
+            gar_ds = xr.open_dataset(from_path, **kwargs)
         else:
             file = glob_files(
                 f"{basepath}/{experiment}/products/{domain}/{frequency}/{dimensions}/"
                 f"{experiment}*{variable}*{year}.nc*"
             )[0]
-            gar_ds = xr.open_dataset(file, decode_cf=False, **kwargs)
+            gar_ds = xr.open_dataset(file, **kwargs)
+        gar_ds.attrs["experiment"] = experiment
+        gar_ds.attrs["year"] = year
     elif engine == "salem":
         if from_path:
             file = from_path
@@ -127,8 +129,9 @@ class Experiment:
         try:
             self.experiment = gar_ds.attrs["experiment"]
             self.year = gar_ds.attrs["year"]
-        except:
-            print("Could not add experiment and/or year.")
+        except KeyError:
+            print("WARNING: Could not add experiment and/or year.")
+        self.measurements = {}
         self.__add_measurements()
 
     def remove_boundaries(self, gar_ds):
@@ -136,6 +139,22 @@ class Experiment:
         self.wrf_product[gar_ds.VARNAME] = gar_ds.isel(
             west_east=slice(10, -10), south_north=slice(10, -10)
         )
+
+    def add_extracted_simulated_points_from_file(self, file):
+        """Load measurements from file."""
+        extracted = pd.read_csv(file, parse_dates=["datetime"], index_col=["datetime"])
+        path = file.rsplit("/")[-1].split(".")[0].split("_")
+        if self.__translate_varname(self.variable) not in path:
+            raise ValueError(
+                f"""
+                The name of the selected file does not seem to contain the variable.
+                {path}
+                Please name it in style of *_variable_*
+                """
+            )
+
+        extracted.attrs["name"] = self.variable
+        self.extracted = extracted
 
     def add_product(self, variable=None, wrf_ds=None):
         """Add another variable to the Experiment."""
@@ -153,8 +172,10 @@ class Experiment:
             return "PCP"
         if varname.startswith("pcp"):
             return "prcp"
-        if varname in ["t2", "t"]:
+        if varname == "t2":
             return "T"
+        if varname == "t":
+            return "t2"
         if varname == "q2":
             return "RH"
         if varname == "rh":
@@ -171,7 +192,6 @@ class Experiment:
         if not variable:
             variable = self.variable
         self.measurements_files = glob_measurements()
-        self.measurements = {}
         for file in self.measurements_files:
             measured = load_measurements(file, variable)
             self.measurements[measured.attrs["name"]] = measured
@@ -229,12 +249,16 @@ class Experiment:
             elif var in variables:
                 timeseries[var] = data[var].resample(sample_rate).mean()
                 timeseries[var].plot(ax=ax, **kwargs)
-        closest_gridpoint = self.__get_closest_gridpoint_values(station)
+        if hasattr(self, "extracted"):
+            extracted = pd.Series(self.extracted[station])
+            extracted.index = pd.DatetimeIndex(pd.date_range("2022-04-01", "2022-06-30"))
+            extracted.name = self.experiment
+        else:
+            extracted = self.__get_closest_gridpoint_values(station)
         if var in variables and self.variable == "PCP":
-            closest_gridpoint = closest_gridpoint * 24
-            closest_gridpoint.cumsum().plot(ax=ax)
+            extracted.cumsum().plot(ax=ax, c='k', **kwargs)
         elif var in variables:
-            closest_gridpoint.plot(ax=ax)
+            extracted.plot(ax=ax, c='k', **kwargs)
         if var in variables:
             plt.legend()
             plt.title(station)
@@ -257,7 +281,7 @@ class Experiment:
         coords = np.maximum(abslon, abslat)
         return np.where(coords == np.min(coords))
 
-    def __get_closest_gridpoint_values(self, station):
+    def __get_closest_gridpoint_values(self, station: str) -> pd.Series:
         ([xlon], [xlat]) = self.__find_closest_gridpoint(station)
         selected = self.wrf_product[self.variable[0]].isel(
             west_east=xlon, south_north=xlat
