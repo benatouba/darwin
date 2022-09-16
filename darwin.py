@@ -23,10 +23,10 @@ class FilePath(type(Path())):
         """Initiate a FilePath instance from a str."""
         super().__init__()
         self.a = args[0] if args else ""
-        if self.suffix.lower() in [".nc", ".nc4", ".netcdf"]:
-            self.__assign_file_infos(self.stem.split("_"))
+        if self.suffix in [".nc", ".nc4", ".netcdf"]:
+            self.__assign_wrf_infos(self.stem.split("_"))
 
-    def __assign_file_infos(self, file_infos: list):
+    def __assign_wrf_infos(self, file_infos: list):
         if "static" not in self.stem:
             self.year = file_infos.pop()
         self.var = file_infos.pop()
@@ -35,7 +35,7 @@ class FilePath(type(Path())):
         else:
             self.dimensionality = f"{file_infos.pop()}_{file_infos.pop()}"
         self.frequency = file_infos.pop()
-        self.project = "_".join(file_infos)
+        self.experiment = "_".join(file_infos)
 
 
 gar_basepath = FilePath(gar_basepath)
@@ -64,8 +64,8 @@ def open_dataset(
                 f"{experiment}*{variable}*{year}.nc*"
             )[0]
             gar_ds = xr.open_dataset(file, **kwargs)
-        gar_ds.attrs["experiment"] = str(experiment)
-        gar_ds.attrs["year"] = str(year)
+    # NOTE: salem does something weird and adds pyproj_srs during load.
+    # It is recommended not to use it.
     elif engine == "salem":
         if from_path:
             file = from_path
@@ -136,9 +136,9 @@ class Experiment:
         except KeyError:
             Warning("Measurements could not be found")
 
-    def remove_boundaries(self, gar_ds):
+    def remove_boundaries(self):
         """Crop the outer 10 rows/columns of the model data."""
-        self.wrf_product[gar_ds.VARNAME] = gar_ds.isel(
+        self.wrf_product = self.wrf_product.isel(
             west_east=slice(10, -10), south_north=slice(10, -10)
         )
 
@@ -146,7 +146,7 @@ class Experiment:
         """Load measurements from file."""
         extracted = pd.read_csv(file, parse_dates=["datetime"], index_col=["datetime"])
         path = file.rsplit("/")[-1].split(".")[0].split("_")
-        if self.__translate_varname(self.variable) not in path:
+        if self.__translate_varname(self.varname) not in path:
             raise ValueError(
                 f"""
                 The name of the selected file does not seem to contain the variable.
@@ -155,17 +155,16 @@ class Experiment:
                 """
             )
 
-        extracted.attrs["name"] = self.variable
+        extracted.attrs["name"] = self.varname
         self.extracted = extracted
 
     def add_product(self, variable=None, wrf_ds=None):
         """Add another variable to the Experiment."""
         if wrf_ds:
-            self.wrf_product[wrf_ds.VARNAME] = wrf_ds
+            self.__added_variables.append(wrf_ds)
             return
         wrf_ds = open_dataset(self.experiment, variable, self.year)
-        if wrf_ds.VARNAME not in self.wrf_product.keys():
-            self.wrf_product[wrf_ds.VARNAME] = wrf_ds
+        if wrf_ds.VARNAME != self.varname:
             self.__added_variables.append(wrf_ds.VARNAME)
 
     def __translate_varname(self, varname):
@@ -186,44 +185,18 @@ class Experiment:
 
     def __add_measurements(self, variable=None):
         if not variable:
-            variable = self.variable
+            variable = self.varname_translations
         self.measurements_files = glob_measurements()
         for file in self.measurements_files:
             measured = load_measurements(file, variable)
             self.measurements[measured.attrs["name"]] = measured
-
-    def compute_rh(self):
-        """Compute relative humidity from mixing ratio."""
-        if self.variable.lower() not in ["q", "q2", "qv", "rh"]:
-            raise NameError("Can only be calculated from any of 'q', 'qv', 'q2', 'RH'")
-        if self.variable.lower() in ["rh", "q2"] and "t2" not in self.__added_variables:
-            self.add_product("t2")
-        if (
-            self.variable.lower() in ["rh", "q2"]
-            and "psfc" not in self.__added_variables
-        ):
-            self.add_product("psfc")
-        rel_humidity = self.wrf_product["q2"].copy()
-        psfc = self.wrf_product["psfc"].psfc * units("mbar")
-        temperature = (self.wrf_product["t2"].temperature + 273.15) * units("K")
-        mixing_ratio = self.wrf_product["q2"].mixing_ratio * units("kg/kg")
-        rel_humidity["rh"] = relative_humidity_from_mixing_ratio(
-            pressure=psfc,
-            temperature=temperature,
-            mixing_ratio=mixing_ratio,
-        )
-        return xr.Dataset(
-            rel_humidity,
-            coords=self.wrf_product["q2"].coords,
-            attrs=self.wrf_product["q2"].attrs,
-        )
 
     def plot_station(self, station, sample_rate="D", save=False, **kwargs):
         """Plot timeseries data of a specific station of the darwin network."""
         timeseries = {}
         data = self.measurements[station]
         # Check for multiple measurement types of precipitation
-        if self.variable == "PCP":
+        if self.varname == "PCP":
             variables = [
                 "PCP_diff_radar",
                 "PCP_tot_bucket",
@@ -231,7 +204,7 @@ class Experiment:
                 "PCP_acoustic",
             ]
         else:
-            variables = [self.variable]
+            variables = [self.varname]
         _, ax = plt.subplots(figsize=(12, 10))
         # if isinstance(data, pd.DataFrame):
         #     names = data.columns
@@ -239,7 +212,7 @@ class Experiment:
             data = data.to_frame(name=data.name)
         var = ""
         for var in data.columns:
-            if var in variables and self.variable == "PCP":
+            if var in variables and self.varname == "PCP":
                 timeseries[var] = data[var].resample(sample_rate).sum()
                 timeseries[var].cumsum().plot(ax=ax, **kwargs)
             elif var in variables:
@@ -253,7 +226,7 @@ class Experiment:
             extracted.name = self.experiment
         else:
             extracted = self.__get_closest_gridpoint_values(station)
-        if var in variables and self.variable == "PCP":
+        if var in variables and self.varname == "PCP":
             extracted.cumsum().plot(ax=ax, c="k", **kwargs)
         elif var in variables:
             extracted.plot(ax=ax, c="k", **kwargs)
@@ -262,7 +235,7 @@ class Experiment:
             plt.title(station)
             plt.xlabel("")
         if save:
-            plt.savefig(f"{self.variable.lower()}_{station.lower()}.png")
+            plt.savefig(f"{self.varname.lower()}_{station.lower()}.png")
 
     def plot_stations(self, **kwargs):
         """Plot data of multiple stations using the 'plot_station'-method."""
@@ -270,7 +243,7 @@ class Experiment:
             self.plot_station(station, sample_rate="D", **kwargs)
 
     def __find_closest_gridpoint(self, station):
-        wrf_ds = self.wrf_product[self.variable[0]]
+        wrf_ds = self.wrf_product
         # for var in self.measurements.keys():
         #     df = self.measurements[var]
         #     break
@@ -281,48 +254,30 @@ class Experiment:
 
     def __get_closest_gridpoint_values(self, station: str) -> pd.Series:
         ([xlon], [xlat]) = self.__find_closest_gridpoint(station)
-        selected = self.wrf_product[self.variable[0]].isel(
-            west_east=xlon, south_north=xlat
-        )
-        selected = pd.Series(selected[self.wrf_product[self.variable].VARNAME])
+        selected = self.wrf_product.isel(west_east=xlon, south_north=xlat)
+        selected = pd.Series(selected[self.varname])
         selected.index = pd.DatetimeIndex(pd.date_range("2022-04-01", "2022-06-30"))
-        selected.name = self.wrf_product[self.variable[0]].attrs["experiment"]
+        selected.name = self.wrf_product.attrs["experiment"]
         return selected
 
-    def plot_map(
-        self, variable=None, ax=None, aggregation="mean", save=False, **kwargs
-    ):
+    def plot_map(self, varname=None, ax=None, aggregation="mean", save=False, **kwargs):
         """
         Plot a map of Experiment data.
 
         kwargs: args for  salem's quick_map.
         """
-        variable = variable or self.__translate_varname(self.variable)
+        varname = varname or self.__translate_varname(self.varname)
         cmap = color_map if "cmap" not in locals() or "cmap" not in globals() else None
         if aggregation == "mean":
-            data = self.wrf_product[variable][self.wrf_product[variable].VARNAME].mean(
-                dim="time", skipna=True, keep_attrs=True
-            )
-
+            data = self.wrf_product.mean(dim="time", skipna=True, keep_attrs=True)
         elif aggregation == "sum":
-            data = self.wrf_product[variable][self.wrf_product[variable].VARNAME].sum(
-                dim="time", skipna=True, keep_attrs=True
-            )
+            data = self.wrf_product.sum(dim="time", skipna=True, keep_attrs=True)
         else:
-            raise NameError("aggregation not implemented")
-        # try:
-        #     base_map = data.salem.get_map(**kwargs)
-        # except RuntimeError:
-        #     grid = salem.Grid(Proj(self.wrf_product[variable].attrs['PROJ_ENVI_STRING']))
-        #     print(grid)
-        grid = salem.mercator_grid(
-            (
-                self.wrf_product[variable].attrs["LON_0"],
-                self.wrf_product[variable].attrs["LAT_0"],
-            )
-        )
-        base_map = data.salem.get_map(grid=grid, **kwargs)
-        base_map.set_data(data)
+            raise NameError("Aggregation not implemented")
+        base_map = data.salem.get_map(**kwargs)
+        if self.varname == "prcp":
+            data[self.varname] *= 24
+        base_map.set_data(data[self.varname])
         for key, value in coordinates.items():
             lat, lon = value
             base_map.set_points(lon, lat, text=key)
@@ -334,8 +289,34 @@ class Experiment:
         else:
             base_map.visualize(add_cbar=True)
         if save:
-            plt.savefig(f"{self.variable.lower()}_{aggregation.lower()}_map.png")
+            plt.savefig(f"{self.varname.lower()}_{aggregation.lower()}_map.png")
         return base_map
+
+    def set_units(self) -> xr.DataArray:
+        """Add units to xarray data."""
+        ds = self.wrf_product
+        var = self.varname
+        ds[var] = ds[var] * units(ds[var].attrs["units"])
+        return self.wrf_product
+
+
+def compute_rh(
+    mixing_ratio: xr.Dataset, temperature: xr.Dataset, pressure: xr.Dataset
+) -> xr.Dataset:
+    """Compute relative humidity from mixing ratio."""
+    psfc = pressure.psfc * units("mbar")
+    temperature = temperature.t2 * units("K")
+    mixing_ratio = mixing_ratio.q2 * units("kg/kg")
+    rel_humidity = relative_humidity_from_mixing_ratio(
+        pressure=psfc,
+        temperature=temperature,
+        mixing_ratio=mixing_ratio,
+    )
+    return xr.Dataset(
+        rel_humidity,
+        coords=temperature.coords,
+        attrs=temperature.attrs,
+    )
 
 
 def plot_pcp(data, title=None, sample_rate="D", **kwargs):
