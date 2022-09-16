@@ -8,6 +8,7 @@ import salem
 import xarray as xr
 from metpy.calc import relative_humidity_from_mixing_ratio
 from metpy.units import units
+from pyproj import Proj
 from windrose import WindroseAxes
 
 from constants import basepath as gar_basepath
@@ -63,8 +64,8 @@ def open_dataset(
                 f"{experiment}*{variable}*{year}.nc*"
             )[0]
             gar_ds = xr.open_dataset(file, **kwargs)
-        gar_ds.attrs["experiment"] = experiment
-        gar_ds.attrs["year"] = year
+        gar_ds.attrs["experiment"] = str(experiment)
+        gar_ds.attrs["year"] = str(year)
     elif engine == "salem":
         if from_path:
             file = from_path
@@ -75,12 +76,10 @@ def open_dataset(
                 f"{experiment}*{variable}*{year}.nc*"
             )[0]
             gar_ds = salem.open_xr_dataset(file, **kwargs)
-        gar_ds.attrs["experiment"] = experiment
-        gar_ds.attrs["year"] = year
+        gar_ds.attrs["experiment"] = str(experiment)
+        gar_ds.attrs["year"] = str(year)
     else:
         raise ValueError("Engine type not supported.")
-    if gar_ds.VARNAME.lower() in ["t2", "t"]:
-        gar_ds[gar_ds.VARNAME].data = transform_k_to_c(gar_ds)
 
     split = file.split("/")[-1].split("_")
     var = split[-2]
@@ -123,16 +122,19 @@ class Experiment:
 
     def __init__(self, gar_ds):
         """Initiate an instance of class Experiment."""
-        self.wrf_product = {gar_ds.VARNAME: gar_ds}
-        self.variable = self.__translate_varname(gar_ds.VARNAME)
-        self.__added_variables = []
+        self.wrf_product = gar_ds
+        self.varname = gar_ds.VARNAME
+        self.varname_translations = self.__translate_varname(gar_ds.VARNAME)
         try:
             self.experiment = gar_ds.attrs["experiment"]
             self.year = gar_ds.attrs["year"]
         except KeyError:
             print("WARNING: Could not add experiment and/or year.")
         self.measurements = {}
-        self.__add_measurements()
+        try:
+            self.__add_measurements()
+        except KeyError:
+            Warning("Measurements could not be found")
 
     def remove_boundaries(self, gar_ds):
         """Crop the outer 10 rows/columns of the model data."""
@@ -168,24 +170,18 @@ class Experiment:
 
     def __translate_varname(self, varname):
         varname = varname.lower()
-        if varname == "prcp":
-            return "PCP"
-        if varname.startswith("pcp"):
-            return "prcp"
-        if varname == "t2":
-            return "T"
-        if varname == "t":
-            return "t2"
-        if varname == "q2":
-            return "RH"
-        if varname == "rh":
-            return "q2"
-        if varname == "ws10":
-            return "WS"
-        if varname == "ws":
-            return "ws10"
-        if varname == "press":
-            return "P"
+        variable_names = [
+            ["prcp", "PCP"],
+            ["et"],
+            ["t2", "T"],
+            ["q2", "q"],
+            ["rh", "RH"],
+            ["ws10", "ws"],
+            ["press", "P"],
+        ]
+        for combination in variable_names:
+            if varname in combination:
+                return combination
         raise NameError("Please add variable name translation")
 
     def __add_measurements(self, variable=None):
@@ -251,14 +247,16 @@ class Experiment:
                 timeseries[var].plot(ax=ax, **kwargs)
         if hasattr(self, "extracted"):
             extracted = pd.Series(self.extracted[station])
-            extracted.index = pd.DatetimeIndex(pd.date_range("2022-04-01", "2022-06-30"))
+            extracted.index = pd.DatetimeIndex(
+                pd.date_range("2022-04-01", "2022-06-30")
+            )
             extracted.name = self.experiment
         else:
             extracted = self.__get_closest_gridpoint_values(station)
         if var in variables and self.variable == "PCP":
-            extracted.cumsum().plot(ax=ax, c='k', **kwargs)
+            extracted.cumsum().plot(ax=ax, c="k", **kwargs)
         elif var in variables:
-            extracted.plot(ax=ax, c='k', **kwargs)
+            extracted.plot(ax=ax, c="k", **kwargs)
         if var in variables:
             plt.legend()
             plt.title(station)
@@ -312,7 +310,18 @@ class Experiment:
             )
         else:
             raise NameError("aggregation not implemented")
-        base_map = data.salem.get_map(**kwargs)
+        # try:
+        #     base_map = data.salem.get_map(**kwargs)
+        # except RuntimeError:
+        #     grid = salem.Grid(Proj(self.wrf_product[variable].attrs['PROJ_ENVI_STRING']))
+        #     print(grid)
+        grid = salem.mercator_grid(
+            (
+                self.wrf_product[variable].attrs["LON_0"],
+                self.wrf_product[variable].attrs["LAT_0"],
+            )
+        )
+        base_map = data.salem.get_map(grid=grid, **kwargs)
         base_map.set_data(data)
         for key, value in coordinates.items():
             lat, lon = value
@@ -354,11 +363,25 @@ def glob_measurements(
 
 
 def load_measurements(path, variable):
-    """Load measured data from darwin measurement network."""
+    """
+    Load measured data from darwin measurement network.
+
+    Parameters
+    ----------
+    path : str
+        Path to a csv-file containing measurements
+    variable : {str, list}
+        name(s) of the variable to load
+
+    Returns
+    ---------
+    pandas.Series
+        a pandas Series of the data in specified csv-file
+    """
     measured = pd.read_csv(path, parse_dates=["datetime"], index_col=["datetime"])
     measured = measured.loc["2022-04-01":"2022-06-30"]
     if variable == "PCP":
-        filter_col = [col for col in measured if col.startswith(variable)]
+        filter_col = [col for col in measured if col in variable]
     else:
         filter_col = variable
     measured.attrs["name"] = path.split("/")[-1].split("_")[-3]

@@ -15,7 +15,7 @@ def isnt_str_or_basestring(obj):
     return isinstance(obj, str)
 
 
-def remove_nonalphanumerics(string):
+def remove_nonalphanumerics(string: str) -> str:
     return "".join(ch for ch in string if ch.isalnum())
 
 
