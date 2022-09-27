@@ -48,11 +48,15 @@ def change_all_projections(path, *args, **kwargs):
             ds = set_projection(ds)
             pp.pprint("Saving dataset")
             extra_attrs = {
-                "year": f.year,
                 "experiment": f.experiment,
                 "frequency": f.frequency,
                 "dimensionality": f.dimensionality,
             }
+            if hasattr(f, 'year'):
+                extra_attrs["year"] = f.year
+            if hasattr(f, 'frequency'):
+                extra_attrs["frequency"] = f.frequency
+
             ds = add_extra_attrs(ds, extra_attrs)
             f_new = f.parent / "new" / f.name
             ds.to_netcdf(f"{f_new}")

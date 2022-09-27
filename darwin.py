@@ -136,11 +136,12 @@ class Experiment:
         except KeyError:
             Warning("Measurements could not be found")
 
-    def remove_boundaries(self):
+    def remove_boundaries(self, grid_points):
         """Crop the outer 10 rows/columns of the model data."""
         self.wrf_product = self.wrf_product.isel(
-            west_east=slice(10, -10), south_north=slice(10, -10)
+            west_east=slice(grid_points, -grid_points), south_north=slice(grid_points, -grid_points)
         )
+        return self.wrf_product
 
     def add_extracted_simulated_points_from_file(self, file):
         """Load measurements from file."""
@@ -171,6 +172,7 @@ class Experiment:
         varname = varname.lower()
         variable_names = [
             ["prcp", "PCP"],
+            ["hgt"],
             ["et"],
             ["t2", "T"],
             ["q2", "q"],
