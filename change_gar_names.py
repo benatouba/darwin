@@ -1,4 +1,6 @@
+"""Set attributes of WRF products produced by WAVE."""
 from argparse import ArgumentParser
+from os import path
 from pprint import PrettyPrinter
 
 from xarray import Dataset
@@ -6,20 +8,28 @@ from xarray import Dataset
 from darwin import FilePath, open_dataset
 from utils import glob_files, remove_nonalphanumerics
 
-parser = ArgumentParser(description="Description of your program")
-parser.add_argument(
-    "-f",
-    "--folder",
-    help="Topfolder to search for files to process",
-    default=".",
-)
-parser.add_argument(
-    "-g",
-    "--glob",
-    help="glob pattern to search for files",
-    default="**/*.nc",
-)
-args = vars(parser.parse_args())
+
+def parse_input(parser):
+    """Parse command line inputs.
+
+        parser (): argparse.ArgumentParser object
+
+    Returns:
+        A list of parsed arguments.
+    """
+    parser.add_argument(
+        "-f",
+        "--folder",
+        help="Topfolder to search for files to process",
+        default=".",
+    )
+    parser.add_argument(
+        "-g",
+        "--glob",
+        help="glob pattern to search for files",
+        default="**/*.nc",
+    )
+    return vars(parser.parse_args())
 
 
 pp = PrettyPrinter(indent=2)
@@ -52,14 +62,15 @@ def change_all_projections(path, *args, **kwargs):
                 "frequency": f.frequency,
                 "dimensionality": f.dimensionality,
             }
-            if hasattr(f, 'year'):
+            if hasattr(f, "year"):
                 extra_attrs["year"] = f.year
-            if hasattr(f, 'frequency'):
+            if hasattr(f, "frequency"):
                 extra_attrs["frequency"] = f.frequency
 
             ds = add_extra_attrs(ds, extra_attrs)
-            f_new = f.parent / "new" / f.name
-            ds.to_netcdf(f"{f_new}")
+            temp_path = f.parent / "temp.nc"
+            ds.to_netcdf(temp_path)
+            temp_path.rename(f)
             pp.pprint("Dataset processed")
 
 
@@ -137,7 +148,7 @@ def assign_projection_info(ds):
         "GRID_Y01": y01,
         "GRID_NX": nx,
         "GRID_NY": ny,
-        "CEN_LON": 0.,
+        "CEN_LON": 0.0,
     }
 
     proj_split = split_attribute(ds.attrs["PROJ_ENVI_STRING"])
@@ -200,5 +211,6 @@ def assign_projection_info(ds):
 
 
 if __name__ == "__main__":
+    parser = ArgumentParser(description="Description of your program")
     path = FilePath(args["folder"])
     change_all_projections(path, args["glob"])

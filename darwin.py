@@ -1,3 +1,4 @@
+import copy
 from glob import glob
 from pathlib import Path
 
@@ -34,6 +35,7 @@ class FilePath(type(Path())):
             self.dimensionality = file_infos.pop()
         else:
             self.dimensionality = f"{file_infos.pop()}_{file_infos.pop()}"
+        self.domain = file_infos.pop()
         self.frequency = file_infos.pop()
         self.experiment = "_".join(file_infos)
 
@@ -68,7 +70,7 @@ def open_dataset(
     # It is recommended not to use it.
     elif engine == "salem":
         if from_path:
-            file = from_path
+            file = str(from_path)
             gar_ds = salem.open_xr_dataset(from_path, **kwargs)
         else:
             file = glob_files(
@@ -85,26 +87,6 @@ def open_dataset(
     var = split[-2]
     if var == "lu":
         var = split[-2] + "_" + split[-1].split(".")[0]
-    # projection = {
-    #     "lat_0": float(ds.attrs["PROJ_ENVI_STRING"].split(",")[3]),
-    #     "lon_0": float(ds.attrs["PROJ_ENVI_STRING"].split(",")[4]),
-    #     "x_0": float(ds.attrs["PROJ_ENVI_STRING"].split(",")[5]),
-    #     "y_0": float(ds.attrs["PROJ_ENVI_STRING"].split(",")[5]),
-    #     "ellps": remove_nonalphanumerics(ds.attrs["PROJ_ENVI_STRING"].split(",")[7]),
-    #     "name": remove_nonalphanumerics(
-    #         str(ds.attrs["PROJ_ENVI_STRING"].split(",")[8])
-    #     ),
-    # }
-    #
-    # proj = "merc" if projection["name"].lower() == "wrfmercator" else "lcc"
-    # pyproj_srs = (
-    #     f"+proj={proj} +lat_0={str(projection['lat_0'])} +lon_0={str(projection['lon_0'])} +k=1 "
-    #     f"+x_0={str(projection['x_0'])} +y_0={str(projection['y_0'])} "
-    #     f"+ellps={projection['ellps']} +datum={projection['ellps']} +units=m +no_defs"
-    # )
-    #
-    # ds[var].attrs["pyproj_srs"] = pyproj_srs
-    # ds[var].attrs["projection_info"] = projection
     return gar_ds
 
 
@@ -136,12 +118,35 @@ class Experiment:
         except KeyError:
             Warning("Measurements could not be found")
 
+    def __getitem__(self, key):
+        """Get a item.
+
+            self (): The object.
+            key (): Object key.
+
+        Returns:
+            The object with name key.
+        """
+        return getattr(self, key)
+
+    def __setitem__(self, key, value):
+        """Set an item.
+
+        self (): The object
+        key (): Name under which to store the item.
+        value (): The item to store.
+        """
+        setattr(self, key, value)
+
+    def copy(self):
+        return copy.copy(self)
+
     def remove_boundaries(self, grid_points):
         """Crop the outer 10 rows/columns of the model data."""
-        self.wrf_product = self.wrf_product.isel(
-            west_east=slice(grid_points, -grid_points), south_north=slice(grid_points, -grid_points)
+        return self.wrf_product.isel(
+            west_east=slice(grid_points, -grid_points),
+            south_north=slice(grid_points, -grid_points),
         )
-        return self.wrf_product
 
     def add_extracted_simulated_points_from_file(self, file):
         """Load measurements from file."""
@@ -262,7 +267,17 @@ class Experiment:
         selected.name = self.wrf_product.attrs["experiment"]
         return selected
 
-    def plot_map(self, varname=None, ax=None, aggregation="mean", save=False, **kwargs):
+    def plot_map(
+        self,
+        varname=None,
+        ax=None,
+        aggregation="mean",
+        save=False,
+        stations=True,
+        cbar=True,
+        unit="",
+        **kwargs,
+    ):
         """
         Plot a map of Experiment data.
 
@@ -280,18 +295,20 @@ class Experiment:
         if self.varname == "prcp":
             data[self.varname] *= 24
         base_map.set_data(data[self.varname])
-        for key, value in coordinates.items():
-            lat, lon = value
-            base_map.set_points(lon, lat, text=key)
+        if stations:
+            for key, value in coordinates.items():
+                lat, lon = value
+                base_map.set_points(lon, lat, text=key)
         base_map.set_cmap(cmap)
         base_map.set_scale_bar()
         if ax:
             base_map.plot(ax=ax)
-            base_map.append_colorbar(ax=ax)
+            if cbar:
+                base_map.append_colorbar(ax=ax, label=unit)
         else:
             base_map.visualize(add_cbar=True)
         if save:
-            plt.savefig(f"{self.varname.lower()}_{aggregation.lower()}_map.png")
+            plt.savefig(f"{self.experiment}_{self.varname.lower()}_{aggregation.lower()}_map.png")
         return base_map
 
     def set_units(self) -> xr.DataArray:
