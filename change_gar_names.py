@@ -1,6 +1,5 @@
 """Set attributes of WRF products produced by WAVE."""
 from argparse import ArgumentParser
-from os import path
 from pprint import PrettyPrinter
 
 from xarray import Dataset
@@ -212,5 +211,6 @@ def assign_projection_info(ds):
 
 if __name__ == "__main__":
     parser = ArgumentParser(description="Description of your program")
-    path = FilePath(args["folder"])
-    change_all_projections(path, args["glob"])
+    args = parse_input(parser)
+    filepath = FilePath(args["folder"])
+    change_all_projections(filepath, args["glob"])
