@@ -67,10 +67,10 @@ def change_all_projections(path, *args, **kwargs):
                 extra_attrs["frequency"] = f.frequency
 
             ds = add_extra_attrs(ds, extra_attrs)
-            temp_path = f.parent / "temp.nc"
-            ds.to_netcdf(temp_path)
+            temp_path = f.parent / "temp"
+            ds.to_netcdf(temp_path, mode="w")
             temp_path.rename(f)
-            pp.pprint("Dataset processed")
+            pp.pprint(f"Dataset {f.name} processed")
 
 
 def set_calendar(ds):

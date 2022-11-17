@@ -9,12 +9,12 @@ import salem
 import xarray as xr
 from metpy.calc import relative_humidity_from_mixing_ratio
 from metpy.units import units
-from pyproj import Proj
-from windrose import WindroseAxes
+# from pyproj import Proj
+# from windrose import WindroseAxes
 
 from constants import basepath as gar_basepath
 from constants import color_map, coordinates
-from utils import glob_files, transform_k_to_c
+from utils import glob_files  # , transform_k_to_c
 
 
 class FilePath(type(Path())):
@@ -62,8 +62,7 @@ def open_dataset(
             gar_ds = xr.open_dataset(from_path, **kwargs)
         else:
             file = glob_files(
-                f"{basepath}/{experiment}/products/{domain}/{frequency}/{dimensions}/"
-                f"{experiment}*{variable}*{year}.nc*"
+                f"{basepath}/{experiment}/{experiment}*_{frequency}_*{variable}*{year}.nc*"
             )[0]
             gar_ds = xr.open_dataset(file, **kwargs)
     # NOTE: salem does something weird and adds pyproj_srs during load.
@@ -74,8 +73,7 @@ def open_dataset(
             gar_ds = salem.open_xr_dataset(from_path, **kwargs)
         else:
             file = glob_files(
-                f"{basepath}/{experiment}/products/{domain}/{frequency}/{dimensions}/"
-                f"{experiment}*{variable}*{year}.nc*"
+                f"{basepath}/{experiment}/{experiment}*_{frequency}_*{variable}*{year}.nc*"
             )[0]
             gar_ds = salem.open_xr_dataset(file, **kwargs)
         gar_ds.attrs["experiment"] = str(experiment)
@@ -174,6 +172,7 @@ class Experiment:
             self.__added_variables.append(wrf_ds.VARNAME)
 
     def __translate_varname(self, varname):
+        print("Getting variable name translations")
         varname = varname.lower()
         variable_names = [
             ["prcp", "PCP"],
@@ -191,8 +190,9 @@ class Experiment:
         raise NameError("Please add variable name translation")
 
     def __add_measurements(self, variable=None):
+        print("Adding measurements to dataset")
         if not variable:
-            variable = self.varname_translations
+            variable = self.varname
         self.measurements_files = glob_measurements()
         for file in self.measurements_files:
             measured = load_measurements(file, variable)
@@ -228,7 +228,7 @@ class Experiment:
         if hasattr(self, "extracted"):
             extracted = pd.Series(self.extracted[station])
             extracted.index = pd.DatetimeIndex(
-                pd.date_range("2022-04-01", "2022-06-30")
+                pd.date_range("2022-04-01", "2022-09-30")
             )
             extracted.name = self.experiment
         else:
@@ -263,7 +263,7 @@ class Experiment:
         ([xlon], [xlat]) = self.__find_closest_gridpoint(station)
         selected = self.wrf_product.isel(west_east=xlon, south_north=xlat)
         selected = pd.Series(selected[self.varname])
-        selected.index = pd.DatetimeIndex(pd.date_range("2022-04-01", "2022-06-30"))
+        selected.index = pd.DatetimeIndex(pd.date_range("2022-04-01", "2022-09-30"))
         selected.name = self.wrf_product.attrs["experiment"]
         return selected
 
@@ -293,7 +293,7 @@ class Experiment:
             raise NameError("Aggregation not implemented")
         base_map = data.salem.get_map(**kwargs)
         if self.varname == "prcp":
-            data[self.varname] *= 24
+            data[self.varname] = data[self.varname] * 24
         base_map.set_data(data[self.varname])
         if stations:
             for key, value in coordinates.items():
@@ -308,7 +308,9 @@ class Experiment:
         else:
             base_map.visualize(add_cbar=True)
         if save:
-            plt.savefig(f"{self.experiment}_{self.varname.lower()}_{aggregation.lower()}_map.png")
+            plt.savefig(
+                f"{self.experiment}_{self.varname.lower()}_{aggregation.lower()}_map.png"
+            )
         return base_map
 
     def set_units(self) -> xr.DataArray:
@@ -358,8 +360,8 @@ def glob_measurements(
     path="/home/ben/data/darwin_measured", ds_number="??", type_of_data="AWS-P"
 ):
     """Glob for measurement data of the darwin measurement network."""
-    files = glob(f"{path}/{ds_number}_{type_of_data}*/*[!xlsx_complete]")
-    return [file for file in files if not file.count("xlsx") and not file.count("_-_")]
+    return glob(f"{path}/{ds_number}_{type_of_data}*.csv")
+    # return [file for file in files if not file.count("xlsx") and not file.count("_-_")]
 
 
 def load_measurements(path, variable):
@@ -379,9 +381,13 @@ def load_measurements(path, variable):
         a pandas Series of the data in specified csv-file
     """
     measured = pd.read_csv(path, parse_dates=["datetime"], index_col=["datetime"])
-    measured = measured.loc["2022-04-01":"2022-06-30"]
-    if variable == "PCP":
-        filter_col = [col for col in measured if col in variable]
+    measured = measured.loc["2022-04-01":"2022-09-30"]
+    if variable == "prcp":
+        filter_col = [
+            col
+            for col in measured
+            if col in ["PCP_diff_radar", "PCP_acoustic", "PCP_tot_bucket", "PCP"]
+        ]
     else:
         filter_col = variable
     measured.attrs["name"] = path.split("/")[-1].split("_")[-3]
