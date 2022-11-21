@@ -9,12 +9,16 @@ import salem
 import xarray as xr
 from metpy.calc import relative_humidity_from_mixing_ratio
 from metpy.units import units
-# from pyproj import Proj
-# from windrose import WindroseAxes
+from datetime.timezone import utc
+from pytz import timezone
 
 from constants import basepath as gar_basepath
 from constants import color_map, coordinates
 from utils import glob_files  # , transform_k_to_c
+
+# from pyproj import Proj
+# from windrose import WindroseAxes
+
 
 
 class FilePath(type(Path())):
@@ -361,7 +365,22 @@ def glob_measurements(
 ):
     """Glob for measurement data of the darwin measurement network."""
     return glob(f"{path}/{ds_number}_{type_of_data}*.csv")
-    # return [file for file in files if not file.count("xlsx") and not file.count("_-_")]
+
+
+def open_measurements(path):
+    df = pd.read_csv(path)
+    df.index = pd.DatetimeIndex(
+        df.datetime, tz=timezone("Pacific/Galapagos")
+    ).tz_convert(utc)
+    return MeasurementFrame(df)
+
+
+class MeasurementFrame(pd.DataFrame):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def join_wrfdata(self, wrfdata, inplace=False, join='inner'):
+        return pd.concat([self.data, wrfdata], axis=1, join=join)
 
 
 def load_measurements(path, variable):
@@ -381,7 +400,6 @@ def load_measurements(path, variable):
         a pandas Series of the data in specified csv-file
     """
     measured = pd.read_csv(path, parse_dates=["datetime"], index_col=["datetime"])
-    measured = measured.loc["2022-04-01":"2022-09-30"]
     if variable == "prcp":
         filter_col = [
             col
