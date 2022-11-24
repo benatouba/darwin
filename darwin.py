@@ -9,7 +9,7 @@ import salem
 import xarray as xr
 from metpy.calc import relative_humidity_from_mixing_ratio
 from metpy.units import units
-from datetime.timezone import utc
+import datetime
 from pytz import timezone
 
 from constants import basepath as gar_basepath
@@ -18,7 +18,6 @@ from utils import glob_files  # , transform_k_to_c
 
 # from pyproj import Proj
 # from windrose import WindroseAxes
-
 
 
 class FilePath(type(Path())):
@@ -371,13 +370,13 @@ def open_measurements(path):
     df = pd.read_csv(path)
     df.index = pd.DatetimeIndex(
         df.datetime, tz=timezone("Pacific/Galapagos")
-    ).tz_convert(utc)
+    ).tz_convert(datetime.timezone.utc)
     return MeasurementFrame(df)
 
 
 class MeasurementFrame(pd.DataFrame):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, *args, **kwargs):
+        super(MeasurementFrame, self).__init__(*args, **kwargs)
 
     def join_wrfdata(self, wrfdata, inplace=False, join='inner'):
         return pd.concat([self.data, wrfdata], axis=1, join=join)
