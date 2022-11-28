@@ -288,6 +288,7 @@ class Experiment:
         """
         varname = varname or self.__translate_varname(self.varname)
         cmap = color_map if "cmap" not in locals() or "cmap" not in globals() else None
+        cmap = 'BuPu'
         if aggregation == "mean":
             data = self.wrf_product.mean(dim="time", skipna=True, keep_attrs=True)
         elif aggregation == "sum":
