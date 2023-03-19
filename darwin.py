@@ -1,20 +1,19 @@
 import copy
-from glob import glob
-from pathlib import Path
+from   glob import glob
+from   pathlib import Path
 
-import matplotlib.pyplot as plt
+import datetime
+from   matplotlib import pyplot as plt
+from   metpy.calc import relative_humidity_from_mixing_ratio
+from   metpy.units import units
 import numpy as np
 import pandas as pd
+from   pytz import timezone
 import salem
 import xarray as xr
-from metpy.calc import relative_humidity_from_mixing_ratio
-from metpy.units import units
-import datetime
-from pytz import timezone
 
-from constants import basepath as gar_basepath
-from constants import color_map, coordinates
-from utils import glob_files  # , transform_k_to_c
+from   constants import basepath as gar_basepath, coordinates
+from   utils import glob_files
 
 # from pyproj import Proj
 # from windrose import WindroseAxes
@@ -143,11 +142,13 @@ class Experiment:
         return copy.copy(self)
 
     def remove_boundaries(self, grid_points):
-        """Crop the outer 10 rows/columns of the model data."""
-        return self.wrf_product.isel(
+        """Crop the outer rows/columns of the model data."""
+        copy = self.copy()
+        copy.wrf_product = self.wrf_product.isel(
             west_east=slice(grid_points, -grid_points),
             south_north=slice(grid_points, -grid_points),
         )
+        return copy
 
     def add_extracted_simulated_points_from_file(self, file):
         """Load measurements from file."""
@@ -279,6 +280,7 @@ class Experiment:
         stations=True,
         cbar=True,
         unit="",
+        cmap=None,
         **kwargs,
     ):
         """
@@ -287,8 +289,6 @@ class Experiment:
         kwargs: args for  salem's quick_map.
         """
         varname = varname or self.__translate_varname(self.varname)
-        cmap = color_map if "cmap" not in locals() or "cmap" not in globals() else None
-        cmap = 'BuPu'
         if aggregation == "mean":
             data = self.wrf_product.mean(dim="time", skipna=True, keep_attrs=True)
         elif aggregation == "sum":

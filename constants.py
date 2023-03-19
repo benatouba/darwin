@@ -30,6 +30,7 @@ measured_vars = {
     "ws10": ["WS", "WSmax"],
     "v10": ["WD"],
     "u10": ["WD"],
+    "rh": ["RH"],
 }
 
 measured_units = {
@@ -38,6 +39,7 @@ measured_units = {
     "PCP_diffmin_radar": Unit("mm/min"),
     "PCP_acoustic": Unit("mm"),
     "T": Unit("C"),
+    "RH": Unit("%"),
     "Pabs": Unit("hPa"),
     "WS": Unit("m/s"),
     "WSmax": Unit("m/s"),
