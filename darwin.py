@@ -1,8 +1,8 @@
 import copy
+import datetime
 from   glob import glob
 from   pathlib import Path
 
-import datetime
 from   matplotlib import pyplot as plt
 from   metpy.calc import relative_humidity_from_mixing_ratio
 from   metpy.units import units
@@ -182,6 +182,7 @@ class Experiment:
             ["prcp", "PCP"],
             ["hgt"],
             ["et"],
+            ["potevap"],
             ["t2", "T"],
             ["q2", "q"],
             ["rh", "RH"],
@@ -296,7 +297,7 @@ class Experiment:
         else:
             raise NameError("Aggregation not implemented")
         base_map = data.salem.get_map(**kwargs)
-        if self.varname == "prcp":
+        if self.varname in ["prcp", "et", "potevap"]:
             data[self.varname] = data[self.varname] * 24
         base_map.set_data(data[self.varname])
         if stations:
@@ -383,13 +384,13 @@ class MeasurementFrame(pd.DataFrame):
         return pd.concat([self.data, wrfdata], axis=1, join=join)
 
 
-def load_measurements(path, variable):
+def load_measurements(path: [str, Path], variable: str = "all"):
     """
     Load measured data from darwin measurement network.
 
     Parameters
     ----------
-    path : str
+    path : {str, Path-like object}
         Path to a csv-file containing measurements
     variable : {str, list}
         name(s) of the variable to load
@@ -400,6 +401,8 @@ def load_measurements(path, variable):
         a pandas Series of the data in specified csv-file
     """
     measured = pd.read_csv(path, parse_dates=["datetime"], index_col=["datetime"])
+    if variable == "all":
+        return measured
     if variable == "prcp":
         filter_col = [
             col
