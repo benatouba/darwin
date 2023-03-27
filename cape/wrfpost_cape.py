@@ -1,5 +1,6 @@
+"""Calculate and extract CAPE products from wrfpost files."""
 import argparse
-import glob
+from glob import glob
 import os.path as path
 import subprocess
 from calendar import monthrange
@@ -16,6 +17,7 @@ from netCDF4 import Dataset, date2num
 
 
 def get_args():
+    """Parse arguments."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-p",
@@ -62,7 +64,14 @@ def run_cmd(in_str, dry_run=False):
 
 
 def cape_calculate(f):
-    """Calculate 2d CAPE."""
+    """Calculate 2-dimensional CAPE.
+
+    Args:
+        f (string): Input file path.
+
+    Returns:
+        netcdf.Dataset
+    """
     wrf_nc = Dataset(f)
     cape_2d = wrf.getvar(wrf_nc, "cape_2d", timeidx=wrf.ALL_TIMES).isel(
         mcape_mcin_lcl_lfc=0, Time=np.arange(0, 24)
@@ -79,8 +88,8 @@ def copy_one_day(fg_dir, working_dir, date):
         datetime.strftime(date, "%Y-%m"),
         datetime.strftime(date, "%Y-%m-%d"),
     )
-    print("from dir" + source_dir)
-    source_wrfpost = glob.glob(path.join(source_dir, "wrfpost*"))[0]
+    print("Source: " + source_dir)
+    source_wrfpost = glob(path.join(source_dir, "wrfpost*"))[0]
     print(source_wrfpost)
     local_wrfpost = path.join(working_dir, path.split(source_wrfpost)[-1])
     print("copying ", path.join(source_dir, "wrfpost*"))
@@ -98,7 +107,7 @@ def write_cape_to_nc(cape_data, sample_file, out_file):
     dataset = Dataset(out_file, "w", format="NETCDF4_CLASSIC")
 
     # set global attributes
-    dataset.TITLE = "HAR v2 d10km"
+    dataset.TITLE = "GAR d02km"
     dataset.DATA_NOTES = (
         "File generated with the output of successive model "
         "runs of 36H (first 12 hours discarded for spin-up)"
@@ -106,7 +115,7 @@ def write_cape_to_nc(cape_data, sample_file, out_file):
     dataset.WRF_VERSION = (
         ds.attrs["TITLE"].split()[2] + " " + ds.attrs["TITLE"].split()[3]
     )
-    dataset.CREATED_BY = "Xun Wang - xun.wang@tu-berlin.de"
+    dataset.CREATED_BY = "Benjamin Schmidt - benjamin.schmidt@tu-berlin.de"
     dataset.INSTITUTION = (
         "Technische Universitaet Berlin, Institute of Ecology, Chair of Climatology"
     )
@@ -216,7 +225,7 @@ def extract_cape_month(fg_dir, working_dir, out_dir, year, month):
         if day != days:
             run_cmd("rm -f " + local_wrf)
 
-    out_name_pattern = "HARv2_d10km_h_2d_cape_{0}.nc"
+    out_name_pattern = "GAR_d02km_h_2d_cape_{0}.nc"
     out_name = out_name_pattern.format(datetime(year, month, 1).strftime("%Y-%m"))
     write_cape_to_nc(cape_all, local_wrf, path.join(out_dir, out_name))
     run_cmd("rm -f " + local_wrf)
