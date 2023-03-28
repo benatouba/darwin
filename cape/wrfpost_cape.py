@@ -1,11 +1,10 @@
 """Calculate and extract CAPE products from wrfpost files."""
 import argparse
-from glob import glob
 import os.path as path
 import subprocess
 from calendar import monthrange
 from datetime import datetime, timedelta
-from platform import python_version
+from glob import glob
 from shutil import copyfile
 
 import numpy as np
@@ -14,6 +13,8 @@ import salem
 import wrf
 import xarray as xr
 from netCDF4 import Dataset, date2num
+
+from .metadata import get_attributes
 
 
 def get_args():
@@ -34,9 +35,7 @@ def get_args():
         "--out_dir",
         help="The working directory to store and unzip pp files, and to store the output",
     )
-    parser.add_argument(
-        "-y", "--year", type=int, help="The year you want to calculate CAPE"
-    )
+    parser.add_argument("-y", "--year", type=int, help="The year you want to calculate CAPE")
     parser.add_argument(
         "-m",
         "--month",
@@ -58,7 +57,7 @@ def run_cmd(in_str, dry_run=False):
         return_code = subprocess.run(in_str, shell=True, check=True)
         if return_code != 0:
             print("Returncode: ", return_code)
-                    #  raise Exception("Cant execute: " + in_str)
+            #  raise Exception("Cant execute: " + in_str)
     else:
         print("Call would be:" + in_str)
 
@@ -101,77 +100,25 @@ def copy_one_day(fg_dir, working_dir, date):
     return local_wrfpost
 
 
-def write_cape_to_nc(cape_data, sample_file, out_file):
-    ds = salem.open_wrf_dataset(sample_file)
+def write_cape_to_nc(cape_data, sample, out_file):
     dates = pd.to_datetime(cape_data.Time.values)
     dataset = Dataset(out_file, "w", format="NETCDF4_CLASSIC")
 
-    # set global attributes
-    dataset.TITLE = "GAR d02km"
-    dataset.DATA_NOTES = (
-        "File generated with the output of successive model "
-        "runs of 36H (first 12 hours discarded for spin-up)"
-    )
-    dataset.WRF_VERSION = (
-        ds.attrs["TITLE"].split()[2] + " " + ds.attrs["TITLE"].split()[3]
-    )
-    dataset.CREATED_BY = "Benjamin Schmidt - benjamin.schmidt@tu-berlin.de"
-    dataset.INSTITUTION = (
-        "Technische Universitaet Berlin, Institute of Ecology, Chair of Climatology"
-    )
-    now = datetime.now()
-    dataset.CREATION_DATE = now.strftime("%d-%m-%Y %H:%M:%S")
-    dataset.SOFTWARE_NOTES = "Python " + python_version()
-    dataset.VARNAME = "cape"
-    domain_num = path.split(sample_file)[-1].split("_")[1]
-    dataset.DOMAIN = domain_num.strip("d0")
-    dataset.NESTED = "YES" if domain_num != "d01" else "NO"
-    dataset.TIME_ZONE = "UTC"
-    dataset.PRODUCT_LEVEL = "H"
-    dataset.LEVEL_INFO = (
-        "H: original simulation output; D: daily; M: monthly; Y: yearly; S: static"
-    )
-    dataset.PROJ_NAME = ds.attrs["MAP_PROJ_CHAR"]
-    dataset.PROJ_CENTRAL_LON = ds.attrs["STAND_LON"]
-    dataset.PROJ_CENTRAL_LAT = ds.attrs["MOAD_CEN_LAT"]
-    dataset.PROJ_STANDARD_PAR1 = ds.attrs["TRUELAT1"]
-    dataset.PROJ_STANDARD_PAR2 = ds.attrs["TRUELAT2"]
-    dataset.PROJ_SEMIMAJOR_AXIS = "6370000.0"
-    dataset.PROJ_SEMIMINOR_AXIS = "6370000.0"
-    dataset.PROJ_FALSE_EASTING = "0.0"
-    dataset.PROJ_FALSE_NORTHING = "0.0"
-    dataset.PROJ_DATUM = "WGS-84"
-    dataset.PYPROJ_SRS = ds.attrs["pyproj_srs"]
-    dataset.GRID_INFO = (
-        "Grid spacing: GRID_DX and GRID_DY (unit: m), "
-        "Down left corner: GRID_X00 and GRID_Y00 (unit: m), \
-                         Upper Left Corner: GRID_X01 and GRID_Y01 (unit: m)"
-    )
-    dataset.GRID_DX = ds.attrs["DX"]
-    dataset.GRID_DY = ds.attrs["DY"]
-    dataset.GRID_X00 = ds.west_east.values.min()
-    dataset.GRID_Y00 = ds.south_north.values.min()
-    dataset.GRID_X01 = ds.west_east.values.min()
-    dataset.GRID_Y01 = ds.south_north.values.max()
-    dataset.GRID_NX = len(ds.west_east)
-    dataset.GRID_NY = len(ds.south_north)
-
+    dataset["attrs"] = get_attributes(dataset)
     # create dimensions
     dataset.createDimension("time", None)
-    dataset.createDimension("west_east", ds.west_east.size)
-    dataset.createDimension("south_north", ds.south_north.size)
+    dataset.createDimension("west_east", sample.west_east.size)
+    dataset.createDimension("south_north", sample.south_north.size)
 
     # create coordinates
     times = dataset.createVariable("time", np.float64, ("time",))
-    west_easts = dataset.createVariable("west_east", np.float32, ("west_east",))
-    south_norths = dataset.createVariable("south_north", np.float32, ("south_north",))
+    west_east = dataset.createVariable("west_east", np.float32, ("west_east",))
+    south_north = dataset.createVariable("south_north", np.float32, ("south_north",))
     lon = dataset.createVariable("lon", np.float32, ("south_north", "west_east"))
     lat = dataset.createVariable("lat", np.float32, ("south_north", "west_east"))
 
     # create variables
-    cape = dataset.createVariable(
-        "cape", np.float32, ("time", "south_north", "west_east")
-    )
+    cape = dataset.createVariable("cape", np.float32, ("time", "south_north", "west_east"))
 
     # set attributes
     # for coordinate
@@ -179,10 +126,10 @@ def write_cape_to_nc(cape_data, sample_file, out_file):
     times.units = f"hour since {str(dates[0])}"
     times.calendar = "standard"
 
-    south_norths.long_name = "y-coordinate in Cartesian system"
-    south_norths.units = "m"
-    west_easts.long_name = "x-coordinate in Cartesian system"
-    west_easts.units = "m"
+    south_north.long_name = "y-coordinate in Cartesian system"
+    south_north.units = "m"
+    west_east.long_name = "x-coordinate in Cartesian system"
+    west_east.units = "m"
 
     lat.long_name = "Latitude"
     lat.units = "degree_north"
@@ -199,47 +146,37 @@ def write_cape_to_nc(cape_data, sample_file, out_file):
     cape[:] = cape_data.cape_2d.values
 
     dates_new = [
-        datetime(dates.year[0], dates.month[0], dates.day[0])
-        + n * timedelta(hours=1)
+        datetime(dates.year[0], dates.month[0], dates.day[0]) + n * timedelta(hours=1)
         for n in range(cape_data.cape_2d.shape[0])
     ]
     times[:] = date2num(dates_new, units=times.units, calendar=times.calendar)
-    south_norths[:] = ds.south_north.values
-    west_easts[:] = ds.west_east.values
-    lat[:] = ds.lat.values
-    lon[:] = ds.lon.values
+    south_north[:] = sample.south_north.values
+    west_east[:] = sample.west_east.values
+    lat[:] = sample.lat.values
+    lon[:] = sample.lon.values
     dataset.close()
 
 
 def extract_cape_month(fg_dir, working_dir, out_dir, year, month):
-    days = monthrange(year, month)[1]
-    day = 2
-    local_wrf = copy_one_day(fg_dir, working_dir, datetime(year, month, day))
-    cape_all = cape_calculate(local_wrf)
-    run_cmd("rm -f " + local_wrf)
-
-    for day in range(3, days):
+    length_of_month = monthrange(year, month)[1]
+    cape_all = None
+    for day in range(1, length_of_month + 1):
         local_wrf = copy_one_day(fg_dir, working_dir, datetime(year, month, day))
         cape_one_day = cape_calculate(local_wrf)
-        cape_all = xr.combine_by_coords([cape_all, cape_one_day])
-        if day != days:
+        if cape_all:
+            cape_all = xr.combine_by_coords([cape_all, cape_one_day])
+        else:
+            cape_all = cape_one_day
+        if day <= length_of_month:
             run_cmd("rm -f " + local_wrf)
+            return
 
-    out_name_pattern = "GAR_d02km_h_2d_cape_{0}.nc"
-    out_name = out_name_pattern.format(datetime(year, month, 1).strftime("%Y-%m"))
-    write_cape_to_nc(cape_all, local_wrf, path.join(out_dir, out_name))
+    out_name= f"GAR_d02km_h_2d_cape_{datetime(year, month, 1).strftime('%Y-%m')}.nc"
+    write_cape_to_nc(cape_all, salem.open_wrf_dataset(local_wrf), path.join(out_dir, out_name))
     run_cmd("rm -f " + local_wrf)
-
-
-def extract_cape(fg_dir, working_dir, out_dir, year, month):
-    for mon in month:
-        extract_cape_month(fg_dir, working_dir, out_dir, year, mon)
-
-
-def main():
-    args = get_args()
-    extract_cape(args.in_dir, args.working_dir, args.out_dir, args.year, args.month)
 
 
 if __name__ == "__main__":
-    main()
+    args = get_args()
+    for mon in args.month:
+        extract_cape_month(args.in_dir, args.working_dir, args.out_dir, args.year, args.month)
