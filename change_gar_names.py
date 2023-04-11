@@ -73,29 +73,70 @@ def change_all_projections(path, *args, **kwargs):
             pp.pprint(f"Dataset {f.name} processed")
 
 
-def set_calendar(ds):
+def set_calendar(ds: Dataset) -> Dataset:
+    """Set calendar attribute to standard.
+
+    Args:
+        ds: xarray.Dataset
+
+    Returns:
+        xarray.Dataset with standard calendar attribute.
+    """
     ds["time"].attrs["calendar"] = "standard"
     return ds
 
 
 def add_extra_attrs(ds: Dataset, attrs: dict) -> Dataset:
+    """Add extra attributes to dataset.
+
+    Args:
+        ds: xarray.Dataset
+        attrs: dictionary with attributes to add
+
+    Returns:
+        xarray.Dataset with extra attributes.
+    """
     for key, value in attrs.items():
         ds.attrs[key] = str(value)
     return ds
 
 
-def set_projection(ds):
+def set_projection(ds: Dataset) -> Dataset:
+    """Set projection attributes.
+
+    Args:
+        ds: xarray.Dataset
+
+    Returns:
+        xarray.Dataset with projection attributes.
+    """
     var = ds.attrs["VARNAME"]
     ds[var].attrs["coordinates"] = "lon lat"
     return ds
 
 
 def build_pyproj(projection: dict) -> str:
+    """Build pyproj string from projection dictionary.
+
+    Args:
+        projection: Dictionary with projection attributes
+
+    Returns:
+        Projection string in pyproj format.
+    """
     string = " ".join(f"+{key}={str(value)}" for key, value in projection.items())
     return f"{string} +no_defs"
 
 
 def split_attribute(attr: str) -> str:
+    """Split attribute by comma or space.
+
+    Args:
+        attr: Attribute to split
+
+    Returns:
+        List with split attribute.
+    """
     # Try to split by comma
     split = attr.split(",")
     if len(split) == 1:
@@ -107,7 +148,15 @@ def split_attribute(attr: str) -> str:
 #     return not proj_string.startswith("{")
 
 
-def assign_projection_info(ds):
+def assign_projection_info(ds: Dataset) -> Dataset:
+    """Assign projection attributes to dataset.
+
+    Args:
+        ds: xarray.Dataset
+
+    Returns:
+        xarray.Dataset with projection attributes.
+    """
     xx = ds.coords["west_east"].values
     yy = ds.coords["south_north"].values
 
