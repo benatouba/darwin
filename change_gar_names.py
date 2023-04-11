@@ -199,37 +199,43 @@ def assign_projection_info(ds: Dataset) -> Dataset:
         "CEN_LON": 0.0,
     }
 
-    proj_split = split_attribute(ds.attrs["PROJ_ENVI_STRING"])
-    projection = {
-        # "proj_id": remove_nonalphanumerics(proj_split[0]),
-        # "a": float(proj_split[1]),
-        # "b": float(proj_split[2]),
-        "k_0": 1.0,
-        "units": "m",
-        "lat_0": float(proj_split[3]),
-        "lon_0": float(proj_split[4]),
-        "x_0": float(proj_split[5]),
-        "y_0": float(proj_split[6]),
-        "ellps": remove_nonalphanumerics(str(proj_split[-2])),
-        "datum": remove_nonalphanumerics(str(proj_split[-2])),
-        "name": remove_nonalphanumerics(str(proj_split[-1])),
-    }
-    projection["proj"] = (
-        "merc" if projection["name"].lower() == "wrfmercator" else "lcc"
+    proj_split = (
+        split_attribute(ds.attrs["PROJ_ENVI_STRING"])
+        if hasattr(ds.attrs, "PROJ_ENVI_STRING")
+        else None
     )
-    if projection["name"].lower() == "wrfmercator":
-        proj_name = "WRF Mercator"
-    elif projection["name"].lower() == "wrflambertconformal":
-        projection["sp1"] = float(proj_split[7])
-        projection["sp2"] = float(proj_split[8])
-        proj_name = "Lambert Conformal Conic"
-    pyproj_srs = build_pyproj(projection)
-    attributes["PROJ_NAME"] = proj_name
-    attributes["LON_0"] = projection["lon_0"]
-    attributes["LAT_0"] = projection["lat_0"]
-    attributes["TRUELAT1"] = projection["lat_0"]
-    # attributes["PROJ_ENVI_STRING"] = pyproj_srs
-    attributes["pyproj_srs"] = pyproj_srs
+    if proj_split:
+        projection = {
+            # "proj_id": remove_nonalphanumerics(proj_split[0]),
+            # "a": float(proj_split[1]),
+            # "b": float(proj_split[2]),
+            "k_0": 1.0,
+            "units": "m",
+            "lat_0": float(proj_split[3]),
+            "lon_0": float(proj_split[4]),
+            "x_0": float(proj_split[5]),
+            "y_0": float(proj_split[6]),
+            "ellps": remove_nonalphanumerics(str(proj_split[-2])),
+            "datum": remove_nonalphanumerics(str(proj_split[-2])),
+            "name": remove_nonalphanumerics(str(proj_split[-1])),
+        }
+        projection["proj"] = "merc" if projection["name"].lower() == "wrfmercator" else "lcc"
+        if projection["name"].lower() == "wrfmercator":
+            proj_name = "WRF Mercator"
+        elif projection["name"].lower() == "wrflambertconformal":
+            projection["sp1"] = float(proj_split[7])
+            projection["sp2"] = float(proj_split[8])
+            proj_name = "Lambert Conformal Conic"
+        pyproj_srs = build_pyproj(projection)
+        attributes["PROJ_NAME"] = proj_name
+        attributes["LON_0"] = projection["lon_0"]
+        attributes["LAT_0"] = projection["lat_0"]
+        attributes["TRUELAT1"] = projection["lat_0"]
+        # attributes["PROJ_ENVI_STRING"] = pyproj_srs
+        attributes["pyproj_srs"] = pyproj_srs
+    else:
+        attributes["pyproj_srs"] = "+k_0=1.0 +units=m +lat_0=2.0 +lon_0=-90.31006622 "
+        "+x_0=0.0 +y_0=0.0 +ellps=WGS84 +datum=WGS84 +name=WRFMercator +proj=merc +no_defs"
     # lcc_attrs = {
     #     "PROJ_SEMIMAJOR_AXIS": projlis[1],
     #     "PROJ_SEMIMINOR_AXIS": projlis[2],
