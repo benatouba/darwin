@@ -139,8 +139,8 @@ def assign_projection_info(ds):
             "Grid spacing: GRID_DX and GRID_DY (unit: m), Down left corner: GRID_X00 and "
             "GRID_Y00 (unit: m), Upper Left Corner: GRID_X01 and GRID_Y01 (unit: m)"
         ),
-        "GRID_DX": ds.attrs["DX"],
-        "GRID_DY": ds.attrs["DY"],
+        "GRID_DX": get_grid_distance_attribute(ds.attrs, "x"),
+        "GRID_DY": get_grid_distance_attribute(ds.attrs, "y"),
         "GRID_X00": x00,
         "GRID_Y00": y00,
         "GRID_X01": x01,
@@ -197,6 +197,32 @@ def assign_projection_info(ds):
     return ds
 
 
+def get_grid_distance_attribute(attrs: dict, dimension: str) -> str:
+    """Return the grid distance attribute from the dataset attributes.
+
+    Args:
+        attrs: Dataset attributes.
+        dimension: Dimension to get the grid distance attribute for.
+
+    Returns:
+        Grid distance attribute.
+    """
+    if dimension.lower() == "x":
+        if "DX" in attrs:
+            return attrs["DX"]
+        elif "GRID_DX" in attrs:
+            return attrs["GRID_DX"]
+        else:
+            raise ValueError("No grid distance attribute found.")
+    elif dimension.lower() == "y":
+        if "DY" in attrs:
+            return attrs["DY"]
+        elif "GRID_DY" in attrs:
+            return attrs["GRID_DY"]
+        else:
+            raise ValueError("No grid distance attribute found.")
+    else:
+        raise ValueError(f"Dimension {dimension} not supported.")
 # if projection == "lcc":
 #     for key, value in lcc_attrs.items():
 #         ds.attrs[key] = value
