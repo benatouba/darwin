@@ -74,9 +74,12 @@ def open_dataset(
             file = str(from_path)
             gar_ds = salem.open_xr_dataset(from_path, **kwargs)
         else:
-            file = glob_files(
-                f"{basepath}/{experiment}/{experiment}*_{frequency}_*{variable}*{year}.nc*"
-            )[0]
+            path = f"{basepath}/{experiment}/{experiment}*_{frequency}_*{variable}*{year}.nc*"
+            file = glob_files(path)[0]
+            if not file:
+                raise FileNotFoundError(
+                    f"No file found for {path}. Did you mean to use the 'from_path' argument?"
+                )
             gar_ds = salem.open_xr_dataset(file, **kwargs)
         gar_ds.attrs["experiment"] = str(experiment)
         gar_ds.attrs["year"] = str(year)
