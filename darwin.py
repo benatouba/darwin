@@ -32,13 +32,16 @@ class FilePath(type(Path())):
     def __assign_wrf_infos(self, file_infos: list):
         if "static" not in self.stem:
             self.year = file_infos.pop()
-        self.var = file_infos.pop()
-        if "3d" not in file_infos:
-            self.dimensionality = file_infos.pop()
+        if "flux" not in self.stem:
+            self.var = file_infos.pop()
         else:
+            self.var = file_infos.pop() + "_" + file_infos.pop()
+        if "3d" not in file_infos and "static" not in self.stem:
+            self.dimensionality = file_infos.pop()
+        elif "static" not in self.stem:
             self.dimensionality = f"{file_infos.pop()}_{file_infos.pop()}"
-        self.domain = file_infos.pop()
         self.frequency = file_infos.pop()
+        self.domain = file_infos.pop()
         self.experiment = "_".join(file_infos)
 
 
