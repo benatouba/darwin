@@ -1,19 +1,22 @@
+"""Base module for the GAR project."""
 import copy
 import datetime
-from   glob import glob
-from   pathlib import Path
+from glob import glob
+from pathlib import Path
 
-from   matplotlib import pyplot as plt
-from   metpy.calc import relative_humidity_from_mixing_ratio
-from   metpy.units import units
+from matplotlib import pyplot as plt
+from metpy.calc import relative_humidity_from_mixing_ratio
+from metpy.units import units
 import numpy as np
 import pandas as pd
-from   pytz import timezone
+from pytz import timezone
 import salem
 import xarray as xr
 
-from   constants import basepath as gar_basepath, coordinates
-from   utils import glob_files
+from constants import basepath as gar_basepath, coordinates
+from utils import glob_files
+
+from typing import Optional
 
 # from pyproj import Proj
 # from windrose import WindroseAxes
@@ -40,6 +43,8 @@ class FilePath(type(Path())):
             self.dimensionality = file_infos.pop()
         elif "static" not in self.stem:
             self.dimensionality = f"{file_infos.pop()}_{file_infos.pop()}"
+        else:
+            self.dimensionality = "static"
         self.frequency = file_infos.pop()
         self.domain = file_infos.pop()
         self.experiment = "_".join(file_infos)
@@ -108,7 +113,7 @@ def open_experiment(**kwargs):
 class Experiment:
     """Class to hold all data associated with one variable for one run."""
 
-    def __init__(self, gar_ds):
+    def __init__(self, gar_ds, with_measurements=False):
         """Initiate an instance of class Experiment."""
         self.wrf_product = gar_ds
         self.varname = gar_ds.VARNAME
@@ -119,10 +124,8 @@ class Experiment:
         except KeyError:
             print("WARNING: Could not add experiment and/or year.")
         self.measurements = {}
-        try:
+        if with_measurements:
             self.__add_measurements()
-        except KeyError:
-            Warning("Measurements could not be found")
 
     def __getitem__(self, key):
         """Get a item.
@@ -145,6 +148,11 @@ class Experiment:
         setattr(self, key, value)
 
     def copy(self):
+        """Copy the object.
+
+        Returns:
+            A copy of the object.
+        """
         return copy.copy(self)
 
     def remove_boundaries(self, grid_points):
@@ -188,6 +196,8 @@ class Experiment:
             ["prcp", "PCP"],
             ["hgt"],
             ["et"],
+            ["cape"],
+            ["cin"],
             ["potevap"],
             ["t2", "T"],
             ["q2", "q"],
@@ -238,9 +248,7 @@ class Experiment:
                 timeseries[var].plot(ax=ax, **kwargs)
         if hasattr(self, "extracted"):
             extracted = pd.Series(self.extracted[station])
-            extracted.index = pd.DatetimeIndex(
-                pd.date_range("2022-04-01", "2022-09-30")
-            )
+            extracted.index = pd.DatetimeIndex(pd.date_range("2022-04-01", "2022-09-30"))
             extracted.name = self.experiment
         else:
             extracted = self.__get_closest_gridpoint_values(station)
@@ -296,12 +304,15 @@ class Experiment:
         kwargs: args for  salem's quick_map.
         """
         varname = varname or self.__translate_varname(self.varname)
-        if aggregation == "mean":
-            data = self.wrf_product.mean(dim="time", skipna=True, keep_attrs=True)
-        elif aggregation == "sum":
-            data = self.wrf_product.sum(dim="time", skipna=True, keep_attrs=True)
+        if "time" in self.wrf_product.dims:
+            if aggregation == "mean":
+                data = self.wrf_product.mean(dim="time", skipna=True, keep_attrs=True)
+            elif aggregation == "sum":
+                data = self.wrf_product.sum(dim="time", skipna=True, keep_attrs=True)
+            else:
+                raise NameError("Aggregation not implemented")
         else:
-            raise NameError("Aggregation not implemented")
+            data = self.wrf_product
         base_map = data.salem.get_map(**kwargs)
         if self.varname in ["prcp", "et", "potevap"]:
             data[self.varname] = data[self.varname] * 24
@@ -319,9 +330,7 @@ class Experiment:
         else:
             base_map.visualize(add_cbar=True)
         if save:
-            plt.savefig(
-                f"{self.experiment}_{self.varname.lower()}_{aggregation.lower()}_map.png"
-            )
+            plt.savefig(f"{self.experiment}_{self.varname.lower()}_{aggregation.lower()}_map.png")
         return base_map
 
     def set_units(self) -> xr.DataArray:
@@ -330,6 +339,10 @@ class Experiment:
         var = self.varname
         ds[var] = ds[var] * units(ds[var].attrs["units"])
         return self.wrf_product
+
+    def cat(self, other):
+        """Concatenate two experiments."""
+        return xr.concat([self.wrf_product, other.wrf_product], dim="time")
 
 
 def compute_rh(
@@ -367,18 +380,16 @@ def plot_pcp(data, title=None, sample_rate="D", **kwargs):
         plt.xlabel("")
 
 
-def glob_measurements(
-    path="/home/ben/data/darwin_measured", ds_number="??", type_of_data="AWS-P"
-):
+def glob_measurements(path="/home/ben/data/darwin_measured", ds_number="??", type_of_data="AWS-P"):
     """Glob for measurement data of the darwin measurement network."""
     return glob(f"{path}/{ds_number}_{type_of_data}*.csv")
 
 
 def open_measurements(path):
     df = pd.read_csv(path)
-    df.index = pd.DatetimeIndex(
-        df.datetime, tz=timezone("Pacific/Galapagos")
-    ).tz_convert(datetime.timezone.utc)
+    df.index = pd.DatetimeIndex(df.datetime, tz=timezone("Pacific/Galapagos")).tz_convert(
+        datetime.timezone.utc
+    )
     return MeasurementFrame(df)
 
 
@@ -386,19 +397,19 @@ class MeasurementFrame(pd.DataFrame):
     def __init__(self, *args, **kwargs):
         super(MeasurementFrame, self).__init__(*args, **kwargs)
 
-    def join_wrfdata(self, wrfdata, inplace=False, join='inner'):
+    def join_wrfdata(self, wrfdata, inplace=False, join="inner"):
         return pd.concat([self.data, wrfdata], axis=1, join=join)
 
 
-def load_measurements(path: [str, Path], variable: str = "all"):
+def load_measurements(path: Path, variable: Optional[list] = None):
     """
     Load measured data from darwin measurement network.
 
     Parameters
     ----------
-    path : {str, Path-like object}
+    path :
         Path to a csv-file containing measurements
-    variable : {str, list}
+    variable :
         name(s) of the variable to load
 
     Returns
@@ -407,7 +418,7 @@ def load_measurements(path: [str, Path], variable: str = "all"):
         a pandas Series of the data in specified csv-file
     """
     measured = pd.read_csv(path, parse_dates=["datetime"], index_col=["datetime"])
-    if variable == "all":
+    if not variable:
         return measured
     if variable == "prcp":
         filter_col = [
@@ -417,7 +428,7 @@ def load_measurements(path: [str, Path], variable: str = "all"):
         ]
     else:
         filter_col = variable
-    measured.attrs["name"] = path.split("/")[-1].split("_")[-3]
+    measured.attrs["name"] = path.name.split("_")[-3]
     measured.attrs["coordinates"] = [
         value
         for key, value in coordinates.items()

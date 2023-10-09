@@ -1,12 +1,11 @@
 {
   "venvPath": "/home/ben/.pyenv/versions/",
   "venv": "darwin",
-  "pythonVersion": "3.9",
+  "pythonVersion": "3.10",
   "pythonPlatform": "Linux",
   "exclude": [
     "**/node_modules",
     "**/__pycache__",
-    "src/experimental",
-    "src/typestubs"
+    "src/experimental"
   ]
 }
