@@ -4,7 +4,7 @@ from pprint import PrettyPrinter
 
 from cdo import Cdo
 
-from darwin import FilePath
+from darwin.core import FilePath
 from utils import glob_files
 
 parser = ArgumentParser(description="Description of your program")

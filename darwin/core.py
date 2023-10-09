@@ -13,8 +13,8 @@ from pytz import timezone
 import salem
 import xarray as xr
 
-from defaults import basepath as gar_basepath, coordinates
-from utils import glob_files
+from darwin.defaults import basepath as gar_basepath, coordinates
+from darwin.utils import glob_files
 
 from typing import Optional
 

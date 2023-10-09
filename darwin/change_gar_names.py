@@ -5,9 +5,9 @@ from pprint import PrettyPrinter
 
 from xarray import Dataset
 
-from darwin import FilePath, open_dataset
+from darwin.core import FilePath, open_dataset
+from darwin.utils import glob_files, remove_nonalphanumerics
 from pathlib import Path
-from utils import glob_files, remove_nonalphanumerics
 
 
 def parse_input(parser):

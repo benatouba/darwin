@@ -1,4 +1,4 @@
-from defaults import basepath
+from darwin.defaults import basepath
 from glob import glob
 
 

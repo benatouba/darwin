@@ -5,6 +5,7 @@ description = "Process and visualize measured and simulated data in the project 
 authors = ["Benjamin Schmidt <benschmidt@live.de>"]
 license = "UC]² Data Policy - Version 2.0 (http://www.uc2-program.org/uc2_data_policy.pdf)"
 readme = "README.md"
+packages = [{ include = "darwin", from = "." }]
 
 [tool.poetry.dependencies]
 python = ">=3.8,<4"
