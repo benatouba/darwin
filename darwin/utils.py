@@ -1,5 +1,5 @@
+from defaults import basepath
 from glob import glob
-from constants import basepath
 
 
 def normalize_whitespace(text):
@@ -33,7 +33,7 @@ def get_basename(path, suffix=False):
 
 
 def glob_files(path, *args, **kwargs):
-    if type(path) == str:
+    if isinstance(path, str):
         return glob_from_str(pathname=path, *args, **kwargs)
     if not path.is_absolute():
         path = basepath / path

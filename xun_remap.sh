@@ -14,7 +14,7 @@ VAR=prcp
 COORDS="./stations.csv"
 # path of the nc file you want to extract from
 INPUT="./*${VAR}*.nc"
-# TODO: Make LAT_COL and LON_COL actually work
+# FIXME: Make LAT_COL and LON_COL actually work
 # column of latitues in csv file
 LAT_COL=6
 # column of longitudes in csv file

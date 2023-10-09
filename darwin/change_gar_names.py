@@ -1,10 +1,12 @@
 """Set attributes of WRF products produced by WAVE."""
 from argparse import ArgumentParser
+import datetime
 from pprint import PrettyPrinter
 
 from xarray import Dataset
 
 from darwin import FilePath, open_dataset
+from pathlib import Path
 from utils import glob_files, remove_nonalphanumerics
 
 
@@ -20,13 +22,19 @@ def parse_input(parser):
         "-f",
         "--folder",
         help="Topfolder to search for files to process",
-        default=".",
+        default="~/data/GAR/rc_trop_ls_MM/",
     )
     parser.add_argument(
         "-g",
         "--glob",
         help="glob pattern to search for files",
-        default="**/*.nc",
+        default="*.nc",
+    )
+    parser.add_argument(
+        "-o",
+        "--overwrite",
+        help="Overwrite existing attributes",
+        action="store_true",
     )
     return vars(parser.parse_args())
 
@@ -34,9 +42,9 @@ def parse_input(parser):
 pp = PrettyPrinter(indent=2)
 
 
-def change_all_projections(path, *args, **kwargs):
+def change_all_projections(path, glob, overwrite, *args, **kwargs):
     """path: path from darwin's base folder or absolute path."""
-    files = glob_files(path, *args, **kwargs)
+    files = glob_files(path, glob)
     pp.pprint(f"Base folder: {path.as_posix()}")
     pp.pprint("Found the following files:")
     pp.pprint(files)
@@ -49,6 +57,12 @@ def change_all_projections(path, *args, **kwargs):
             engine="xarray",
             decode_cf=False,
         ) as ds:
+            if "months" in ds.time.attrs["units"] or "years" in ds.time.attrs["units"]:
+                pp.pprint("correcting time")
+                ds = correct_time(ds)
+            elif "year" in ds.attrs and not overwrite:
+                pp.pprint("year attribute already set, skipping set overwrite option to overwrite")
+                continue
             pp.pprint("setting global attributes")
             ds = assign_projection_info(ds)
             pp.pprint("setting time attributes")
@@ -67,7 +81,7 @@ def change_all_projections(path, *args, **kwargs):
                 extra_attrs["frequency"] = f.frequency
 
             ds = add_extra_attrs(ds, extra_attrs)
-            temp_path = f.parent / "temp"
+            temp_path = Path(f"{f}_temp")
             ds.to_netcdf(temp_path, mode="w")
             temp_path.rename(f)
             pp.pprint(f"Dataset {f.name} processed")
@@ -234,8 +248,10 @@ def assign_projection_info(ds: Dataset) -> Dataset:
         # attributes["PROJ_ENVI_STRING"] = pyproj_srs
         attributes["pyproj_srs"] = pyproj_srs
     else:
-        attributes["pyproj_srs"] = "+k_0=1.0 +units=m +lat_0=2.0 +lon_0=-90.31006622 "
-        "+x_0=0.0 +y_0=0.0 +ellps=WGS84 +datum=WGS84 +name=WRFMercator +proj=merc +no_defs"
+        attributes["pyproj_srs"] = (
+            "+k_0=1.0 +units=m +lat_0=2.0 +lon_0=-90.31006622 "
+            "+x_0=0.0 +y_0=0.0 +ellps=WGS84 +datum=WGS84 +name=WRFMercator +proj=merc +no_defs"
+        )
     # lcc_attrs = {
     #     "PROJ_SEMIMAJOR_AXIS": projlis[1],
     #     "PROJ_SEMIMINOR_AXIS": projlis[2],
@@ -278,6 +294,8 @@ def get_grid_distance_attribute(attrs: dict, dimension: str) -> str:
             raise ValueError("No grid distance attribute found.")
     else:
         raise ValueError(f"Dimension {dimension} not supported.")
+
+
 # if projection == "lcc":
 #     for key, value in lcc_attrs.items():
 #         ds.attrs[key] = value
@@ -288,10 +306,53 @@ def get_grid_distance_attribute(attrs: dict, dimension: str) -> str:
 #     f"+x_0={str(projection['x_0'])} +y_0={str(projection['y_0'])} +ellps={projection['ellps']} "
 #     f"+datum={projection['ellps']} +units=m +no_defs"
 # )
+def get_first_day_of_month_doys(year: int) -> list:
+    """Return the day of the year for the first day of each month.
+
+    Args:
+        year: Year to get the first day of each month for.
+
+    Returns:
+        List of day of the year for the first day of each month.
+    """
+    first_day_of_month_doys = []
+    for month in range(1, 13):
+        first_day = datetime.date(year, month, 1)
+        day_of_year = first_day.timetuple().tm_yday
+        first_day_of_month_doys.append(day_of_year-1)
+    return first_day_of_month_doys
+
+
+def correct_time(ds: Dataset) -> Dataset:
+    """Correct the time dimension values and units for a dataset.
+
+    This function is used to change the time units to days if they are in months or years.
+    The values are changed accordingly.
+
+    Args:
+        ds: Dataset to correct.
+
+    Returns:
+        Dataset with corrected time dimension.
+    """
+    print(ds.time.attrs["units"])
+    if "months" in ds.time.attrs["units"]:
+        pp.pprint("months to days in time units")
+        old_attrs = ds.time.attrs
+        ds = ds.assign_coords(
+            {"time": get_first_day_of_month_doys(int(ds.time.attrs["units"].split(" ")[2][:4]))},
+        )
+        ds.time.attrs = old_attrs
+        ds.time.attrs["units"] = old_attrs["units"].replace("months", "days")
+    elif "years" in ds.time.attrs["units"]:
+        pp.pprint("years to days in time units")
+        ds.time.attrs["units"].replace("years", "days")
+    print(ds.time)
+    return ds
 
 
 if __name__ == "__main__":
     parser = ArgumentParser(description="Description of your program")
     args = parse_input(parser)
     filepath = FilePath(args["folder"])
-    change_all_projections(filepath, args["glob"])
+    change_all_projections(filepath, args["glob"], args["overwrite"])
