@@ -1,8 +1,12 @@
 *.pdf
+.virtual_documents/
+*.conf
 *.png
 data/
 *.zip
 *.nc
+*.key
+*.crt
 *.nc4
 .python-version
 .log
