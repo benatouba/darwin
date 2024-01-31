@@ -1,40 +1,41 @@
+"""Utility functions for the Darwin package."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
 from darwin.defaults import basepath
-from glob import glob
 
 
-def normalize_whitespace(text):
+def normalize_whitespace(text: str) -> str:
     """Remove redundant whitespace from a string."""
     return " ".join(text.split())
 
 
-def isnt_str_or_basestring(obj):
-    """
-    check if the passed in object is a str
-    """
-
-    return isinstance(obj, str)
-
-
 def remove_nonalphanumerics(string: str) -> str:
+    """Remove non-alphanumeric characters from a string.
+
+    Args:
+        string: String to remove non-alphanumeric characters from.
+
+    Returns:
+        String with non-alphanumeric characters removed.
+    """
     return "".join(ch for ch in string if ch.isalnum())
 
 
-def transform_k_to_c(ds):
-    return ds[ds.VARNAME].data - 273.15
+def glob_files(path: str | Path, pattern: str) -> list[Path]:
+    """Glob files in a directory.
 
+    Args:
+        path: Path to directory to glob files in.
+        pattern: Glob pattern to match.
 
-def glob_from_str(*args, **kwargs):
-    return glob(*args, **kwargs)
-
-
-def get_basename(path, suffix=False):
-    name = path.split("/")[-1]
-    return name if suffix else name.split(".")[0]
-
-
-def glob_files(path, *args, **kwargs):
+    Returns:
+        List of paths to files matching the glob pattern.
+    """
     if isinstance(path, str):
-        return glob_from_str(pathname=path, *args, **kwargs)
+        return list(Path(path).glob(pattern))
     if not path.is_absolute():
         path = basepath / path
-    return list(path.glob(*args, **kwargs))
+    return list(path.glob(pattern))

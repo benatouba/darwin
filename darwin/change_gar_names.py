@@ -1,16 +1,21 @@
+#!/usr/bin/env python
 """Set attributes of WRF products produced by WAVE."""
-from argparse import ArgumentParser
-import datetime
-from pprint import PrettyPrinter
+from __future__ import annotations
 
-from xarray import Dataset
+import datetime
+from argparse import ArgumentParser, Namespace
+from pathlib import Path, PosixPath
+from pprint import PrettyPrinter
+from typing import TYPE_CHECKING
 
 from darwin.core import FilePath, open_dataset
 from darwin.utils import glob_files, remove_nonalphanumerics
-from pathlib import Path
+
+if TYPE_CHECKING:
+    from xarray import Dataset
 
 
-def parse_input(parser):
+def parse_input(parser: ArgumentParser) -> Namespace:
     """Parse command line inputs.
 
         parser (): argparse.ArgumentParser object
@@ -42,14 +47,14 @@ def parse_input(parser):
 pp = PrettyPrinter(indent=2)
 
 
-def change_all_projections(path, glob, overwrite, *args, **kwargs):
+def change_all_projections(path: str | PosixPath, glob: str, *, overwrite: bool = False) -> None:
     """path: path from darwin's base folder or absolute path."""
     files = glob_files(path, glob)
     pp.pprint(f"Base folder: {path.as_posix()}")
     pp.pprint("Found the following files:")
     pp.pprint(files)
+    files = [FilePath(f) for f in files]
     for f in files:
-        f = FilePath(f)
         pp.pprint("Working on:")
         pp.pprint(f.as_posix())
         with open_dataset(
@@ -57,18 +62,19 @@ def change_all_projections(path, glob, overwrite, *args, **kwargs):
             engine="xarray",
             decode_cf=False,
         ) as ds:
-            if "months" in ds.time.attrs["units"] or "years" in ds.time.attrs["units"]:
+            ds_new = ds.copy(deep=True)
+            if "months" in ds_new.time.attrs["units"] or "years" in ds_new.time.attrs["units"]:
                 pp.pprint("correcting time")
-                ds = correct_time(ds)
+                ds_new = correct_time(ds_new)
             elif "year" in ds.attrs and not overwrite:
                 pp.pprint("year attribute already set, skipping set overwrite option to overwrite")
                 continue
             pp.pprint("setting global attributes")
-            ds = assign_projection_info(ds)
+            ds_new = assign_projection_info(ds_new)
             pp.pprint("setting time attributes")
-            ds = set_calendar(ds)
+            ds_new = set_calendar(ds_new)
             pp.pprint("setting projection")
-            ds = set_projection(ds)
+            ds_new = set_projection(ds_new)
             pp.pprint("Saving dataset")
             extra_attrs = {
                 "experiment": f.experiment,
@@ -80,9 +86,9 @@ def change_all_projections(path, glob, overwrite, *args, **kwargs):
             if hasattr(f, "frequency"):
                 extra_attrs["frequency"] = f.frequency
 
-            ds = add_extra_attrs(ds, extra_attrs)
+            ds_new = add_extra_attrs(ds_new, extra_attrs)
             temp_path = Path(f"{f}_temp")
-            ds.to_netcdf(temp_path, mode="w")
+            ds_new.to_netcdf(temp_path, mode="w")
             temp_path.rename(f)
             pp.pprint(f"Dataset {f.name} processed")
 
@@ -138,7 +144,7 @@ def build_pyproj(projection: dict) -> str:
     Returns:
         Projection string in pyproj format.
     """
-    string = " ".join(f"+{key}={str(value)}" for key, value in projection.items())
+    string = " ".join(f"+{key}={value!s}" for key, value in projection.items())
     return f"{string} +no_defs"
 
 
@@ -171,8 +177,8 @@ def assign_projection_info(ds: Dataset) -> Dataset:
     Returns:
         xarray.Dataset with projection attributes.
     """
-    xx = ds.coords["west_east"].values
-    yy = ds.coords["south_north"].values
+    xx = ds.coords["west_east"].to_numpy()
+    yy = ds.coords["south_north"].to_numpy()
 
     nx = xx.size
     ny = yy.size
@@ -278,22 +284,21 @@ def get_grid_distance_attribute(attrs: dict, dimension: str) -> str:
     Returns:
         Grid distance attribute.
     """
+    msg = "No grid distance attribute found."
     if dimension.lower() == "x":
         if "DX" in attrs:
             return attrs["DX"]
-        elif "GRID_DX" in attrs:
+        if "GRID_DX" in attrs:
             return attrs["GRID_DX"]
-        else:
-            raise ValueError("No grid distance attribute found.")
-    elif dimension.lower() == "y":
+        raise ValueError(msg)
+    if dimension.lower() == "y":
         if "DY" in attrs:
             return attrs["DY"]
-        elif "GRID_DY" in attrs:
+        if "GRID_DY" in attrs:
             return attrs["GRID_DY"]
-        else:
-            raise ValueError("No grid distance attribute found.")
-    else:
-        raise ValueError(f"Dimension {dimension} not supported.")
+        raise ValueError(msg)
+    msg = f"Dimension {dimension} not supported."
+    raise ValueError(msg)
 
 
 # if projection == "lcc":
@@ -319,7 +324,7 @@ def get_first_day_of_month_doys(year: int) -> list:
     for month in range(1, 13):
         first_day = datetime.date(year, month, 1)
         day_of_year = first_day.timetuple().tm_yday
-        first_day_of_month_doys.append(day_of_year-1)
+        first_day_of_month_doys.append(day_of_year - 1)
     return first_day_of_month_doys
 
 
@@ -335,7 +340,7 @@ def correct_time(ds: Dataset) -> Dataset:
     Returns:
         Dataset with corrected time dimension.
     """
-    print(ds.time.attrs["units"])
+    pp.pprint(ds.time.attrs["units"])
     if "months" in ds.time.attrs["units"]:
         pp.pprint("months to days in time units")
         old_attrs = ds.time.attrs
@@ -347,7 +352,7 @@ def correct_time(ds: Dataset) -> Dataset:
     elif "years" in ds.time.attrs["units"]:
         pp.pprint("years to days in time units")
         ds.time.attrs["units"].replace("years", "days")
-    print(ds.time)
+    pp.pprint(ds.time)
     return ds
 
 
@@ -355,4 +360,4 @@ if __name__ == "__main__":
     parser = ArgumentParser(description="Description of your program")
     args = parse_input(parser)
     filepath = FilePath(args["folder"])
-    change_all_projections(filepath, args["glob"], args["overwrite"])
+    change_all_projections(filepath, args["glob"], overwrite=args["overwrite"])

@@ -1,38 +1,46 @@
 """Base module for the GAR project."""
+from __future__ import annotations
+
 import copy
 import datetime
 from glob import glob
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
-from matplotlib import pyplot as plt
-from metpy.calc import relative_humidity_from_mixing_ratio
-from metpy.units import units
 import numpy as np
 import pandas as pd
-from pytz import timezone
 import salem
 import xarray as xr
+from matplotlib import pyplot as plt
+from matplotlib.cm import ScalarMappable
+from matplotlib.colors import Normalize
+from metpy.calc import relative_humidity_from_mixing_ratio
+from metpy.units import units
+from pytz import timezone
 
-from darwin.defaults import basepath as gar_basepath, coordinates
+from darwin.defaults import basepath as gar_basepath
+from darwin.defaults import coordinates
 from darwin.utils import glob_files
 
-from typing import Optional
+# isort: off
+from icecream import ic
+import pint_xarray  # noqa: F401
 
-# from pyproj import Proj
-# from windrose import WindroseAxes
+if TYPE_CHECKING:
+    import pint
 
 
 class FilePath(type(Path())):
     """FilePath."""
 
-    def __init__(self, *args):
+    def __init__(self: FilePath, *args: Path) -> None:
         """Initiate a FilePath instance from a str."""
         super().__init__()
         self.a = args[0] if args else ""
         if self.suffix in [".nc", ".nc4", ".netcdf"]:
             self.__assign_wrf_infos(self.stem.split("_"))
 
-    def __assign_wrf_infos(self, file_infos: list):
+    def __assign_wrf_infos(self: FilePath, file_infos: list[str]) -> None:
         if "static" not in self.stem:
             self.year = file_infos.pop()
         if "flux" not in self.stem:
@@ -54,45 +62,43 @@ gar_basepath = FilePath(gar_basepath)
 
 
 def open_dataset(
-    experiment=None,
-    variable=None,
-    year=None,
-    domain="d02",
-    dimensions="2d",
-    frequency="d",
-    from_path=None,
-    basepath=gar_basepath,
-    engine="salem",
-    **kwargs,
-):
+    from_path: Path | None = None,
+    experiment: str = "rc_trop_ls_MM",
+    variable: str = "t2",
+    year: str = "2022",
+    domain: str = "d02",
+    dimensions: str = "2d",
+    frequency: str = "d",
+    basepath: Path | FilePath = gar_basepath,
+    engine: str = "salem",
+    **kwargs: dict[str, Any],
+) -> xr.Dataset:
     """Open a Dataset."""
+    folder = basepath / experiment
+    if type(from_path) != FilePath:
+        from_path = FilePath(from_path)
     if engine == "xarray":
         if from_path:
-            file = from_path
-            gar_ds = xr.open_dataset(from_path, **kwargs)
+            file = from_path.as_posix()
         else:
-            file = glob_files(
-                f"{basepath}/{experiment}/{experiment}*_{frequency}_*{variable}*{year}.nc*"
-            )[0]
-            gar_ds = xr.open_dataset(file, **kwargs)
-    # NOTE: salem does something weird and adds pyproj_srs during load.
-    # It is recommended not to use it.
+            file = folder / f"{experiment}_{domain}km_{frequency}_{dimensions}_{variable}_{year}.nc"
+        gar_ds = xr.open_dataset(file, **kwargs)
     elif engine == "salem":
         if from_path:
-            file = str(from_path)
+            file = from_path.as_posix()
             gar_ds = salem.open_xr_dataset(from_path, **kwargs)
         else:
             path = f"{basepath}/{experiment}/{experiment}*_{frequency}_*{variable}*{year}.nc*"
-            file = glob_files(path)[0]
+            file = glob_files(path, "*")[0]
             if not file:
-                raise FileNotFoundError(
-                    f"No file found for {path}. Did you mean to use the 'from_path' argument?"
-                )
+                msg = f"No file found for {path}. Did you mean to use the 'from_path' argument?"
+                raise FileNotFoundError(msg)
             gar_ds = salem.open_xr_dataset(file, **kwargs)
-        gar_ds.attrs["experiment"] = str(experiment)
-        gar_ds.attrs["year"] = str(year)
+        gar_ds.attrs["experiment"] = experiment
+        gar_ds.attrs["year"] = year
     else:
-        raise ValueError("Engine type not supported.")
+        msg = "Engine type not supported."
+        raise ValueError(msg)
 
     split = file.split("/")[-1].split("_")
     var = split[-2]
@@ -101,33 +107,63 @@ def open_dataset(
     return gar_ds
 
 
-def open_experiment(**kwargs):
-    """
-    Open an Experiment for GAR.
+def open_experiment(
+    from_path: Path | None = None,
+    experiment: str = "rc_trop_ls_MM",
+    variable: str = "t2",
+    year: str = "2022",
+    domain: str = "d02",
+    dimensions: str = "2d",
+    frequency: str = "d",
+    basepath: list[Path | FilePath] = gar_basepath,
+    engine: str = "salem",
+    **kwargs,
+):
+    """Open an Experiment for GAR.
 
     kwargs = arguments passed to open_dataset.
     """
-    return Experiment(open_dataset(**kwargs))
+    return Experiment(
+        open_dataset(
+            from_path,
+            experiment,
+            variable,
+            year,
+            domain,
+            dimensions,
+            frequency,
+            basepath,
+            engine,
+            **kwargs,
+        )
+    )
 
 
 class Experiment:
     """Class to hold all data associated with one variable for one run."""
 
-    def __init__(self, gar_ds, with_measurements=False):
+    def __init__(self: Experiment, gar_ds: xr.Dataset, *, with_measurements: bool = False) -> None:
         """Initiate an instance of class Experiment."""
-        self.wrf_product = gar_ds
-        self.varname = gar_ds.VARNAME
-        self.varname_translations = self.__translate_varname(gar_ds.VARNAME)
+        self.varname: str = gar_ds.VARNAME
+        self.units: str = gar_ds[gar_ds.VARNAME].attrs["units"]
+        if self.units == "k":
+            self.units = "K"
+        elif self.units == "w m-2":
+            self.units = "W/m**2"
+        elif self.units == "pa":
+            self.units = "Pa"
+        self.wrf_product: xr.Dataset = gar_ds.pint.quantify({self.varname: self.units})
+        self.varname_translations: list[str] = self.__translate_varname(gar_ds.VARNAME)
         try:
             self.experiment = gar_ds.attrs["experiment"]
             self.year = gar_ds.attrs["year"]
         except KeyError:
-            print("WARNING: Could not add experiment and/or year.")
+            ic("WARNING: Could not add experiment and/or year.")
         self.measurements = {}
         if with_measurements:
             self.__add_measurements()
 
-    def __getitem__(self, key):
+    def __getitem__(self: Experiment, key: str) -> str:
         """Get a item.
 
             self (): The object.
@@ -138,7 +174,7 @@ class Experiment:
         """
         return getattr(self, key)
 
-    def __setitem__(self, key, value):
+    def __setitem__(self: Experiment, key: str, value: str | float | bool) -> None:
         """Set an item.
 
         self (): The object
@@ -147,7 +183,7 @@ class Experiment:
         """
         setattr(self, key, value)
 
-    def copy(self):
+    def copy(self: Experiment) -> Experiment:
         """Copy the object.
 
         Returns:
@@ -155,7 +191,7 @@ class Experiment:
         """
         return copy.copy(self)
 
-    def remove_boundaries(self, grid_points):
+    def remove_boundaries(self: Experiment, grid_points: int = 1) -> Experiment:
         """Crop the outer rows/columns of the model data."""
         copy = self.copy()
         copy.wrf_product = self.wrf_product.isel(
@@ -164,33 +200,30 @@ class Experiment:
         )
         return copy
 
-    def add_extracted_simulated_points_from_file(self, file):
+    def add_extracted_simulated_points_from_file(self: Experiment, file: str) -> None:
         """Load measurements from file."""
         extracted = pd.read_csv(file, parse_dates=["datetime"], index_col=["datetime"])
         path = file.rsplit("/")[-1].split(".")[0].split("_")
         if self.__translate_varname(self.varname) not in path:
-            raise ValueError(
-                f"""
-                The name of the selected file does not seem to contain the variable.
-                {path}
-                Please name it in style of *_variable_*
-                """
-            )
+            msg = f"""
+            The name of the selected file does not seem to contain the variable. {path}
+            Please name it in style of *_variable_*
+            """
+            raise ValueError(msg)
 
         extracted.attrs["name"] = self.varname
         self.extracted = extracted
 
-    def add_product(self, variable=None, wrf_ds=None):
+    def add_product(self: Experiment, variable: str, wrf_ds: xr.Dataset) -> None:
         """Add another variable to the Experiment."""
         if wrf_ds:
             self.__added_variables.append(wrf_ds)
             return
-        wrf_ds = open_dataset(self.experiment, variable, self.year)
-        if wrf_ds.VARNAME != self.varname:
+        wrf_ds = open_dataset(experiment=self.experiment, variable=variable, year=self.year)
+        if self.varname != wrf_ds.VARNAME:
             self.__added_variables.append(wrf_ds.VARNAME)
 
-    def __translate_varname(self, varname):
-        print("Getting variable name translations")
+    def __translate_varname(self: Experiment, varname: str) -> list[str]:
         varname = varname.lower()
         variable_names = [
             ["prcp", "PCP"],
@@ -202,27 +235,38 @@ class Experiment:
             ["t2", "T"],
             ["q2", "q"],
             ["rh", "RH"],
+            ["rh2", "RH"],
             ["ws10", "ws"],
-            ["press", "P"],
+            ["wd10", "WDIR"],
+            ["swdown", "SLR"],
+            ["psfc", "Pabs"],
         ]
         for combination in variable_names:
             if varname in combination:
                 return combination
-        raise NameError("Please add variable name translation")
+        msg = "Please add variable name translation"
+        raise NameError(msg)
 
-    def __add_measurements(self, variable=None):
-        print("Adding measurements to dataset")
+    def __add_measurements(self: Experiment, variable: str | None = None):
+        ic("Adding measurements to dataset")
         if not variable:
             variable = self.varname
         self.measurements_files = glob_measurements()
         for file in self.measurements_files:
-            measured = load_measurements(file, variable)
+            measured = load_measurements(Path(file), variable)
             self.measurements[measured.attrs["name"]] = measured
 
-    def plot_station(self, station, sample_rate="D", save=False, **kwargs):
+    def plot_station(
+        self: Experiment,
+        station: str,
+        sample_rate: str = "D",
+        *,
+        save: bool = False,
+        **kwargs: dict[str, str | int | bool],
+    ) -> None:
         """Plot timeseries data of a specific station of the darwin network."""
         timeseries = {}
-        data = self.measurements[station]
+        data: pd.DataFrame = self.measurements[station]
         # Check for multiple measurement types of precipitation
         if self.varname == "PCP":
             variables = [
@@ -265,7 +309,7 @@ class Experiment:
 
     def plot_stations(self, **kwargs):
         """Plot data of multiple stations using the 'plot_station'-method."""
-        for station in self.measurements.keys():
+        for station in self.measurements:
             self.plot_station(station, sample_rate="D", **kwargs)
 
     def __find_closest_gridpoint(self, station):
@@ -294,53 +338,95 @@ class Experiment:
         save=False,
         stations=True,
         cbar=True,
-        unit="",
+        unit: str | pint.Unit = "",
         cmap=None,
+        markercolors=None,
         **kwargs,
     ):
-        """
-        Plot a map of Experiment data.
+        """Plot a map of Experiment data.
 
         kwargs: args for  salem's quick_map.
         """
         varname = varname or self.__translate_varname(self.varname)
+        base_map = self.wrf_product.salem.get_map(**kwargs)
         if "time" in self.wrf_product.dims:
-            if aggregation == "mean":
-                data = self.wrf_product.mean(dim="time", skipna=True, keep_attrs=True)
-            elif aggregation == "sum":
+            if self.varname in ["prcp", "et", "potevap"]:
                 data = self.wrf_product.sum(dim="time", skipna=True, keep_attrs=True)
+                data[self.varname] = data[self.varname] * 24
             else:
-                raise NameError("Aggregation not implemented")
+                data = self.wrf_product.mean(dim="time", skipna=True, keep_attrs=True)
+                if self.varname == "t2":
+                    data[self.varname] = data[self.varname].pint.to("degC")
+                if self.varname == "psfc":
+                    data[self.varname] = data[self.varname].pint.to("hPa")
         else:
             data = self.wrf_product
-        base_map = data.salem.get_map(**kwargs)
-        if self.varname in ["prcp", "et", "potevap"]:
-            data[self.varname] = data[self.varname] * 24
         base_map.set_data(data[self.varname])
-        if stations:
-            for key, value in coordinates.items():
-                lat, lon = value
-                base_map.set_points(lon, lat, text=key)
+        if cmap:
+            cm = ScalarMappable(
+                cmap=cmap,
+                norm=Normalize(data[self.varname].min(), data[self.varname].max()),
+            )
+            cm.set_clim(
+                vmin=data[self.varname].min().values,
+                vmax=data[self.varname].max().values,
+            )
         base_map.set_cmap(cmap)
+        halign = {
+            "Bellavista": "left",
+            "Cerro Crocker": "left",
+            "Cueva de Sucre": "left",
+            "El Junco": "center",
+            "La Galapaguera": "left",
+            "Militar": "left",
+            "Minas Rojas": "center",
+            "Puerto Ayora": "left",
+            "Puerto Baquerizo Moreno": "right",
+            "Puerto Villamil": "left",
+            "Sierra Negra": "right",
+            "Santa Rosa": "right",
+        }
+        coordinates_sorted = dict(sorted(coordinates.items(), key=lambda item: item[0]))
+        if stations:
+            for i, (key, value) in enumerate(coordinates_sorted.items()):
+                if markercolors[i] == 0 or not markercolors[i] or np.isnan(markercolors[i]):
+                    continue
+                lat, lon = value
+                if markercolors is not None:
+                    c_rgba = cm.to_rgba(markercolors[i])
+                else:
+                    c_rgba = "k"
+                base_map.set_points(
+                    lon,
+                    lat,
+                    text=key,
+                    facecolor=c_rgba,
+                    text_kwargs={"ha": halign[key]},
+                )
         base_map.set_scale_bar()
-        if ax:
-            base_map.plot(ax=ax)
-            if cbar:
-                base_map.append_colorbar(ax=ax, label=unit)
-        else:
-            base_map.visualize(add_cbar=True)
+        if not ax:
+            fig = plt.figure(
+                figsize=(10, 8),
+                frameon=False,
+                layout="tight",
+            )
+            ax = fig.add_subplot(111)
+        base_map.plot(ax=ax)
+        if cbar:
+            base_map.append_colorbar(ax=ax, label=unit)
         if save:
             plt.savefig(f"{self.experiment}_{self.varname.lower()}_{aggregation.lower()}_map.png")
         return base_map
 
-    def set_units(self) -> xr.DataArray:
-        """Add units to xarray data."""
-        ds = self.wrf_product
-        var = self.varname
-        ds[var] = ds[var] * units(ds[var].attrs["units"])
-        return self.wrf_product
+    # NOTE: This method is not working properly.
+    # def set_units(self) -> xr.DataArray:
+    #     """Add units to xarray data."""
+    #     ds = self.wrf_product
+    #     var = self.varname
+    #     ds[var] = ds[var] * units(ds[var].attrs["units"])
+    #     return self.wrf_product
 
-    def cat(self, other):
+    def cat(self, other: xr.Dataset) -> xr.Dataset:
         """Concatenate two experiments."""
         return xr.concat([self.wrf_product, other.wrf_product], dim="time")
 
@@ -352,7 +438,7 @@ def compute_rh(
     psfc = pressure.psfc * units("mbar")
     temperature = temperature.t2 * units("K")
     mixing_ratio = mixing_ratio.q2 * units("kg/kg")
-    rel_humidity = relative_humidity_from_mixing_ratio(
+    rel_humidity: xr.Dataset = relative_humidity_from_mixing_ratio(
         pressure=psfc,
         temperature=temperature,
         mixing_ratio=mixing_ratio,
@@ -380,7 +466,9 @@ def plot_pcp(data, title=None, sample_rate="D", **kwargs):
         plt.xlabel("")
 
 
-def glob_measurements(path="/home/ben/data/darwin_measured", ds_number="??", type_of_data="AWS-P"):
+def glob_measurements(
+    path="/home/ben/data/darwin_measured", ds_number="??", type_of_data="AWS-P"
+) -> list[str]:
     """Glob for measurement data of the darwin measurement network."""
     return glob(f"{path}/{ds_number}_{type_of_data}*.csv")
 
@@ -394,16 +482,17 @@ def open_measurements(path):
 
 
 class MeasurementFrame(pd.DataFrame):
-    def __init__(self, *args, **kwargs):
-        super(MeasurementFrame, self).__init__(*args, **kwargs)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
 
     def join_wrfdata(self, wrfdata, inplace=False, join="inner"):
         return pd.concat([self.data, wrfdata], axis=1, join=join)
 
 
-def load_measurements(path: Path, variable: Optional[list] = None):
-    """
-    Load measured data from darwin measurement network.
+def load_measurements(
+    path: Path, variable: list[str] | str | None = None
+) -> pd.Series[float] | pd.DataFrame:
+    """Load measured data from darwin measurement network.
 
     Parameters
     ----------
@@ -412,7 +501,7 @@ def load_measurements(path: Path, variable: Optional[list] = None):
     variable :
         name(s) of the variable to load
 
-    Returns
+    Returns:
     ---------
     pandas.Series
         a pandas Series of the data in specified csv-file
