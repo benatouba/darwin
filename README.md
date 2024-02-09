@@ -1,4 +1,4 @@
-# Analysis tools for the [DARWIN](https://darwin-rain.org) project and GAR data
+# Analysis tools for the [DARWIN](https://vhrz669.hrz.uni-marburg.de/darwin/data_pre.do?cmd=showall) project and GAR data
 
 The GAR dataset is modelled on a WRF Mercator grid with 2 km grid spacing. The
 [salem](https://salem.readthedocs.io/en/stable/index.html) package provides methods for easy access
