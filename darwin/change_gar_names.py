@@ -27,13 +27,13 @@ def parse_input(parser: ArgumentParser) -> Namespace:
         "-f",
         "--folder",
         help="Topfolder to search for files to process",
-        default="~/data/GAR/rc_trop_ls_MM/",
+        default="~/data/GAR/MM/",
     )
     parser.add_argument(
         "-g",
         "--glob",
         help="glob pattern to search for files",
-        default="*.nc",
+        default="*_????.nc",
     )
     parser.add_argument(
         "-o",
@@ -66,9 +66,11 @@ def change_all_projections(path: str | PosixPath, glob: str, *, overwrite: bool 
             if "months" in ds_new.time.attrs["units"] or "years" in ds_new.time.attrs["units"]:
                 pp.pprint("correcting time")
                 ds_new = correct_time(ds_new)
-            elif "year" in ds.attrs and not overwrite:
-                pp.pprint("year attribute already set, skipping set overwrite option to overwrite")
-                continue
+            elif "year" in ds.attrs:
+                pp.pprint("correcting time")
+                ds_new = correct_time(ds_new)
+                # pp.pprint("year attribute already set, skipping set overwrite option to overwrite")
+                # continue
             pp.pprint("setting global attributes")
             ds_new = assign_projection_info(ds_new)
             pp.pprint("setting time attributes")
@@ -89,7 +91,8 @@ def change_all_projections(path: str | PosixPath, glob: str, *, overwrite: bool 
             ds_new = add_extra_attrs(ds_new, extra_attrs)
             temp_path = Path(f"{f}_temp")
             ds_new.to_netcdf(temp_path, mode="w")
-            temp_path.rename(f)
+            if overwrite:
+                temp_path.rename(f)
             pp.pprint(f"Dataset {f.name} processed")
 
 
@@ -104,6 +107,7 @@ def set_calendar(ds: Dataset) -> Dataset:
     """
     ds["time"].attrs["calendar"] = "standard"
     return ds
+    # return ds.convert_calendar("standard")
 
 
 def add_extra_attrs(ds: Dataset, attrs: dict) -> Dataset:
@@ -351,7 +355,7 @@ def correct_time(ds: Dataset) -> Dataset:
         ds.time.attrs["units"] = old_attrs["units"].replace("months", "days")
     elif "years" in ds.time.attrs["units"]:
         pp.pprint("years to days in time units")
-        ds.time.attrs["units"].replace("years", "days")
+        ds.time.attrs["units"] = ds.time.attrs["units"].replace("years", "days")
     pp.pprint(ds.time)
     return ds
 

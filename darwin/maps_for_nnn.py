@@ -14,7 +14,7 @@ from xarray.core.dataset import DataVariables
 
 #
 # # constants
-# basepath = Path("/home/ben/data/GAR/rc_trop_ls_MM/")
+# basepath = Path.home() / "data" / "GAR" / "MM"
 # variable = "prcp"
 # enso_event = "nino"
 # cdo = Cdo(
@@ -26,7 +26,7 @@ from xarray.core.dataset import DataVariables
 #     "neutral": ["2016", "2017"],
 # }
 #
-# # naming rc_trop_ls_MM_d02km_m_2d_v10_2022.nc
+# # naming MM_d02km_m_2d_v10_2022.nc
 #
 #
 # def make_path(folder: Path, year: Union[str, int], variable: str) -> Path:
@@ -41,8 +41,8 @@ from xarray.core.dataset import DataVariables
 #         Path to the file.
 #     """
 #     if year == "static":
-#         return folder / f"rc_trop_ls_MM_d02km_static_{variable}.nc"
-#     return folder / f"rc_trop_ls_MM_d02km_d_2d_{variable}_{year}.nc"
+#         return folder / f"MM_d02km_static_{variable}.nc"
+#     return folder / f"MM_d02km_d_2d_{variable}_{year}.nc"
 #
 #
 # def hydro_year(ifile1: Path, ifile2: Path, ofile=False) -> xr.Dataset:
@@ -118,7 +118,7 @@ from xarray.core.dataset import DataVariables
 #     if remove_boundaries:
 #         ds = ds.remove_boundaries(40)
 #     ds.plot_map(ax=ax, **kwargs)
-#     plt.savefig(f"rc_trop_ls_MM_{variable}_sum_map_{name}.png")
+#     plt.savefig(f"MM_{variable}_sum_map_{name}.png")
 #     plt.show()
 #
 #
@@ -136,7 +136,7 @@ from xarray.core.dataset import DataVariables
 # diff.attrs = neutral.attrs
 # ds = darwin.Experiment(diff)
 # plot_map(ds, name=enso_event, **plot_map_args)
-# plt.savefig(f"rc_trop_ls_MM_{variable}_sum_map_nino-nina.png")
+# plt.savefig(f"MM_{variable}_sum_map_nino-nina.png")
 #
 #
 # # In[8]:
@@ -144,7 +144,7 @@ from xarray.core.dataset import DataVariables
 #
 # ds = darwin.Experiment(globals()[enso_event])
 # plot_map(ds, name=enso_event, **plot_map_args)
-# plt.savefig(f"rc_trop_ls_MM_{variable}_sum_map_{enso_event}.png")
+# plt.savefig(f"MM_{variable}_sum_map_{enso_event}.png")
 #
 #
 # # In[9]:
@@ -172,12 +172,12 @@ from xarray.core.dataset import DataVariables
 # plt.legend()
 # # plt.tight_layout()
 # plt.ylabel(f"cumulative {variable} over land in mm")
-# plt.savefig(f"rc_trop_ls_MM_{variable}_cumsum_line_nino-nina-neutral.png")
+# plt.savefig(f"MM_{variable}_cumsum_line_nino-nina-neutral.png")
 # plt.show()
 #
 # # zonal classification by altitude
-# path = basepath / "rc_trop_ls_MM_d02km_static_hgt.nc"
-# landmask_path = basepath / "rc_trop_ls_MM_d02km_static_landmask.nc"
+# path = basepath / "MM_d02km_static_hgt.nc"
+# landmask_path = basepath / "MM_d02km_static_landmask.nc"
 # hgt = darwin.open_dataset(from_path=path)
 # landmask = darwin.open_dataset(from_path=landmask_path)
 # hgt_land = hgt.copy()
@@ -245,7 +245,7 @@ def mask_by_hgt_zone(
     ds: xr.Dataset,
     hgt: xr.Dataset,
     altitudes: tuple,
-    variables: Optional[DataVariables] = None,
+    variables: DataVariables | None = None,
 ) -> xr.Dataset:
     """Mask a dataset with a height zone.
 
@@ -283,10 +283,10 @@ def get_mean_timeseries(ds: xr.Dataset) -> xr.Dataset:
 def plot_timeseries(
     ds: xr.Dataset,
     label: str,
-    plot_type: Optional[str] = "line",
-    xticks: Optional[list] = None,
-    yticks: Optional[list] = None,
-    ax: Optional[plt.Axes] = None,
+    plot_type: str | None = "line",
+    xticks: list | None = None,
+    yticks: list | None = None,
+    ax: plt.Axes | None = None,
     **kwargs,
 ):
     """Plot a timeseries.
@@ -331,7 +331,7 @@ def plot_timeseries(
     plt.legend()
 
 
-def concatenate(files: list, ofile: Optional[str] = None) -> xr.Dataset:
+def concatenate(files: list, ofile: str | None = None) -> xr.Dataset:
     """Concatenate a list of files via cdo concatenate.
 
     Args:

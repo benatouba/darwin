@@ -7,7 +7,9 @@ from pathlib import Path
 from matplotlib.colors import LinearSegmentedColormap
 from pint import Unit
 
-basepath: Path = Path("/home/ben/data/GAR/")
+basepath: Path = Path.home() / "data"
+gar_path: Path = basepath / "GAR"
+measured_path: Path = basepath / "darwin_measured"
 coordinates = {
     "Cerro Crocker": (-0.642398, -90.326),
     "Cueva de Sucre": (-0.843216, -91.0284),
@@ -35,11 +37,13 @@ measured_vars = {
     "t2": "T",
     "ws10": ["WS", "WSmax"],
     "wd10": ["WD"],
-    # "v10": ["WD"],
-    # "u10": ["WD"],
+    "v10": ["WD"],
+    "u10": ["WD"],
     "rh2": ["RH"],
     "swdown": ["SLR"],
     "psfc": ["Pabs"],
+    "sh2": ["SH"],
+    "q2": ["Q"],
 }
 
 measured_units: dict[str, Unit] = {
@@ -57,6 +61,8 @@ measured_units: dict[str, Unit] = {
     "SLR": Unit("W/m**2"),
     "ST": Unit("K"),
     "Vwc": Unit("count"),
+    "SH": Unit("g/kg"),
+    "Q": Unit("kg/kg"),
 }
 
 color_map: LinearSegmentedColormap = LinearSegmentedColormap.from_list(

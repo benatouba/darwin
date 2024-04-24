@@ -5,8 +5,9 @@ from pathlib import Path
 from pprint import PrettyPrinter
 
 from cdo import Cdo
+from icecream import ic
 
-from darwin.defaults import basepath, measured_vars
+from darwin.defaults import measured_vars
 from darwin.utils import glob_files
 
 
@@ -28,33 +29,40 @@ def parse_input(parser: argparse.ArgumentParser) -> argparse.Namespace:
         "-f",
         "--folder",
         help="Topfolder to search for files to process",
-        default="~/data/GAR/rc_trop_ls_MM/",
+        default="~/data/GAR/MM",
     )
     parser.add_argument(
         "-s",
         "--start",
         help="Start date of period to process",
         type=date.fromisoformat,
-        default="2022-04-01",
+        default="1980-01-01",
     )
     parser.add_argument(
         "-e",
         "--end",
         help="End date of period to process",
         type=date.fromisoformat,
-        default="2023-03-31",
+        default="2023-12-31",
     )
     parser.add_argument(
         "-g",
         "--glob",
         help="glob pattern to search for files",
-        default="*202[23]*.nc",
+        default="*.nc",
     )
     parser.add_argument(
         "-o",
         "--overwrite",
         help="Overwrite existing attributes",
         action="store_true",
+    )
+    parser.add_argument(
+        "-v",
+        "--vars",
+        help="Variables to process",
+        nargs="+",
+        default=list(measured_vars.keys()),
     )
     return vars(parser.parse_args())
 
@@ -64,23 +72,26 @@ pp = PrettyPrinter(indent=2)
 
 
 def get_files(
-    model: str = "MM", year: int = 2023, variables: tuple = ("prcp", "t2", "q2", "rh2")
+    folder: Path = "~/data/GAR/GAR",
+    year: int = 2023,
+    variables: tuple = ("prcp", "t2", "q2", "rh2"),
 ) -> dict:
     """Get files for a certain year and variables.
 
     Args:
         year: year to get files for
         variables: The variables to get files for
-        model: The model to get files for
+        folder: The folder to get files from
 
     Returns:
         A dictionary with the variables as keys and the files as values.
     """
     files = {}
-    filelist = glob_files(Path(basepath) / f"rc_trop_ls_{model}", f"*_d_2d_*_{year}.nc*")
+    filelist = glob_files(folder, f"*_[dmy]_2d_*_{year}.nc*")
+    ic(filelist)
     for f in filelist:
         for v in variables:
-            if f"_{v}_2" in f.as_posix():
+            if f"_{v}_" in f.as_posix():
                 files[v] = f
     return files
 
@@ -91,21 +102,20 @@ def main() -> None:
     args = parse_input(parser)
     start_year = args["start"].year
     end_year = args["end"].year
+    folder = Path(args["folder"]).expanduser()
 
     files = []
     [
-        files.append(get_files(args["folder"].split("_")[-1], y, list(measured_vars.keys())))
+        files.append(get_files(folder, y, list(measured_vars.keys())))
         for y in range(start_year, end_year + 1)
     ]
-    for v in measured_vars:
-        inputs = " ".join([str(f[v]) for f in files])
+    ic(files)
+    for v in args["vars"]:
+        inputs = " ".join([str(f[str(v)]) for f in files])
         ofile = str(files[0][v])
         if start_year != end_year:
             inputs = f"-cat {inputs}"
-            ofile = (
-                str(files[0][v])
-                .replace(f"_{start_year}", "")
-            )
+            ofile = str(files[0][v]).replace(f"_{start_year}", "")
         for f, i in zip(files, range(len(files))):
             pp.pprint(f"{v} {start_year + i}: {f[v]}")
         pp.pprint(f"Processing {v} to {ofile}")
@@ -115,6 +125,9 @@ def main() -> None:
             output=ofile,
             options="-L",
         )
+        [f.pop(v) for f in files]
+        del inputs
+        del ofile
 
 
 if __name__ == "__main__":
