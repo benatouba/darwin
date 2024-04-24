@@ -61,22 +61,23 @@ def change_all_projections(path: str | PosixPath, glob: str, *, overwrite: bool 
             from_path=f.as_posix(),
             engine="xarray",
             decode_cf=False,
+            mode="a",
         ) as ds:
-            ds_new = ds.copy(deep=True)
-            if "months" in ds_new.time.attrs["units"] or "years" in ds_new.time.attrs["units"]:
+            # ds_new = ds.copy(deep=True)
+            if "months" in ds.time.attrs["units"] or "years" in ds.time.attrs["units"]:
                 pp.pprint("correcting time")
-                ds_new = correct_time(ds_new)
+                ds.time = correct_time(ds)
             elif "year" in ds.attrs:
                 pp.pprint("correcting time")
-                ds_new = correct_time(ds_new)
+                ds["time"] = correct_time(ds)
                 # pp.pprint("year attribute already set, skipping set overwrite option to overwrite")
                 # continue
             pp.pprint("setting global attributes")
-            ds_new = assign_projection_info(ds_new)
+            ds.attrs = assign_projection_info(ds)
             pp.pprint("setting time attributes")
-            ds_new = set_calendar(ds_new)
+            ds["time"].attrs["calendar"] = set_calendar(ds)
             pp.pprint("setting projection")
-            ds_new = set_projection(ds_new)
+            ds[ds.attrs["VARNAME"]].attrs["coordinates"] = set_projection()
             pp.pprint("Saving dataset")
             extra_attrs = {
                 "experiment": f.experiment,
@@ -88,11 +89,13 @@ def change_all_projections(path: str | PosixPath, glob: str, *, overwrite: bool 
             if hasattr(f, "frequency"):
                 extra_attrs["frequency"] = f.frequency
 
-            ds_new = add_extra_attrs(ds_new, extra_attrs)
-            temp_path = Path(f"{f}_temp")
-            ds_new.to_netcdf(temp_path, mode="w")
-            if overwrite:
-                temp_path.rename(f)
+            for key, value in extra_attrs.items():
+                ds.attrs[key] = str(value)
+            ds.to_netcdf(f.as_posix(), mode="a")
+            # temp_path = Path(f"{f}_temp")
+            # ds.to_netcdf(temp_path, mode="w")
+            # if overwrite:
+            #     temp_path.rename(f)
             pp.pprint(f"Dataset {f.name} processed")
 
 
@@ -106,7 +109,7 @@ def set_calendar(ds: Dataset) -> Dataset:
         xarray.Dataset with standard calendar attribute.
     """
     ds["time"].attrs["calendar"] = "standard"
-    return ds
+    return ds["time"].attrs["calendar"]
     # return ds.convert_calendar("standard")
 
 
@@ -125,7 +128,7 @@ def add_extra_attrs(ds: Dataset, attrs: dict) -> Dataset:
     return ds
 
 
-def set_projection(ds: Dataset) -> Dataset:
+def set_projection() -> str:
     """Set projection attributes.
 
     Args:
@@ -134,9 +137,7 @@ def set_projection(ds: Dataset) -> Dataset:
     Returns:
         xarray.Dataset with projection attributes.
     """
-    var = ds.attrs["VARNAME"]
-    ds[var].attrs["coordinates"] = "lon lat"
-    return ds
+    return "lon lat"
 
 
 def build_pyproj(projection: dict) -> str:
@@ -275,7 +276,7 @@ def assign_projection_info(ds: Dataset) -> Dataset:
     for key, value in attributes.items():
         pp.pprint(f"add {value} to attribute {key}")
         ds.attrs[key] = str(value)
-    return ds
+    return ds.attrs
 
 
 def get_grid_distance_attribute(attrs: dict, dimension: str) -> str:
@@ -357,7 +358,7 @@ def correct_time(ds: Dataset) -> Dataset:
         pp.pprint("years to days in time units")
         ds.time.attrs["units"] = ds.time.attrs["units"].replace("years", "days")
     pp.pprint(ds.time)
-    return ds
+    return ds.time
 
 
 if __name__ == "__main__":
