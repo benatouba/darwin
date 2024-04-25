@@ -46,12 +46,13 @@ class FilePath(type(Path())):
             self.var = file_infos.pop()
         else:
             self.var = file_infos.pop() + "_" + file_infos.pop()
-        if "3d" not in file_infos and "static" not in self.stem:
-            self.dimensionality = file_infos.pop()
-        elif "static" not in self.stem:
-            self.dimensionality = f"{file_infos.pop()}_{file_infos.pop()}"
-        else:
+        if "static" in self.stem:
             self.dimensionality = "static"
+        elif "3d" not in file_infos:
+            self.dimensionality = file_infos.pop()
+        else:
+            eta = file_infos.pop()
+            self.dimensionality = f"{file_infos.pop()}_{eta}"
         self.frequency = file_infos.pop()
         self.domain = file_infos.pop()
         self.experiment = "_".join(file_infos)

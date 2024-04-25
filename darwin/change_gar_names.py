@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """Set attributes of WRF products produced by WAVE."""
+
 from __future__ import annotations
 
 import datetime
@@ -7,6 +8,7 @@ from argparse import ArgumentParser, Namespace
 from pathlib import Path, PosixPath
 from pprint import PrettyPrinter
 from typing import TYPE_CHECKING
+import netCDF4
 
 from darwin.core import FilePath, open_dataset
 from darwin.utils import glob_files, remove_nonalphanumerics
@@ -54,31 +56,30 @@ def change_all_projections(path: str | PosixPath, glob: str, *, overwrite: bool 
     pp.pprint("Found the following files:")
     pp.pprint(files)
     files = [FilePath(f) for f in files]
+    i = 0
     for f in files:
         pp.pprint("Working on:")
         pp.pprint(f.as_posix())
-        with open_dataset(
-            from_path=f.as_posix(),
-            engine="xarray",
-            decode_cf=False,
-            mode="a",
-        ) as ds:
-            # ds_new = ds.copy(deep=True)
-            if "months" in ds.time.attrs["units"] or "years" in ds.time.attrs["units"]:
+        i += 1
+
+        with netCDF4.Dataset(f.as_posix(), "a") as nc:
+            if "pyproj_srs" in nc.ncattrs() and not overwrite:
+                pp.pprint(
+                    "pyproj_srs attribute already set, assuming data already valid. Set overwrite option to overwrite"
+                )
+                continue
+            time_units = nc.variables["time"].units
+            if "months" in time_units or "years" in time_units:
                 pp.pprint("correcting time")
-                ds.time = correct_time(ds)
-            elif "year" in ds.attrs:
-                pp.pprint("correcting time")
-                ds["time"] = correct_time(ds)
-                # pp.pprint("year attribute already set, skipping set overwrite option to overwrite")
-                # continue
-            pp.pprint("setting global attributes")
-            ds.attrs = assign_projection_info(ds)
+                nc.variables["time"] = correct_time(nc.variables["time"])
             pp.pprint("setting time attributes")
-            ds["time"].attrs["calendar"] = set_calendar(ds)
+            nc.variables["time"].calendar = "standard"
+            pp.pprint(nc.variables["time"])
+            pp.pprint("setting global attributes")
             pp.pprint("setting projection")
-            ds[ds.attrs["VARNAME"]].attrs["coordinates"] = set_projection()
-            pp.pprint("Saving dataset")
+            assign_projection_info(nc)
+            var = nc.variables[nc.VARNAME]
+            var.setncattr("coordinates", "lon lat")
             extra_attrs = {
                 "experiment": f.experiment,
                 "frequency": f.frequency,
@@ -90,8 +91,9 @@ def change_all_projections(path: str | PosixPath, glob: str, *, overwrite: bool 
                 extra_attrs["frequency"] = f.frequency
 
             for key, value in extra_attrs.items():
-                ds.attrs[key] = str(value)
-            ds.to_netcdf(f.as_posix(), mode="a")
+                nc.setncattr(key, value)
+            pp.pprint(f"Saving file {i} of {len(files)} ")
+            # ds.to_netcdf(f.as_posix(), mode="a")
             # temp_path = Path(f"{f}_temp")
             # ds.to_netcdf(temp_path, mode="w")
             # if overwrite:
@@ -173,7 +175,7 @@ def split_attribute(attr: str) -> str:
 #     return not proj_string.startswith("{")
 
 
-def assign_projection_info(ds: Dataset) -> Dataset:
+def assign_projection_info(ds: netCDF4._netCDF4.Dimension):
     """Assign projection attributes to dataset.
 
     Args:
@@ -182,8 +184,8 @@ def assign_projection_info(ds: Dataset) -> Dataset:
     Returns:
         xarray.Dataset with projection attributes.
     """
-    xx = ds.coords["west_east"].to_numpy()
-    yy = ds.coords["south_north"].to_numpy()
+    xx = ds.variables["west_east"][:]
+    yy = ds.variables["south_north"][:]
 
     nx = xx.size
     ny = yy.size
@@ -213,8 +215,8 @@ def assign_projection_info(ds: Dataset) -> Dataset:
             "Grid spacing: GRID_DX and GRID_DY (unit: m), Down left corner: GRID_X00 and "
             "GRID_Y00 (unit: m), Upper Left Corner: GRID_X01 and GRID_Y01 (unit: m)"
         ),
-        "GRID_DX": get_grid_distance_attribute(ds.attrs, "x"),
-        "GRID_DY": get_grid_distance_attribute(ds.attrs, "y"),
+        "GRID_DX": get_grid_distance_attribute(ds, "x"),
+        "GRID_DY": get_grid_distance_attribute(ds, "y"),
         "GRID_X00": x00,
         "GRID_Y00": y00,
         "GRID_X01": x01,
@@ -225,8 +227,8 @@ def assign_projection_info(ds: Dataset) -> Dataset:
     }
 
     proj_split = (
-        split_attribute(ds.attrs["PROJ_ENVI_STRING"])
-        if hasattr(ds.attrs, "PROJ_ENVI_STRING")
+        split_attribute(ds.PROJ_ENVI_STRING)
+        if "PROJ_ENVI_STRING" in ds.ncattrs()
         else None
     )
     if proj_split:
@@ -275,11 +277,10 @@ def assign_projection_info(ds: Dataset) -> Dataset:
     # }
     for key, value in attributes.items():
         pp.pprint(f"add {value} to attribute {key}")
-        ds.attrs[key] = str(value)
-    return ds.attrs
+        ds.setncattr(key, value)
 
 
-def get_grid_distance_attribute(attrs: dict, dimension: str) -> str:
+def get_grid_distance_attribute(ds: netCDF4.Dataset, dimension: str) -> str:
     """Return the grid distance attribute from the dataset attributes.
 
     Args:
@@ -290,17 +291,18 @@ def get_grid_distance_attribute(attrs: dict, dimension: str) -> str:
         Grid distance attribute.
     """
     msg = "No grid distance attribute found."
+    attrs = ds.ncattrs()
     if dimension.lower() == "x":
         if "DX" in attrs:
-            return attrs["DX"]
+            return ds.DX
         if "GRID_DX" in attrs:
-            return attrs["GRID_DX"]
+            return ds.GRID_DX
         raise ValueError(msg)
     if dimension.lower() == "y":
         if "DY" in attrs:
-            return attrs["DY"]
+            return ds.DY
         if "GRID_DY" in attrs:
-            return attrs["GRID_DY"]
+            return ds.GRID_DY
         raise ValueError(msg)
     msg = f"Dimension {dimension} not supported."
     raise ValueError(msg)
@@ -333,7 +335,7 @@ def get_first_day_of_month_doys(year: int) -> list:
     return first_day_of_month_doys
 
 
-def correct_time(ds: Dataset) -> Dataset:
+def correct_time(time_var: netCDF4._netCDF4.Dimension) -> netCDF4._netCDF4.Dimension:
     """Correct the time dimension values and units for a dataset.
 
     This function is used to change the time units to days if they are in months or years.
@@ -345,20 +347,16 @@ def correct_time(ds: Dataset) -> Dataset:
     Returns:
         Dataset with corrected time dimension.
     """
-    pp.pprint(ds.time.attrs["units"])
-    if "months" in ds.time.attrs["units"]:
+    pp.pprint(time_var.units)
+    if "months" in time_var.units:
         pp.pprint("months to days in time units")
-        old_attrs = ds.time.attrs
-        ds = ds.assign_coords(
-            {"time": get_first_day_of_month_doys(int(ds.time.attrs["units"].split(" ")[2][:4]))},
-        )
-        ds.time.attrs = old_attrs
-        ds.time.attrs["units"] = old_attrs["units"].replace("months", "days")
-    elif "years" in ds.time.attrs["units"]:
+        time_var[:] = get_first_day_of_month_doys(int(time_var.units.split(" ")[2][:4]))
+        time_var.units = time_var.units.replace("months", "days")
+    elif "years" in time_var.units:
         pp.pprint("years to days in time units")
-        ds.time.attrs["units"] = ds.time.attrs["units"].replace("years", "days")
-    pp.pprint(ds.time)
-    return ds.time
+        time_var.units = time_var.units.replace("years", "days")
+    pp.pprint(time_var)
+    return time_var
 
 
 if __name__ == "__main__":
