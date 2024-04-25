@@ -179,9 +179,35 @@ select = [
 ignore = ["ERA001", "COM812", "TD002", "TD003", "FIX002"]
 target-version = "py39"
 
-[tool.black]
-max-line-length = 100
-
 [tool.isort]
 line_length = 100
 profile = "black"
+
+[tool.basedpyright]
+include = ["darwin"]
+exclude = ["**/node_modules",
+    "**/__pycache__",
+    "darwin/experimental",
+    "darwin/typestubs"
+]
+stubPath = "darwin/stubs"
+
+reportMissingImports = true
+reportMissingTypeStubs = false
+
+pythonVersion = "3.11"
+pythonPlatform = "Linux"
+venvPath = "/home/ben/.pyenv/versions/"
+venv = "darwin"
+
+disableOrganizeImports = true
+
+[tool.basedpyright.analysis]
+autoImportCompletions = true
+diagnosticMode = "workspace"
+logLevel = "warning"
+typeCheckingMode = "standard"
+useLibraryCodeForTypes = true
+stubPath = [
+	".stubs"
+]
