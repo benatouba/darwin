@@ -25,5 +25,6 @@ scikit-image
 scipy
 tomli
 windrose
-wrf-python
 xarray
+pint_xarray
+icecream
