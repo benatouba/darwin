@@ -11,3 +11,4 @@ data/
 .python-version
 .log
 .ipynb_checkpoints/
+pyrightconfig.json
