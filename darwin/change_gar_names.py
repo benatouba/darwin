@@ -4,17 +4,20 @@
 from __future__ import annotations
 
 import datetime
-from argparse import ArgumentParser, Namespace
-from pathlib import Path, PosixPath
+from argparse import ArgumentParser
 from pprint import PrettyPrinter
 from typing import TYPE_CHECKING
-import netCDF4
 
-from darwin.core import FilePath, open_dataset
+from netCDF4 import Dataset
+
+from darwin.core import FilePath
 from darwin.utils import glob_files, remove_nonalphanumerics
 
 if TYPE_CHECKING:
-    from xarray import Dataset
+    from argparse import Namespace
+    from pathlib import PosixPath
+
+    from netCDF4 import Variable
 
 
 def parse_input(parser: ArgumentParser) -> Namespace:
@@ -30,12 +33,14 @@ def parse_input(parser: ArgumentParser) -> Namespace:
         "--folder",
         help="Topfolder to search for files to process",
         default="~/data/GAR/MM/",
+        type=FilePath,
     )
     parser.add_argument(
         "-g",
         "--glob",
         help="glob pattern to search for files",
         default="*_????.nc",
+        type=str
     )
     parser.add_argument(
         "-o",
@@ -43,13 +48,15 @@ def parse_input(parser: ArgumentParser) -> Namespace:
         help="Overwrite existing attributes",
         action="store_true",
     )
-    return vars(parser.parse_args())
+    return parser.parse_args()
 
 
 pp = PrettyPrinter(indent=2)
 
 
-def change_all_projections(path: str | PosixPath, glob: str, *, overwrite: bool = False) -> None:
+def change_all_projections(
+    path: FilePath | PosixPath, glob: str, *, overwrite: bool = False
+) -> None:
     """path: path from darwin's base folder or absolute path."""
     files = glob_files(path, glob)
     pp.pprint(f"Base folder: {path.as_posix()}")
@@ -62,7 +69,7 @@ def change_all_projections(path: str | PosixPath, glob: str, *, overwrite: bool 
         pp.pprint(f.as_posix())
         i += 1
 
-        with netCDF4.Dataset(f.as_posix(), "a") as nc:
+        with Dataset(f.as_posix(), "a") as nc:
             if "pyproj_srs" in nc.ncattrs() and not overwrite:
                 pp.pprint(
                     "pyproj_srs attribute already set, assuming data already valid. Set overwrite option to overwrite"
@@ -101,21 +108,7 @@ def change_all_projections(path: str | PosixPath, glob: str, *, overwrite: bool 
             pp.pprint(f"Dataset {f.name} processed")
 
 
-def set_calendar(ds: Dataset) -> Dataset:
-    """Set calendar attribute to standard.
-
-    Args:
-        ds: xarray.Dataset
-
-    Returns:
-        xarray.Dataset with standard calendar attribute.
-    """
-    ds["time"].attrs["calendar"] = "standard"
-    return ds["time"].attrs["calendar"]
-    # return ds.convert_calendar("standard")
-
-
-def add_extra_attrs(ds: Dataset, attrs: dict) -> Dataset:
+def set_attrs(ds: Dataset | Dataset.Dimension, attrs: dict[str, str | int | float]):
     """Add extra attributes to dataset.
 
     Args:
@@ -126,8 +119,7 @@ def add_extra_attrs(ds: Dataset, attrs: dict) -> Dataset:
         xarray.Dataset with extra attributes.
     """
     for key, value in attrs.items():
-        ds.attrs[key] = str(value)
-    return ds
+        ds.setncattr(key, value)
 
 
 def set_projection() -> str:
@@ -142,7 +134,7 @@ def set_projection() -> str:
     return "lon lat"
 
 
-def build_pyproj(projection: dict) -> str:
+def build_pyproj(projection: dict[str, str]) -> str:
     """Build pyproj string from projection dictionary.
 
     Args:
@@ -155,7 +147,7 @@ def build_pyproj(projection: dict) -> str:
     return f"{string} +no_defs"
 
 
-def split_attribute(attr: str) -> str:
+def split_attribute(attr: str) -> list[str]:
     """Split attribute by comma or space.
 
     Args:
@@ -175,14 +167,11 @@ def split_attribute(attr: str) -> str:
 #     return not proj_string.startswith("{")
 
 
-def assign_projection_info(ds: netCDF4._netCDF4.Dimension):
+def assign_projection_info(ds: Dataset):
     """Assign projection attributes to dataset.
 
     Args:
-        ds: xarray.Dataset
-
-    Returns:
-        xarray.Dataset with projection attributes.
+        ds: netCDF4.Dataset
     """
     xx = ds.variables["west_east"][:]
     yy = ds.variables["south_north"][:]
@@ -227,9 +216,7 @@ def assign_projection_info(ds: netCDF4._netCDF4.Dimension):
     }
 
     proj_split = (
-        split_attribute(ds.PROJ_ENVI_STRING)
-        if "PROJ_ENVI_STRING" in ds.ncattrs()
-        else None
+        split_attribute(ds.PROJ_ENVI_STRING) if "PROJ_ENVI_STRING" in ds.ncattrs() else None
     )
     if proj_split:
         projection = {
@@ -280,11 +267,11 @@ def assign_projection_info(ds: netCDF4._netCDF4.Dimension):
         ds.setncattr(key, value)
 
 
-def get_grid_distance_attribute(ds: netCDF4.Dataset, dimension: str) -> str:
+def get_grid_distance_attribute(ds: Dataset, dimension: str) -> str:
     """Return the grid distance attribute from the dataset attributes.
 
     Args:
-        attrs: Dataset attributes.
+        ds: netcdf4.Dataset.
         dimension: Dimension to get the grid distance attribute for.
 
     Returns:
@@ -294,15 +281,15 @@ def get_grid_distance_attribute(ds: netCDF4.Dataset, dimension: str) -> str:
     attrs = ds.ncattrs()
     if dimension.lower() == "x":
         if "DX" in attrs:
-            return ds.DX
+            return str(ds.DX)
         if "GRID_DX" in attrs:
-            return ds.GRID_DX
+            return str(ds.GRID_DX)
         raise ValueError(msg)
     if dimension.lower() == "y":
         if "DY" in attrs:
-            return ds.DY
+            return str(ds.DY)
         if "GRID_DY" in attrs:
-            return ds.GRID_DY
+            return str(ds.GRID_DY)
         raise ValueError(msg)
     msg = f"Dimension {dimension} not supported."
     raise ValueError(msg)
@@ -318,7 +305,7 @@ def get_grid_distance_attribute(ds: netCDF4.Dataset, dimension: str) -> str:
 #     f"+x_0={str(projection['x_0'])} +y_0={str(projection['y_0'])} +ellps={projection['ellps']} "
 #     f"+datum={projection['ellps']} +units=m +no_defs"
 # )
-def get_first_day_of_month_doys(year: int) -> list:
+def get_first_day_of_month_doys(year: int) -> list[int]:
     """Return the day of the year for the first day of each month.
 
     Args:
@@ -330,12 +317,12 @@ def get_first_day_of_month_doys(year: int) -> list:
     first_day_of_month_doys = []
     for month in range(1, 13):
         first_day = datetime.date(year, month, 1)
-        day_of_year = first_day.timetuple().tm_yday
+        day_of_year = int(first_day.timetuple().tm_yday)
         first_day_of_month_doys.append(day_of_year - 1)
     return first_day_of_month_doys
 
 
-def correct_time(time_var: netCDF4._netCDF4.Dimension) -> netCDF4._netCDF4.Dimension:
+def correct_time(time_var: Variable) -> Variable:
     """Correct the time dimension values and units for a dataset.
 
     This function is used to change the time units to days if they are in months or years.
@@ -355,12 +342,11 @@ def correct_time(time_var: netCDF4._netCDF4.Dimension) -> netCDF4._netCDF4.Dimen
     elif "years" in time_var.units:
         pp.pprint("years to days in time units")
         time_var.units = time_var.units.replace("years", "days")
-    pp.pprint(time_var)
     return time_var
 
 
 if __name__ == "__main__":
     parser = ArgumentParser(description="Description of your program")
     args = parse_input(parser)
-    filepath = FilePath(args["folder"])
-    change_all_projections(filepath, args["glob"], overwrite=args["overwrite"])
+    filepath = FilePath(args.folder)
+    change_all_projections(filepath, args.glob, overwrite=args.overwrite)
