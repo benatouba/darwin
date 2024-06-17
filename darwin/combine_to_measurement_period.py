@@ -1,4 +1,7 @@
 """Combine files to a certain or the measurement period."""
+
+from __future__ import annotations
+
 import argparse
 from datetime import date
 from pathlib import Path
@@ -29,7 +32,8 @@ def parse_input(parser: argparse.ArgumentParser) -> argparse.Namespace:
         "-f",
         "--folder",
         help="Topfolder to search for files to process",
-        default="~/data/GAR/MM",
+        type=Path,
+        default= Path.home() / "data" / "GAR" / "MM",
     )
     parser.add_argument(
         "-s",
@@ -49,6 +53,7 @@ def parse_input(parser: argparse.ArgumentParser) -> argparse.Namespace:
         "-g",
         "--glob",
         help="glob pattern to search for files",
+        type=str,
         default="*.nc",
     )
     parser.add_argument(
@@ -56,23 +61,24 @@ def parse_input(parser: argparse.ArgumentParser) -> argparse.Namespace:
         "--overwrite",
         help="Overwrite existing attributes",
         action="store_true",
+        default=False,
     )
     parser.add_argument(
         "-v",
         "--vars",
+        type=list[str],
         help="Variables to process",
         nargs="+",
         default=list(measured_vars.keys()),
     )
-    return vars(parser.parse_args())
+    return parser.parse_args()
 
 
-cdo = Cdo(returnNoneOnError=True)
 pp = PrettyPrinter(indent=2)
 
 
 def get_files(
-    folder: Path = "~/data/GAR/GAR",
+    folder: Path = Path("~/data/GAR/GAR"),
     year: int = 2023,
     variables: tuple = ("prcp", "t2", "q2", "rh2"),
 ) -> dict:
@@ -100,9 +106,9 @@ def main() -> None:
     """Main function."""
     parser = argparse.ArgumentParser()
     args = parse_input(parser)
-    start_year = args["start"].year
-    end_year = args["end"].year
-    folder = Path(args["folder"]).expanduser()
+    start_year = args.start.year
+    end_year = args.end.year
+    folder = Path(args.folder).expanduser()
 
     files = []
     [
@@ -110,7 +116,8 @@ def main() -> None:
         for y in range(start_year, end_year + 1)
     ]
     ic(files)
-    for v in args["vars"]:
+    cdo = Cdo(returnNoneOnError=True)
+    for v in args.vars:
         inputs = " ".join([str(f[str(v)]) for f in files])
         ofile = str(files[0][v])
         if start_year != end_year:
@@ -120,7 +127,7 @@ def main() -> None:
             pp.pprint(f"{v} {start_year + i}: {f[v]}")
         pp.pprint(f"Processing {v} to {ofile}")
         cdo.seldate(
-            f"{args['start']},{args['end']}",
+            f"{args.start},{args.end}",
             input=inputs,
             output=ofile,
             options="-L",
