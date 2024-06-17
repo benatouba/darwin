@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import datetime
 from argparse import ArgumentParser
+from pathlib import Path
 from pprint import PrettyPrinter
 from typing import TYPE_CHECKING
 
@@ -32,15 +33,11 @@ def parse_input(parser: ArgumentParser) -> Namespace:
         "-f",
         "--folder",
         help="Topfolder to search for files to process",
-        default="~/data/GAR/MM/",
-        type=FilePath,
+        default=Path.home() / "data" / "GAR" / "MM",
+        type=Path,
     )
     parser.add_argument(
-        "-g",
-        "--glob",
-        help="glob pattern to search for files",
-        default="*_????.nc",
-        type=str
+        "-g", "--glob", help="glob pattern to search for files", default="*_????.nc", type=str
     )
     parser.add_argument(
         "-o",
@@ -71,9 +68,11 @@ def change_all_projections(
 
         with Dataset(f.as_posix(), "a") as nc:
             if "pyproj_srs" in nc.ncattrs() and not overwrite:
-                pp.pprint(
-                    "pyproj_srs attribute already set, assuming data already valid. Set overwrite option to overwrite"
-                )
+                msg = """
+                pyproj_srs attribute already set, assuming data already valid. Set overwrite option
+                to overwrite.
+                """
+                pp.pprint(msg)
                 continue
             time_units = nc.variables["time"].units
             if "months" in time_units or "years" in time_units:
@@ -108,7 +107,7 @@ def change_all_projections(
             pp.pprint(f"Dataset {f.name} processed")
 
 
-def set_attrs(ds: Dataset | Dataset.Dimension, attrs: dict[str, str | int | float]):
+def set_attrs(ds: Dataset | Dataset.Dimension, attrs: dict[str, str | int | float]) -> None:
     """Add extra attributes to dataset.
 
     Args:
@@ -167,7 +166,7 @@ def split_attribute(attr: str) -> list[str]:
 #     return not proj_string.startswith("{")
 
 
-def assign_projection_info(ds: Dataset):
+def assign_projection_info(ds: Dataset) -> None:
     """Assign projection attributes to dataset.
 
     Args:
@@ -240,6 +239,9 @@ def assign_projection_info(ds: Dataset):
             projection["sp1"] = float(proj_split[7])
             projection["sp2"] = float(proj_split[8])
             proj_name = "Lambert Conformal Conic"
+        else:
+            msg = f"Unknown projection {projection['name']}"
+            raise ValueError(msg)
         pyproj_srs = build_pyproj(projection)
         attributes["PROJ_NAME"] = proj_name
         attributes["LON_0"] = projection["lon_0"]
@@ -329,7 +331,7 @@ def correct_time(time_var: Variable) -> Variable:
     The values are changed accordingly.
 
     Args:
-        ds: Dataset to correct.
+        time_var: Variable to correct.
 
     Returns:
         Dataset with corrected time dimension.
