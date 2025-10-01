@@ -1,4 +1,5 @@
 """Base module for the GAR project."""
+
 from __future__ import annotations
 
 import copy
@@ -8,8 +9,10 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pandas as pd
+import pint_xarray  # noqa: F401
 import salem
 import xarray as xr
+from icecream import ic
 from matplotlib import pyplot as plt
 from matplotlib.cm import ScalarMappable
 from matplotlib.colors import Normalize
@@ -18,127 +21,102 @@ from metpy.units import units
 from pytz import timezone
 
 from darwin.defaults import coordinates, gar_path, measured_path
-from darwin.utils import glob_files
-
-# isort: off
-from icecream import ic
-import pint_xarray  # noqa: F401
-from pathlib import PosixPath
 
 if TYPE_CHECKING:
     import pint
 
-
-class FilePath(type(Path())):
-    """FilePath."""
-
-    def __init__(self: FilePath, *args: Path) -> None:
-        """Initiate a FilePath instance from a str."""
-        super().__init__()
-        self.a = args[0] if args else ""
-        if self.suffix in [".nc", ".nc4", ".netcdf"]:
-            self.__assign_wrf_infos(self.stem.split("_"))
-
-    def __assign_wrf_infos(self: FilePath, file_infos: list[str]) -> None:
-        if "static" not in self.stem:
-            self.year = file_infos.pop()
-        if "flux" not in self.stem:
-            self.var = file_infos.pop()
-        else:
-            self.var = file_infos.pop() + "_" + file_infos.pop()
-        if "static" in self.stem:
-            self.dimensionality = "static"
-        elif "3d" not in file_infos:
-            self.dimensionality = file_infos.pop()
-        else:
-            eta = file_infos.pop()
-            self.dimensionality = f"{file_infos.pop()}_{eta}"
-        self.frequency = file_infos.pop()
-        self.domain = file_infos.pop()
-        self.experiment = "_".join(file_infos)
+xr.set_options(keep_attrs=True)
+gar_path = Path(gar_path)
 
 
-gar_path = FilePath(gar_path)
+def open_dataset_from_file(file: Path) -> xr.Dataset:
+    """Open a Dataset from a path.
+
+    Args:
+        file: file path
+    """
+    return salem.open_wrf_dataset(file)
 
 
-def open_dataset(  # noqa: PLR0913
-    from_path: Path | None = None,
+def get_path_from_elements(
     experiment: str = "MM",
     variable: str = "t2",
     year: str = "2022",
-    domain: str = "d02",
+    domain: str = "d02km",
     dimensions: str = "2d",
     frequency: str = "d",
-    basepath: Path | FilePath = gar_path,
-    engine: str = "salem",
-    **kwargs: dict[str, Any],
+    base: Path = gar_path,
+) -> Path:
+    """Get the path to a dataset from its elements."""
+    if variable in ["hgt", "landmask", "lai", "lu_index"]:
+        return base / f"{experiment}/{experiment}_{domain}_static_{variable}.nc"
+    return (
+        base / f"{experiment}/{experiment}_{domain}_{frequency}_{dimensions}_{variable}_{year}.nc"
+    )
+
+
+def open_dataset(
+    experiment: str = "MM",
+    variable: str = "t2",
+    year: str = "2022",
+    domain: str = "d02km",
+    dimensions: str = "2d",
+    frequency: str = "d",
+    basepath: Path = gar_path,
+    **kwargs,
 ) -> xr.Dataset:
     """Open a Dataset."""
-    folder = basepath / experiment
-    if type(from_path) != FilePath or type(from_path) != PosixPath:
-        from_path = FilePath(from_path)
-    if engine == "xarray":
-        if from_path:
-            file = from_path.as_posix()
-        else:
-            file = folder / f"{experiment}_{domain}km_{frequency}_{dimensions}_{variable}_{year}.nc"
-        gar_ds = xr.open_dataset(file, **kwargs)
-    elif engine == "salem":
-        if from_path:
-            file = from_path.as_posix()
-            gar_ds = salem.open_xr_dataset(from_path, **kwargs)
-        else:
-            path = f"{basepath}/{experiment}/{experiment}*_{frequency}_*{variable}*{year}.nc*"
-            file = glob_files(path, "*")[0]
-            if not file:
-                msg = f"No file found for {path}. Did you mean to use the 'from_path' argument?"
-                raise FileNotFoundError(msg)
-            gar_ds = salem.open_xr_dataset(file, **kwargs)
-    else:
-        msg = "Engine type not supported."
-        raise ValueError(msg)
-
-    gar_ds.attrs["experiment"] = experiment
-    gar_ds.attrs["year"] = year
-    split = file.split("/")[-1].split("_")
-    var = split[-2]
-    if var == "lu":
-        var = split[-2] + "_" + split[-1].split(".")[0]
-    return gar_ds
+    path = get_path_from_elements(
+        experiment, variable, year, domain, dimensions, frequency, basepath
+    )
+    return open_dataset_from_file(path)
 
 
-def open_experiment(  # noqa: PLR0913
-    from_path: Path | None = None,
+def open_experiment_from_file(file: Path, **kwargs: Path) -> Experiment:
+    """Open an Experiment for GAR.
+
+    kwargs = arguments passed to open_dataset.
+    """
+    hgt = kwargs.pop("hgt") if "hgt" in kwargs else None
+    landmask = kwargs.pop("landmask") if "landmask" in kwargs else None
+    if hgt:
+        hgt = file.parent / "MM" / "MM_d02km_static_hgt.nc"
+    if landmask:
+        landmask = file.parent / "MM" / "MM_d02km_static_landmask.nc"
+    return Experiment(
+        open_dataset_from_file(file),
+        hgt=hgt,
+        landmask=landmask,
+    )
+
+
+def open_experiment(
     experiment: str = "MM",
     variable: str = "t2",
     year: str = "2022",
     domain: str = "d02",
     dimensions: str = "2d",
     frequency: str = "d",
-    basepath: list[Path | FilePath] = gar_path,
-    engine: str = "salem",
-    **kwargs: dict[str, Any],
+    basepath: Path = gar_path,
+    **kwargs: Path,
 ) -> Experiment:
     """Open an Experiment for GAR.
 
     kwargs = arguments passed to open_dataset.
     """
-    topography = None
-    topography = kwargs.pop("topography") if hasattr(kwargs, "topography") else None
+    filepath = get_path_from_elements(
+        experiment, variable, year, domain, dimensions, frequency, basepath
+    )
+    hgt = kwargs.pop("hgt") if "hgt" in kwargs else None
+    landmask = kwargs.pop("landmask") if "landmask" in kwargs else None
+    if hgt:
+        hgt = get_path_from_elements(
+            experiment, variable, year, domain, dimensions, frequency, basepath
+        )
     return Experiment(
-        open_dataset(
-            from_path,
-            experiment,
-            variable,
-            year,
-            domain,
-            dimensions,
-            frequency,
-            basepath,
-            engine,
-            **kwargs,
-        ),
-        topography=topography,
+        open_dataset_from_file(filepath),
+        hgt=hgt,
+        landmask=landmask,
     )
 
 
@@ -150,7 +128,8 @@ class Experiment:
         gar_ds: xr.Dataset,
         *,
         with_measurements: bool = False,
-        topography: Path | None = None,
+        hgt: Path | None = None,
+        landmask: Path | None = None,
     ) -> None:
         """Initiate an instance of class Experiment."""
         self.varname: str = gar_ds.VARNAME
@@ -167,10 +146,14 @@ class Experiment:
             self.experiment = gar_ds.attrs["experiment"]
             self.year = gar_ds.attrs["year"]
         except KeyError:
-            ic("WARNING: Could not add experiment and/or year.")
+            _ = ic("WARNING: Could not add experiment and/or year.")
         self.measurements = {}
-        if topography:
-            self.topography = open_dataset(from_path=topography)
+        self.__added_variables: list[str] = []
+        self.extracted: pd.DataFrame | None = None
+        if hgt:
+            self.hgt = xr.open_dataset(hgt)
+        if landmask:
+            self.landmask = xr.open_dataset(landmask)
         if with_measurements:
             self.__add_measurements()
 
@@ -188,8 +171,7 @@ class Experiment:
     def __setitem__(self: Experiment, key: str, value: str | float | bool) -> None:
         """Set an item.
 
-        self (): The object
-        key (): Name under which to store the item.
+        self (): The object key (): Name under which to store the item.
         value (): The item to store.
         """
         setattr(self, key, value)
@@ -225,14 +207,17 @@ class Experiment:
         extracted.attrs["name"] = self.varname
         self.extracted = extracted
 
-    def add_product(self: Experiment, variable: str, wrf_ds: xr.Dataset | None = None) -> None:
+    def add_product(
+        self: Experiment, variable: str, wrf_ds: xr.Dataset | None = None
+    ) -> xr.Dataset:
         """Add another variable to the Experiment."""
         if wrf_ds is not None:
-            self.__added_variables.append(wrf_ds)
-        wrf_ds = open_dataset(experiment=self.experiment, variable=variable, year=self.year)
-        if self.varname != wrf_ds.VARNAME:
-            self.__added_variables.append(wrf_ds.VARNAME)
-        return wrf_ds
+            self.__added_variables.append(wrf_ds.darwin.VARNAME)
+            return wrf_ds
+        ds: xr.Dataset = open_dataset(experiment=self.experiment, variable=variable, year=self.year)
+        if self.varname != ds.darwin.VARNAME:
+            self.__added_variables.append(ds.darwin.VARNAME)
+        return ds
 
     def __translate_varname(self: Experiment, varname: str) -> list[str]:
         varname = varname.lower()
@@ -244,6 +229,7 @@ class Experiment:
             ["cin"],
             ["potevap"],
             ["t2", "T"],
+            ["t2c", "T"],
             ["q2", "q"],
             ["rh", "RH"],
             ["rh2", "RH"],
@@ -273,7 +259,7 @@ class Experiment:
         station: str,
         sample_rate: str = "D",
         *,
-        save: bool = False,
+        write: str | Path | bool = False,
         **kwargs: dict[str, str | int | bool],
     ) -> None:
         """Plot timeseries data of a specific station of the darwin network."""
@@ -316,7 +302,9 @@ class Experiment:
             plt.legend()
             plt.title(station)
             plt.xlabel("")
-        if save:
+        if isinstance(write, str):
+            plt.savefig(write)
+        elif write:
             plt.savefig(f"{self.varname.lower()}_{station.lower()}.png")
 
     def plot_stations(self: Experiment, **kwargs: dict[str | Any]) -> None:
@@ -353,31 +341,24 @@ class Experiment:
         frequency: str = "d",
         annotations: dict[str, tuple[float, float]] | None = None,
         *,
-        save: bool = False,
+        write: bool | str | Path = False,
         stations: bool = True,
         cbar: bool = True,
-        **kwargs: dict[str, Any],
+        vmin: float | None = None,
+        vmax: float | None = None,
+        extend: str = "neither",
+        **kwargs: Path | str | int | bool,
     ) -> salem.Map:
         """Plot a map of Experiment data.
 
         kwargs: args for  salem's quick_map.
         """
-        u = open_dataset(
-            from_path=gar_path / "MM" / f"MM_d02km_{frequency}_2d_u10.nc"
+        u = open_dataset_from_file(
+            gar_path / "MM" / f"MM_d02km_{frequency}_2d_u10.nc"
         ).sel(time=self.wrf_product.time)["u10"]
-        v = open_dataset(
-            from_path=gar_path / "MM" / f"MM_d02km_{frequency}_2d_v10.nc"
+        v = open_dataset_from_file(
+            gar_path / "MM" / f"MM_d02km_{frequency}_2d_v10.nc"
         ).sel(time=self.wrf_product.time)["v10"]
-        topo = open_dataset(
-            from_path=gar_path / "MM" / "MM_d02km_static_hgt.nc"
-        )
-        topo = topo.isel(
-            west_east=slice(40, -40),
-            south_north=slice(40, -40),
-        )["hgt"].to_numpy()
-        topo = np.where(topo > 600, 1, np.nan)
-        topo2 = np.where(topo < 600, 1, np.nan)
-        topo2 = np.where(topo >= 1, 1, np.nan)
 
         self.wrf_product["u10"] = u
         self.wrf_product["v10"] = v
@@ -398,17 +379,20 @@ class Experiment:
         else:
             data = self.wrf_product
         base_map.set_data(data[self.varname])
+        base_map.set_vmin(vmin)
+        base_map.set_vmax(vmax)
+        base_map.set_extend(extend)
         if cmap:
             cm = ScalarMappable(
                 cmap=cmap,
                 norm=Normalize(data[self.varname].min(), data[self.varname].max()),
             )
             cm.set_clim(
-                vmin=data[self.varname].min().values,
-                vmax=data[self.varname].max().values,
+                # vmin=data[self.varname].min().to_numpy(),
+                # vmax=data[self.varname].max().to_numpy(),
+                vmin=vmin,
+                vmax=vmax,
             )
-        print(np.nanmean(data[self.varname].to_numpy() * topo))
-        print(np.nanmean(data[self.varname].to_numpy() * topo2))
         # if self.varname == "prcp":
         #     base_map.set_vmin(0)
         #     base_map.set_vmax(10)
@@ -432,6 +416,20 @@ class Experiment:
             "Sierra Negra": "right",
             "Santa Rosa": "right",
         }
+        valign = {
+            "Bellavista": "center",
+            "Cerro Crocker": "center",
+            "Cueva de Sucre": "center",
+            "El Junco": "center",
+            "La Galapaguera": "top",
+            "Militar": "center",
+            "Minas Rojas": "bottom",
+            "Puerto Ayora": "top",
+            "Puerto Baquerizo Moreno": "center",
+            "Puerto Villamil": "center",
+            "Sierra Negra": "center",
+            "Santa Rosa": "center",
+        }
         coordinates_sorted = dict(sorted(coordinates.items(), key=lambda item: item[0]))
         if stations:
             for i, (key, value) in enumerate(coordinates_sorted.items()):
@@ -440,27 +438,24 @@ class Experiment:
                 if markercolors[i] == 0 or not markercolors[i] or np.isnan(markercolors[i]):
                     continue
                 lat, lon = value
-                if markercolors is not None:  # noqa: SIM108
-                    c_rgba = cm.to_rgba(markercolors[i])
-                else:
-                    c_rgba = "k"
+                c_rgba = cm.to_rgba(markercolors[i]) if markercolors is not None else "k"
                 base_map.set_points(
                     lon,
                     lat,
-                    text=key,
+                    text=key if cbar else None,
                     facecolor=c_rgba,
-                    text_kwargs={"ha": halign[key]},
+                    text_kwargs={"ha": halign[key], "va": valign[key]},
                 )
         base_map.set_scale_bar()
-        if not ax:
-            fig = plt.figure(
-                figsize=(10, 8),
-                frameon=False,
-                layout="tight",
-                facecolor="white",
-                edgecolor="white",
-            )
-            ax = fig.add_subplot(111)
+        # if not ax:
+        #     fig = plt.figure(
+        #         figsize=(10, 8),
+        #         frameon=False,
+        #         layout="tight",
+        #         facecolor="white",
+        #         edgecolor="white",
+        #     )
+        #     ax = fig.add_subplot(111)
         base_map.plot(ax=ax)
         u = u[0, 4::7, 4::7]
         v = v[0, 4::7, 4::7]
@@ -469,23 +464,36 @@ class Experiment:
         )
         xx, yy = np.meshgrid(xx, yy)
         qu = ax.quiver(xx, yy, u.values, v.values)
-        plt.quiverkey(qu, 0.7, 0.955, 10, "10 m s$^{-1}$", labelpos="E", coordinates="figure")
+        plt.quiverkey(qu, 0.08, 0.55, 5, "5 m s$^{-1}$", labelpos="E", coordinates="figure")
         if annotations:
             for key, value in annotations.items():
                 ax.annotate(
                     key,
                     xy=value,
-                    xycoords="figure fraction",
+                    xycoords="axes fraction",
+                    fontsize=14,
                     fontweight="bold",
                     backgroundcolor="white",
                 )
         if cbar:
             base_map.append_colorbar(ax=ax, label=unit)
-        if save and isinstance(save, str):
-            plt.savefig(save)
-        elif save is True:
+        if isinstance(write, str):
+            plt.savefig(write)
+        elif write:
             plt.savefig(f"{self.experiment}_{self.varname.lower()}_{aggregation.lower()}_map.png")
         return base_map
+
+    def mask_ocean(self, mask: xr.Dataset | None = None) -> xr.Dataset:
+        """Mask ocean from the data."""
+        if not mask:
+            mask = xr.open_dataset(gar_path / "MM" / "MM_d02km_static_landmask.nc")
+        return self.wrf_product.where(mask.landmask.squeeze() == 1)
+
+    def select_altitude_range(self, min_altitude: float, max_altitude: float) -> xr.Dataset:
+        """Select data from a certain altitude range."""
+        return self.wrf_product.where(
+            self.wrf_product.altitude >= min_altitude & self.wrf_product.altitude <= max_altitude
+        )
 
     # NOTE: This method is not working properly.
     # def set_units(self) -> xr.DataArray:
@@ -520,7 +528,10 @@ def compute_rh(
 
 
 def plot_pcp(
-    data: pd.Dataset, title: str | None = None, sample_rate: str = "D", **kwargs: dict[str, Any]
+    data: pd.Dataset,
+    title: str | None = None,
+    sample_rate: str = "D",
+    **kwargs: dict[str, Any],
 ) -> None:
     """Plot precipitation timeseries from the darwin measurement network."""
     timeseries = {}
@@ -549,7 +560,8 @@ def glob_measurements(
 
 
 def open_measurements(path: Path | str) -> MeasurementFrame:
-    """Open a csv-file containing measurements from the darwin measurement network.
+    """Open a csv-file containing measurements from the darwin measurement
+    network.
 
     Args:
         path: Path to a csv-file containing measurements
@@ -570,8 +582,7 @@ class MeasurementFrame(pd.DataFrame):
     def __init__(self: MeasurementFrame, *args: list[Any], **kwargs: dict[str, Any]) -> None:
         """Initiate an instance of class Measurement.
 
-        *args: extra argument list
-        **kwargs: extra keyword arguments
+        *args: extra argument list **kwargs: extra keyword arguments
         """
         super().__init__(*args, **kwargs)
 
@@ -603,8 +614,8 @@ def load_measurements(
     variable :
         name(s) of the variable to load
 
-    Returns:
-    ---------
+    Returns
+    -------
     pandas.Series
         a pandas Series of the data in specified csv-file
     """
@@ -629,5 +640,5 @@ def load_measurements(
 
 
 if __name__ == "__main__":
-    ds = open_experiment(from_path=gar_path / "MM" / "MM_d02km_d_2d_t2.nc")
-    ds.plot_map("prcp", save="test.png")
+    ds = open_dataset_from_file(gar_path / "MM" / "MM_d02km_d_2d_t2.nc")
+    ds.plot_map("prcp", write="test.png")

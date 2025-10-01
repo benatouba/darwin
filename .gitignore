@@ -12,3 +12,4 @@ data/
 .log
 .ipynb_checkpoints/
 pyrightconfig.json
+plots/
