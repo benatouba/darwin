@@ -1,0 +1,38 @@
+&share
+wrf_core               =  'ARW',
+max_dom                =  3,
+start_date             =  '2019-01-01_12:00:00',                                '2019-01-01_12:00:00',  '2019-01-01_12:00:00',
+end_date               =  '2019-01-03_00:00:00',                                '2019-01-03_00:00:00',  '2019-01-03_00:00:00',
+interval_seconds       =  3600,
+io_form_geogrid        =  2,
+debug_level            =  0,
+/
+&geogrid
+parent_id              =  1,                                                    1,                      2,
+parent_grid_ratio      =  1,                                                    5,                      10,
+i_parent_start         =  1,                                                    67,                     103,
+j_parent_start         =  1,                                                    78,                     85,
+e_we                   =  300,                                                  246,                    400,
+e_sn                   =  210,                                                  231,                    350,
+geog_data_res          =  'usgs_lakes+default',                                 'usgs_lakes+default',   'usgs_lakes+default',
+dx                     =  10000,
+dy                     =  10000,
+map_proj               =  'mercator',
+ref_lat                =  0,
+ref_lon                =  -85,
+truelat1               =  0,
+stand_lon              =  -87,
+geog_data_path         =  '/mnt/sim/1/wrf/static/WRFV4.1/WPS_GEOG/',
+!opt_geogrid_tbl_path  =  'geogrid/'
+/
+&ungrib
+out_format             =  'WPS',
+prefix                 =  '/mnt/sim/1/wrf/ungrib/WRFV4.3.3/ERA5_pl/ERA5_pl',
+!prefix                =  '/mnt/sim/1/wrf/ungrib/WRFV4.3.3/ERA5_sfc/ERA5_sfc',
+/
+&metgrid
+fg_name                =  '/mnt/sim/1/wrf/ungrib/WRFV4.3.3/ERA5_pl/ERA5_pl',
+!fg_name               =  '/mnt/sim/1/wrf/ungrib/WRFV4.3.3/ERA5_sfc/ERA5_sfc',
+constants_name         =  './TAVGSFC',
+io_form_metgrid        =  2,
+/
