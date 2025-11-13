@@ -786,6 +786,9 @@ def format_lat(y, pos=None):
     return f"{-lat}°S"
 
 
+from matplotlib import gridspec
+
+
 def plot_wrf_domains_with_dem(
     fpath: str,
     output_file: str = "wrf_domains_dem.png",
@@ -802,17 +805,57 @@ def plot_wrf_domains_with_dem(
     params = parse_wps_namelist(fpath)
     domains = compute_domain_corners(params)
     gdfs = create_domain_geodataframes(domains)
-
     n_domains = len(domains)
-    fig, axes = plt.subplots(1, n_domains, figsize=(6 * n_domains, 7))
-
-    if n_domains == 1:
-        axes = [axes]
 
     print(f"\nProcessing {n_domains} domains...")
 
+    # Create figure with GridSpec layout
+    # Top row: domain 1 with dedicated colorbar column
+    # Bottom row: domains 2 and 3 side by side
+    fig = plt.figure(figsize=(11, 10), constrained_layout=True)
+
+    # GridSpec: 2 rows, 3 columns
+    # width_ratios: [plot_left, plot_right, colorbar_column]
+    # height_ratios: [top_row, bottom_row]
+    gs = gridspec.GridSpec(
+        nrows=2,
+        ncols=3,
+        figure=fig,
+        width_ratios=[1, 1, 0.05],  # Last column narrow for colorbar
+        height_ratios=[1, 1],  # Bottom slightly larger
+        hspace=0.0,
+        wspace=0.0,
+    )
+
+    # Create axes
+    ax_top = fig.add_subplot(gs[0, 0:2])  # Top plot spans first 2 columns
+    cax_top = fig.add_subplot(gs[0, 2])  # Top colorbar in 3rd column
+    # move cax_top a bit to the left
+    # be careful that it does not move down
+    cax_top.set_position((
+        cax_top.get_position().x0 - 0.07,
+        cax_top.get_position().y0 + 0.1,
+        cax_top.get_position().width,
+        cax_top.get_position().height,
+    ))
+
+    if n_domains >= 2:
+        ax_bot_left = fig.add_subplot(gs[1, 0])  # Bottom left
+    if n_domains >= 3:
+        ax_bot_right = fig.add_subplot(gs[1, 1])  # Bottom right
+
+    # Organize axes list
+    axes = [ax_top]
+    if n_domains >= 2:
+        axes.append(ax_bot_left)
+    if n_domains >= 3:
+        axes.append(ax_bot_right)
+
     # Create land-only colormap
     land_cmap = create_land_colormap()
+
+    # Store mappables for colorbars
+    mappables = []
 
     # Plot each domain
     for i, (domain, gdf, ax) in enumerate(zip(domains, gdfs, axes, strict=True)):
@@ -851,10 +894,9 @@ def plot_wrf_domains_with_dem(
         x_wm, y_wm = transformer.transform(lon_2d, lat_2d)
 
         # Get elevation range (only land values, NaN excluded)
-        elev_min = np.nanmin(dem_interp)
         elev_max = np.nanmax(dem_interp)
 
-        # **KEY FIX**: Normalize starting from 0 (sea level) for land-only colormap
+        # Normalize starting from 0 (sea level) for land-only colormap
         norm = colors.Normalize(vmin=0, vmax=elev_max)
 
         # Plot elevation data with land-only colormap
@@ -867,6 +909,7 @@ def plot_wrf_domains_with_dem(
             shading="auto",
             zorder=1,
         )
+        mappables.append(im)
 
         # Add geographic features using cartopy
         coastlines = cfeature.NaturalEarthFeature(
@@ -951,17 +994,29 @@ def plot_wrf_domains_with_dem(
         plt.setp(ax.get_xticklabels(), fontsize=9)
         plt.setp(ax.get_yticklabels(), fontsize=9)
 
-        # Add colorbar
-        cbar = plt.colorbar(
-            im,
-            ax=ax,
-            orientation="horizontal",
-            pad=0.08,
-            shrink=0.8,
-            label="Elevation (m)",
-        )
-        cbar.ax.tick_params(labelsize=8)
+        # Add colorbars
+        if i == 0:
+            # Vertical colorbar on the right for top plot
+            cbar = fig.colorbar(
+                im,
+                cax=cax_top,
+                orientation="vertical",
+                label="Elevation (m)",
+            )
+            cbar.ax.tick_params(labelsize=8)
+        else:
+            # Horizontal colorbars for bottom plots
+            cbar = fig.colorbar(
+                im,
+                ax=ax,
+                orientation="horizontal",
+                pad=0.08,
+                shrink=0.8,
+                label="Elevation (m)",
+            )
+            cbar.ax.tick_params(labelsize=8)
 
+    # Add connection lines between parent and child domains
     for i in range(1, n_domains):
         parent_idx = params["parent_id"][i] - 1
         parent_ax = axes[parent_idx]
@@ -1021,9 +1076,8 @@ def plot_wrf_domains_with_dem(
         )
         fig.add_artist(con_ur)
 
-    plt.tight_layout()
-    plt.savefig(output_file, dpi=200, bbox_inches="tight")
-    plt.close()
+    fig.savefig(output_file, dpi=200, bbox_inches="tight")
+    plt.close(fig)
     print(f"\nPlot saved to {output_file}")
 
 
