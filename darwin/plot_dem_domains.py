@@ -977,7 +977,7 @@ def plot_wrf_domains_with_dem(
             0.95,
             f"d{i + 1:02d}\n{domain['resolution_m'][0] / 1000:.1f} km",
             transform=ax.transAxes,
-            fontsize=11,
+            fontsize=14,
             fontweight="bold",
             va="top",
             ha="left",
@@ -991,8 +991,8 @@ def plot_wrf_domains_with_dem(
         ax.yaxis.set_major_formatter(mticker.FuncFormatter(format_lat))
         ax.xaxis.set_major_locator(mticker.MaxNLocator(5))
         ax.yaxis.set_major_locator(mticker.MaxNLocator(5))
-        plt.setp(ax.get_xticklabels(), fontsize=9)
-        plt.setp(ax.get_yticklabels(), fontsize=9)
+        plt.setp(ax.get_xticklabels(), fontsize=12, fontweight='bold')
+        plt.setp(ax.get_yticklabels(), fontsize=12, fontweight='bold')
 
         # Add colorbars
         if i == 0:
@@ -1003,7 +1003,8 @@ def plot_wrf_domains_with_dem(
                 orientation="vertical",
                 label="Elevation (m)",
             )
-            cbar.ax.tick_params(labelsize=8)
+            cbar.set_label('Elevation (m)', fontsize=12, fontweight='bold')
+            cbar.ax.tick_params(labelsize=11)
         else:
             # Horizontal colorbars for bottom plots
             cbar = fig.colorbar(
@@ -1014,7 +1015,8 @@ def plot_wrf_domains_with_dem(
                 shrink=0.8,
                 label="Elevation (m)",
             )
-            cbar.ax.tick_params(labelsize=8)
+            cbar.set_label('Elevation (m)', fontsize=12, fontweight='bold')
+            cbar.ax.tick_params(labelsize=11)
 
     # Add connection lines between parent and child domains
     for i in range(1, n_domains):
@@ -1076,7 +1078,7 @@ def plot_wrf_domains_with_dem(
         )
         fig.add_artist(con_ur)
 
-    fig.savefig(output_file, dpi=200, bbox_inches="tight")
+    fig.savefig(output_file, dpi=300, bbox_inches="tight")
     plt.close(fig)
     print(f"\nPlot saved to {output_file}")
 
@@ -1086,4 +1088,4 @@ if __name__ == "__main__":
     fpath = "./wps_namelist_template"
 
     # Plot with colorbar
-    plot_wrf_domains_with_dem(fpath, output_file="wrf_domains_dem.png")
+    plot_wrf_domains_with_dem(fpath, output_file="wrf_domains_dem.pdf")
