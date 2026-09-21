@@ -91,6 +91,7 @@ def load_register(path: str | Path) -> list[SourceRegisterEntry]:
 
 
 def _timestamp_index(header: list[str]) -> int:
+    """Return the position of the timestamp column, or raise StructuralError."""
     for position, name in enumerate(header):
         if name.strip().lower() in TIMESTAMP_CANDIDATES:
             return position

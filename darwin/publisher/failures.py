@@ -42,12 +42,15 @@ class AdminStatus:
         self._last_failure: dict[str, str] = {}
 
     def record_success(self, kind: str, identifier: str) -> None:
+        """Remember the latest successful identifier for an operation kind."""
         self._last_success[kind] = identifier
 
     def record_failure(self, kind: str, identifier: str) -> None:
+        """Remember the latest failed identifier for an operation kind."""
         self._last_failure[kind] = identifier
 
     def view(self) -> dict[str, dict[str, str]]:
+        """Return the admin status snapshot: last success and failure per kind."""
         return {
             "last_success": dict(self._last_success),
             "last_failure": dict(self._last_failure),
@@ -62,6 +65,7 @@ class EmailAlerter:
         self.outbox: list[tuple[str, str]] = []
 
     def alert(self, report: FailureReport) -> None:
+        """Queue one alert email carrying only the report's safe content."""
         subject = f"DARWIN {report.kind} failure: {report.identifier}"
         body = (
             f"To: {', '.join(self.recipients)}\n"

@@ -67,6 +67,8 @@ class YearInputs:
 
 @dataclass(frozen=True)
 class AnnualStatistics:
+    """Per-calendar-month sums and valid-value counts for one source year."""
+
     maximum_sum: xr.DataArray
     maximum_count: xr.DataArray
     minimum_sum: xr.DataArray
@@ -81,6 +83,8 @@ class AnnualStatistics:
 
 @dataclass(frozen=True)
 class DomainNormals:
+    """Accumulated monthly normals for one domain, still in source units (K, mm h-1 based)."""
+
     temperature_maximum: xr.DataArray
     temperature_minimum: xr.DataArray
     precipitation_total: xr.DataArray
@@ -91,6 +95,12 @@ class DomainNormals:
 
 
 def calculate_year(inputs: YearInputs) -> AnnualStatistics:
+    """Reduce one source year to monthly sums and valid-value counts.
+
+    Daily temperature extrema come from resampling the hourly series to
+    one-day bins; precipitation monthly rates are scaled by
+    days-in-month * 24 before grouping by calendar month.
+    """
     daily_maximum = inputs.temperature.resample(time="1D").max(skipna=True)
     daily_minimum = inputs.temperature.resample(time="1D").min(skipna=True)
     maximum_sum, maximum_count = _monthly_sum_and_count(daily_maximum)
@@ -128,6 +138,12 @@ class NormalAccumulator:
         self._precipitation_attributes: dict[str, object] | None = None
 
     def add(self, statistics: AnnualStatistics) -> None:
+        """Fold one year's statistics into the running sums and counts.
+
+        The first year fixes the canonical grid and coordinates; later
+        years must match its spatial shape and have their coordinates
+        reassigned to it.
+        """
         if self._grid_reference is None:
             self._grid_reference = statistics.maximum_sum
             self._coordinates = dict(statistics.coordinates)
@@ -166,6 +182,7 @@ class NormalAccumulator:
         self._precipitation_count += statistics.precipitation_count
 
     def normals(self) -> DomainNormals:
+        """Finalize the normals: mean daily extrema in C, mean monthly precipitation totals."""
         assert self._maximum_sum is not None
         assert self._maximum_count is not None
         assert self._minimum_sum is not None
