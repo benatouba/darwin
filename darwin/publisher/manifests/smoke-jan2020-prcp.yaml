@@ -54,7 +54,9 @@ products:
     uris: {analysis: "s3://darwin-published/GAR_d02km_prcp_sum_1991-2020_01/1/analysis.zarr"}
   - product_id: AWS-PCerroCrocker_2020-01
     kind: observation
-    citation: "AWS observation product, CerroCrocker station, January 2020 (data/11_AWS-PCerroCrocker_data.csv)"
+    citation: >-
+      AWS observation product, CerroCrocker station, January 2020
+      (data/11_AWS-PCerroCrocker_data.csv)
     station_id: "11_AWS-PCerroCrocker"
     variable: "pcp"
     domain: "d02km"
@@ -65,7 +67,9 @@ products:
     uris: {analysis: "s3://darwin-published/AWS-PCerroCrocker_2020-01/1/analysis.zarr"}
   - product_id: CMP_prcp_CerroCrocker_2020-01
     kind: comparison-spec
-    citation: "Precipitation Comparison variable specification pairing GAR prcp_sum with the CerroCrocker AWS observation field"
+    citation: >-
+      Precipitation Comparison variable specification pairing GAR prcp_sum
+      with the CerroCrocker AWS observation field
     model_product: GAR_d02km_m_2d_prcp_2020-01
     model_variable: prcp
     observation_product: AWS-PCerroCrocker_2020-01
