@@ -1,0 +1,79 @@
+{
+  "release": "smoke1",
+  "manifest": "smoke-jan2020-prcp",
+  "manifest_revision": "332b041751e723e13969ba9bc02788f29ddf7f0905f3f1c45188b443bc1f8044",
+  "creator": "darwin.publisher",
+  "created_at": "2026-09-22T16:16:08Z",
+  "products": [
+    {
+      "product_id": "GAR_d02km_static_landmask",
+      "version": "smoke1.1",
+      "candidate_id": "GAR_d02km_static_landmask@smoke1.1#0a5846fdb7dd067e",
+      "kind": "reference",
+      "status": "published",
+      "manifest_revision": "332b041751e723e13969ba9bc02788f29ddf7f0905f3f1c45188b443bc1f8044",
+      "creator": "darwin.publisher",
+      "created_at": "2026-09-22T16:16:08Z",
+      "citation": "GAR static land mask, 2 km domain (GAR_d02km_static_landmask.nc)",
+      "normal_period": "",
+      "method": "",
+      "station_id": ""
+    },
+    {
+      "product_id": "GAR_d02km_m_2d_prcp_2020-01",
+      "version": "smoke1.1",
+      "candidate_id": "GAR_d02km_m_2d_prcp_2020-01@smoke1.1#cd51060641e52a25",
+      "kind": "slice",
+      "status": "published",
+      "manifest_revision": "332b041751e723e13969ba9bc02788f29ddf7f0905f3f1c45188b443bc1f8044",
+      "creator": "darwin.publisher",
+      "created_at": "2026-09-22T16:16:08Z",
+      "citation": "GAR monthly precipitation, January 2020, 2 km domain (GAR_d02km_m_2d_prcp_2020.nc)",
+      "normal_period": "",
+      "method": "",
+      "station_id": ""
+    },
+    {
+      "product_id": "GAR_d02km_prcp_sum_1991-2020_01",
+      "version": "smoke1.1",
+      "candidate_id": "GAR_d02km_prcp_sum_1991-2020_01@smoke1.1#3200dc6c7a78b17b",
+      "kind": "normal",
+      "status": "published",
+      "manifest_revision": "332b041751e723e13969ba9bc02788f29ddf7f0905f3f1c45188b443bc1f8044",
+      "creator": "darwin.publisher",
+      "created_at": "2026-09-22T16:16:08Z",
+      "citation": "GAR January precipitation Climate normal over 1991-2020, 2 km domain",
+      "normal_period": "1991-2020",
+      "method": "prcp: monthly mean rate multiplied by calendar hours, averaged by calendar month",
+      "station_id": ""
+    },
+    {
+      "product_id": "AWS-PCerroCrocker_2020-01",
+      "version": "smoke1.1",
+      "candidate_id": "AWS-PCerroCrocker_2020-01@smoke1.1#c222e9a3436cf9b6",
+      "kind": "observation",
+      "status": "published",
+      "manifest_revision": "332b041751e723e13969ba9bc02788f29ddf7f0905f3f1c45188b443bc1f8044",
+      "creator": "darwin.publisher",
+      "created_at": "2026-09-22T16:16:08Z",
+      "citation": "AWS observation product, CerroCrocker station, January 2020 (data/11_AWS-PCerroCrocker_data.csv)",
+      "normal_period": "",
+      "method": "",
+      "station_id": "11_AWS-PCerroCrocker"
+    },
+    {
+      "product_id": "CMP_prcp_CerroCrocker_2020-01",
+      "version": "smoke1.1",
+      "candidate_id": "CMP_prcp_CerroCrocker_2020-01@smoke1.1#bb7d23737c3fea29",
+      "kind": "comparison-spec",
+      "status": "published",
+      "manifest_revision": "332b041751e723e13969ba9bc02788f29ddf7f0905f3f1c45188b443bc1f8044",
+      "creator": "darwin.publisher",
+      "created_at": "2026-09-22T16:16:08Z",
+      "citation": "Precipitation Comparison variable specification pairing GAR prcp_sum with the CerroCrocker AWS observation field",
+      "normal_period": "",
+      "method": "",
+      "station_id": ""
+    }
+  ]
+}

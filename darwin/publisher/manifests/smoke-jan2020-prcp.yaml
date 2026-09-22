@@ -1,0 +1,40 @@
+# Smoke T1 (darwin#23): reviewed Jan-2020 precipitation smoke manifest.
+#
+# REVIEW: approved for the smoke slice only — five small products built
+# from repo-local source bytes so the dashboard tickets can exercise the
+# catalogue, Explore, Admin, comparison and job seams end to end.
+# Any change re-binds `revision` (sha256 of these exact bytes) and needs
+# a fresh review before the release is rebuilt.
+#
+# Source paths are relative to the repository root; each sha256 was
+# recorded from the reviewed bytes and is re-verified by
+# tests/test_smoke_release.py.
+
+name: smoke-jan2020-prcp
+release: smoke1
+sources:
+  - path: GAR_d02km_static_landmask.nc
+    sha256: 3b1df65920ba0ec31c27ea7425ac5dbdb9e9562862275e4e6691336beb0fc4db
+  - path: GAR_d02km_m_2d_prcp_2020.nc
+    sha256: 5fb7bcbaed6a3b3d4df4f03455ce2acc1f7c424e7a33c5799888d2b122465adf
+  - path: data/11_AWS-PCerroCrocker_data.csv
+    sha256: ebd57825e5ba3566e5a369f1aa425097fb67c8bd6735f9f672062317d0ab5667
+products:
+  - product_id: GAR_d02km_static_landmask
+    kind: reference
+    citation: "GAR static land mask, 2 km domain (GAR_d02km_static_landmask.nc)"
+  - product_id: GAR_d02km_m_2d_prcp_2020-01
+    kind: slice
+    citation: "GAR monthly precipitation, January 2020, 2 km domain (GAR_d02km_m_2d_prcp_2020.nc)"
+  - product_id: GAR_d02km_prcp_sum_1991-2020_01
+    kind: normal
+    citation: "GAR January precipitation Climate normal over 1991-2020, 2 km domain"
+    normal_period: "1991-2020"
+    method: "prcp: monthly mean rate multiplied by calendar hours, averaged by calendar month"
+  - product_id: AWS-PCerroCrocker_2020-01
+    kind: observation
+    citation: "AWS observation product, CerroCrocker station, January 2020 (data/11_AWS-PCerroCrocker_data.csv)"
+    station_id: "11_AWS-PCerroCrocker"
+  - product_id: CMP_prcp_CerroCrocker_2020-01
+    kind: comparison-spec
+    citation: "Precipitation Comparison variable specification pairing GAR prcp_sum with the CerroCrocker AWS observation field"

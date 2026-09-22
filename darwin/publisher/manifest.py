@@ -19,10 +19,19 @@ class SourceEntry:
 
 @dataclass(frozen=True)
 class ProductSpec:
-    """One product requested by the manifest."""
+    """One product requested by the manifest, with its reviewed provenance.
+
+    `citation` is required provenance for every product; `normal_period`
+    and `method` apply to Normal products, `station_id` to AWS
+    observation products.
+    """
 
     product_id: str
     kind: str
+    citation: str = ""
+    normal_period: str = ""
+    method: str = ""
+    station_id: str = ""
 
 
 @dataclass(frozen=True)
@@ -53,7 +62,14 @@ def load_manifest(path: str | Path) -> Manifest:
             for entry in data.get("sources", [])
         ),
         products=tuple(
-            ProductSpec(product_id=item["product_id"], kind=item.get("kind", ""))
+            ProductSpec(
+                product_id=item["product_id"],
+                kind=item.get("kind", ""),
+                citation=item.get("citation", ""),
+                normal_period=item.get("normal_period", ""),
+                method=item.get("method", ""),
+                station_id=item.get("station_id", ""),
+            )
             for item in data.get("products", [])
         ),
         revision=hashlib.sha256(content).hexdigest(),

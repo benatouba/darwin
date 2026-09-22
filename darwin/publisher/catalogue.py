@@ -26,6 +26,10 @@ class Catalogue:
         self._candidates[candidate.candidate_id] = candidate
         self._status[candidate.candidate_id] = "candidate"
 
+    def candidate_ids(self) -> tuple[str, ...]:
+        """Return every registered candidate id in registration order."""
+        return tuple(self._candidates)
+
     def next_version(self, product_id: str, release: str) -> str:
         """Return the next immutable version label for a product and release."""
         seq = sum(
