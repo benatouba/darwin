@@ -21,7 +21,7 @@ class SourceEntry:
 class ProductSpec:
     """One product requested by the manifest, with its reviewed provenance.
 
-    `citation` is required provenance for every product; `normal_period`
+    `citation` should be set for every product; `normal_period`
     and `method` apply to Normal products, `station_id` to AWS
     observation products.
     """

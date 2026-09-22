@@ -63,7 +63,7 @@ def test_build_publishes_every_product_with_provenance(tmp_path):
         assert item["citation"], f"{product_id} has no citation"
     normal = by_id["GAR_d02km_prcp_sum_1991-2020_01"]
     assert normal["normal_period"] == "1991-2020"
-    assert normal["method"], "normal layer must record its computation method"
+    assert normal["method"], "Normal product must record its computation method"
     aws = by_id["AWS-PCerroCrocker_2020-01"]
     assert aws["station_id"] == "11_AWS-PCerroCrocker"
 
