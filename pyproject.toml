@@ -28,6 +28,7 @@ dependencies = [
     "tomli>=2.0.1",
     "windrose>=1.7.0",
     "xarray>=2022.6.0",
+    "zarr>=3.0.0",
     "ipython>=8.23.0",
     "statsmodels>=0.14.2",
     "seaborn>=0.13.2",

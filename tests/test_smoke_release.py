@@ -103,12 +103,10 @@ def test_smoke_products_carry_publisher_declared_presentation(tmp_path):
         lo, hi = item["color_range"]
         assert lo < hi, f"{product_id} has no fixed colour range"
         assert item["uris"].get("analysis"), f"{product_id} declares no analysis store"
-    # The January slice and its Climate normal share one fixed prcp range
-    # across the slice's temporal coverage.
-    assert (
-        by_id["GAR_d02km_m_2d_prcp_2020-01"]["color_range"]
-        == by_id["GAR_d02km_prcp_sum_1991-2020_01"]["color_range"]
-    )
+    # The January slice range fits the measured source max 1.65 mm/h;
+    # the Climate normal keeps the monthly-total range.
+    assert by_id["GAR_d02km_m_2d_prcp_2020-01"]["color_range"] == [0.0, 2.0]
+    assert by_id["GAR_d02km_prcp_sum_1991-2020_01"]["color_range"] == [0.0, 600.0]
 
 
 def test_smoke_products_carry_catalogue_identity(tmp_path):

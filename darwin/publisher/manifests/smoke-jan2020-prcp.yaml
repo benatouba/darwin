@@ -3,6 +3,9 @@
 # REVIEW: approved for the smoke slice only — five small products built
 # from repo-local source bytes so the dashboard tickets can exercise the
 # catalogue, Explore, Admin, comparison and job seams end to end.
+# T4 correction re-reviewed: the slice fixed range is [0, 2] mm/h against
+# the measured source max 1.65 mm/h ([0, 600] rendered the slice flat);
+# the Normal product keeps [0, 600] for monthly totals.
 # Any change re-binds `revision` (sha256 of these exact bytes) and needs
 # a fresh review before the release is rebuilt.
 #
@@ -38,7 +41,7 @@ products:
     format: "zarr-v3-consolidated"
     palette: "Blues"
     transform: "linear"
-    color_range: [0.0, 600.0]
+    color_range: [0.0, 2.0]
     uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_2020-01/1/analysis.zarr"}
   - product_id: GAR_d02km_prcp_sum_1991-2020_01
     kind: normal
