@@ -23,18 +23,34 @@ products:
   - product_id: GAR_d02km_static_landmask
     kind: reference
     citation: "GAR static land mask, 2 km domain (GAR_d02km_static_landmask.nc)"
+    palette: "Greys"
+    transform: "linear"
+    color_range: [0.0, 1.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_static_landmask/1/analysis.zarr"}
   - product_id: GAR_d02km_m_2d_prcp_2020-01
     kind: slice
     citation: "GAR monthly precipitation, January 2020, 2 km domain (GAR_d02km_m_2d_prcp_2020.nc)"
+    palette: "Blues"
+    transform: "linear"
+    color_range: [0.0, 600.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_2020-01/1/analysis.zarr"}
   - product_id: GAR_d02km_prcp_sum_1991-2020_01
     kind: normal
     citation: "GAR January precipitation Climate normal over 1991-2020, 2 km domain"
     normal_period: "1991-2020"
     method: "prcp: monthly mean rate multiplied by calendar hours, averaged by calendar month"
+    palette: "Blues"
+    transform: "linear"
+    color_range: [0.0, 600.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_prcp_sum_1991-2020_01/1/analysis.zarr"}
   - product_id: AWS-PCerroCrocker_2020-01
     kind: observation
     citation: "AWS observation product, CerroCrocker station, January 2020 (data/11_AWS-PCerroCrocker_data.csv)"
     station_id: "11_AWS-PCerroCrocker"
+    palette: "Blues"
+    transform: "linear"
+    color_range: [0.0, 600.0]
+    uris: {analysis: "s3://darwin-published/AWS-PCerroCrocker_2020-01/1/analysis.zarr"}
   - product_id: CMP_prcp_CerroCrocker_2020-01
     kind: comparison-spec
     citation: "Precipitation Comparison variable specification pairing GAR prcp_sum with the CerroCrocker AWS observation field"
@@ -42,3 +58,7 @@ products:
     model_variable: prcp
     observation_product: AWS-PCerroCrocker_2020-01
     observation_field: PCP_tot_bucket
+    palette: "RdBu_r"
+    transform: "linear"
+    color_range: [-100.0, 100.0]
+    uris: {analysis: "s3://darwin-published/CMP_prcp_CerroCrocker_2020-01/1/analysis.zarr"}

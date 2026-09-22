@@ -23,8 +23,10 @@ class ProductSpec:
 
     `citation` should be set for every product; `normal_period`
     and `method` apply to Normal products, `station_id` to AWS
-    observation products, and the `model_*`/`observation_*` pairing
-    to Comparison variable specifications.
+    observation products, the `model_*`/`observation_*` pairing
+    to Comparison variable specifications, and `palette`,
+    `transform`, `color_range` plus the `uris` analysis store to the
+    publisher-declared map presentation of every product.
     """
 
     product_id: str
@@ -37,6 +39,10 @@ class ProductSpec:
     model_variable: str = ""
     observation_product: str = ""
     observation_field: str = ""
+    palette: str = ""
+    transform: str = ""
+    color_range: tuple[float, float] = ()
+    uris: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -78,6 +84,10 @@ def load_manifest(path: str | Path) -> Manifest:
                 model_variable=item.get("model_variable", ""),
                 observation_product=item.get("observation_product", ""),
                 observation_field=item.get("observation_field", ""),
+                palette=item.get("palette", ""),
+                transform=item.get("transform", ""),
+                color_range=tuple(item.get("color_range", ())),
+                uris=dict(item.get("uris", {})),
             )
             for item in data.get("products", [])
         ),

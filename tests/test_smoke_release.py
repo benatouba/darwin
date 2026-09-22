@@ -94,6 +94,23 @@ def test_manifest_revision_stable_across_rebuilds(tmp_path):
     assert first["created_at"] != second["created_at"]
 
 
+def test_smoke_products_carry_publisher_declared_presentation(tmp_path):
+    handoff = build_smoke_release(MANIFEST_PATH, tmp_path / "handoff.json")
+    by_id = {item["product_id"]: item for item in handoff["products"]}
+    for product_id, item in by_id.items():
+        assert item["palette"], f"{product_id} declares no palette"
+        assert item["transform"], f"{product_id} declares no transform"
+        lo, hi = item["color_range"]
+        assert lo < hi, f"{product_id} has no fixed colour range"
+        assert item["uris"].get("analysis"), f"{product_id} declares no analysis store"
+    # The January slice and its Climate normal share one fixed prcp range
+    # across the slice's temporal coverage.
+    assert (
+        by_id["GAR_d02km_m_2d_prcp_2020-01"]["color_range"]
+        == by_id["GAR_d02km_prcp_sum_1991-2020_01"]["color_range"]
+    )
+
+
 def test_build_writes_handoff_file(tmp_path):
     out_path = tmp_path / "handoff.json"
     handoff = build_smoke_release(MANIFEST_PATH, out_path)
