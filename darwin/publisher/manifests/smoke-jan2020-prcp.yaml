@@ -23,6 +23,9 @@ products:
   - product_id: GAR_d02km_static_landmask
     kind: reference
     citation: "GAR static land mask, 2 km domain (GAR_d02km_static_landmask.nc)"
+    variable: "landmask"
+    domain: "d02km"
+    format: "netcdf"
     palette: "Greys"
     transform: "linear"
     color_range: [0.0, 1.0]
@@ -30,6 +33,9 @@ products:
   - product_id: GAR_d02km_m_2d_prcp_2020-01
     kind: slice
     citation: "GAR monthly precipitation, January 2020, 2 km domain (GAR_d02km_m_2d_prcp_2020.nc)"
+    variable: "prcp"
+    domain: "d02km"
+    format: "zarr-v3-consolidated"
     palette: "Blues"
     transform: "linear"
     color_range: [0.0, 600.0]
@@ -39,6 +45,9 @@ products:
     citation: "GAR January precipitation Climate normal over 1991-2020, 2 km domain"
     normal_period: "1991-2020"
     method: "prcp: monthly mean rate multiplied by calendar hours, averaged by calendar month"
+    variable: "prcp_sum"
+    domain: "d02km"
+    format: "zarr-v3-consolidated"
     palette: "Blues"
     transform: "linear"
     color_range: [0.0, 600.0]
@@ -47,6 +56,9 @@ products:
     kind: observation
     citation: "AWS observation product, CerroCrocker station, January 2020 (data/11_AWS-PCerroCrocker_data.csv)"
     station_id: "11_AWS-PCerroCrocker"
+    variable: "pcp"
+    domain: "d02km"
+    format: "csv"
     palette: "Blues"
     transform: "linear"
     color_range: [0.0, 600.0]
@@ -58,6 +70,9 @@ products:
     model_variable: prcp
     observation_product: AWS-PCerroCrocker_2020-01
     observation_field: PCP_tot_bucket
+    variable: "prcp"
+    domain: "d02km"
+    format: "json"
     palette: "RdBu_r"
     transform: "linear"
     color_range: [-100.0, 100.0]

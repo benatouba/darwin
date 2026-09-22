@@ -111,6 +111,17 @@ def test_smoke_products_carry_publisher_declared_presentation(tmp_path):
     )
 
 
+def test_smoke_products_carry_catalogue_identity(tmp_path):
+    handoff = build_smoke_release(MANIFEST_PATH, tmp_path / "handoff.json")
+    by_id = {item["product_id"]: item for item in handoff["products"]}
+    for product_id, item in by_id.items():
+        assert item["variable"], f"{product_id} declares no variable"
+        assert item["domain"], f"{product_id} declares no domain"
+        assert item["format"], f"{product_id} declares no format"
+    assert by_id["GAR_d02km_m_2d_prcp_2020-01"]["variable"] == "prcp"
+    assert by_id["GAR_d02km_prcp_sum_1991-2020_01"]["variable"] == "prcp_sum"
+
+
 def test_build_writes_handoff_file(tmp_path):
     out_path = tmp_path / "handoff.json"
     handoff = build_smoke_release(MANIFEST_PATH, out_path)
