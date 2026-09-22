@@ -61,11 +61,37 @@ def test_build_publishes_every_product_with_provenance(tmp_path):
         assert item["creator"] == "reviewer: smoke", product_id
         assert item["created_at"] == "2026-09-22T00:00:00Z", product_id
         assert item["citation"], f"{product_id} has no citation"
-    normal = by_id["GAR_d02km_prcp_sum_1991-2020_01"]
-    assert normal["normal_period"] == "1991-2020"
-    assert normal["method"], "Normal product must record its computation method"
+    normal_product = by_id["GAR_d02km_prcp_sum_1991-2020_01"]
+    assert normal_product["normal_period"] == "1991-2020"
+    assert normal_product["method"], "Normal product must record its computation method"
     aws = by_id["AWS-PCerroCrocker_2020-01"]
     assert aws["station_id"] == "11_AWS-PCerroCrocker"
+
+
+def test_comparison_spec_carries_machine_readable_pairing(tmp_path):
+    handoff = build_smoke_release(MANIFEST_PATH, tmp_path / "handoff.json")
+    by_id = {item["product_id"]: item for item in handoff["products"]}
+    comparison = by_id["CMP_prcp_CerroCrocker_2020-01"]
+    assert comparison["model_product"] == "GAR_d02km_m_2d_prcp_2020-01"
+    assert comparison["model_variable"] == "prcp"
+    assert comparison["observation_product"] == "AWS-PCerroCrocker_2020-01"
+    assert comparison["observation_field"] == "PCP_tot_bucket"
+    # Both ends of the pairing resolve to products in the same release.
+    assert comparison["model_product"] in by_id
+    assert comparison["observation_product"] in by_id
+
+
+def test_manifest_revision_stable_across_rebuilds(tmp_path):
+    # created_at stamps build time, so rebuilds diverge in stamp only:
+    # the revision still binds the exact reviewed manifest bytes.
+    first = build_smoke_release(
+        MANIFEST_PATH, tmp_path / "a.json", created_at="2026-09-22T00:00:00Z"
+    )
+    second = build_smoke_release(
+        MANIFEST_PATH, tmp_path / "b.json", created_at="2026-09-23T00:00:00Z"
+    )
+    assert first["manifest_revision"] == second["manifest_revision"]
+    assert first["created_at"] != second["created_at"]
 
 
 def test_build_writes_handoff_file(tmp_path):

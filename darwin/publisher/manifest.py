@@ -23,7 +23,8 @@ class ProductSpec:
 
     `citation` should be set for every product; `normal_period`
     and `method` apply to Normal products, `station_id` to AWS
-    observation products.
+    observation products, and the `model_*`/`observation_*` pairing
+    to Comparison variable specifications.
     """
 
     product_id: str
@@ -32,6 +33,10 @@ class ProductSpec:
     normal_period: str = ""
     method: str = ""
     station_id: str = ""
+    model_product: str = ""
+    model_variable: str = ""
+    observation_product: str = ""
+    observation_field: str = ""
 
 
 @dataclass(frozen=True)
@@ -69,6 +74,10 @@ def load_manifest(path: str | Path) -> Manifest:
                 normal_period=item.get("normal_period", ""),
                 method=item.get("method", ""),
                 station_id=item.get("station_id", ""),
+                model_product=item.get("model_product", ""),
+                model_variable=item.get("model_variable", ""),
+                observation_product=item.get("observation_product", ""),
+                observation_field=item.get("observation_field", ""),
             )
             for item in data.get("products", [])
         ),

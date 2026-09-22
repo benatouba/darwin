@@ -38,3 +38,7 @@ products:
   - product_id: CMP_prcp_CerroCrocker_2020-01
     kind: comparison-spec
     citation: "Precipitation Comparison variable specification pairing GAR prcp_sum with the CerroCrocker AWS observation field"
+    model_product: GAR_d02km_m_2d_prcp_2020-01
+    model_variable: prcp
+    observation_product: AWS-PCerroCrocker_2020-01
+    observation_field: PCP_tot_bucket

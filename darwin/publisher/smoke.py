@@ -4,7 +4,10 @@ Loads one reviewed release manifest, registers one Product candidate per
 requested product, publishes every candidate, and writes the handoff
 JSON the dashboard catalogue ingests: product/version identifiers plus
 full per-product provenance (manifest revision, creator, creation time,
-citation, and normal period/method where applicable).
+citation, normal period/method where applicable, and the
+model/observation pairing for Comparison variable specifications).
+`created_at` stamps build time, so rebuilds share the manifest revision
+but diverge in stamp.
 """
 
 from __future__ import annotations
@@ -61,6 +64,10 @@ def build_smoke_release(
                 "normal_period": spec.normal_period,
                 "method": spec.method,
                 "station_id": spec.station_id,
+                "model_product": spec.model_product,
+                "model_variable": spec.model_variable,
+                "observation_product": spec.observation_product,
+                "observation_field": spec.observation_field,
             }
         )
     handoff = {
