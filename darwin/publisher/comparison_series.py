@@ -87,18 +87,24 @@ def build_comparison_series(
         prcp = np.asarray(source.variables["prcp"][:])
     finally:
         source.close()
-    flat = int(np.argmin((lon - station_lon) ** 2 + (lat - station_lat) ** 2))
-    grid_y, grid_x = divmod(flat, lon.shape[1])
+    nearest_flat_index = int(np.argmin((lon - station_lon) ** 2 + (lat - station_lat) ** 2))
+    grid_y, grid_x = divmod(nearest_flat_index, lon.shape[1])
     monthly = np.asarray(prcp[:, grid_y, grid_x], dtype=np.float64)
 
     days = monthrange(AWS_YEAR, AWS_MONTH)[1]
     hours = days * 24
     gar_path = out_dir / GAR_STORE
     gar_group = zarr.open_group(str(gar_path), mode="w")
-    gar_group.create_array("monthly", data=monthly)
-    gar_group.create_array("hourly", data=np.full(hours, monthly[0]))
-    gar_group.create_array("daily", data=np.full(days, monthly[0]))
-    gar_group.attrs["units"] = "mm h-1"
+    gar_group.create_array("monthly", data=monthly, attributes={"units": "mm h-1"})
+    # Both disaggregated series are depths (hourly depth = rate x 1h) so
+    # they pair unit-clean with the AWS tip-sum depths, both in mm.
+    gar_group.create_array(
+        "hourly", data=np.full(hours, monthly[0]), attributes={"units": "mm"}
+    )
+    gar_group.create_array(
+        "daily", data=np.full(days, monthly[0] * 24.0), attributes={"units": "mm"}
+    )
+    gar_group.attrs["constant_series"] = True
     gar_group.attrs["method"] = "nearest"
     gar_group.attrs["grid_y"] = grid_y
     gar_group.attrs["grid_x"] = grid_x
@@ -132,9 +138,9 @@ def build_comparison_series(
 
     aws_path = out_dir / AWS_STORE
     aws_group = zarr.open_group(str(aws_path), mode="w")
-    aws_group.create_array("hourly", data=hourly)
+    aws_group.create_array("hourly", data=hourly, attributes={"units": "mm"})
     aws_group.create_array("hourly_valid", data=np.asarray(hourly_valid))
-    aws_group.create_array("daily", data=daily)
+    aws_group.create_array("daily", data=daily, attributes={"units": "mm"})
     aws_group.create_array("daily_valid", data=np.asarray(daily_valid))
     aws_group.attrs["units"] = "mm"
     aws_group.attrs["year"] = AWS_YEAR

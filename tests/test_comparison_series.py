@@ -2,11 +2,11 @@
 
 The dashboard serves the real prcp Comparison result from these seed
 stores, so they must carry true values: the GAR January-2020 monthly
-rate sampled nearest the CerroCrocker station uniformly disaggregated
-to constant hourly/daily series, and the AWS January hourly/daily
-depths with real completeness exclusions, all asserted against
-independently measured literals (CSV + NetCDF probes, not the
-builder's own stores).
+rate sampled nearest the Station location record, uniformly
+disaggregated to constant hourly/daily depth series, and the AWS
+January hourly/daily depths with real completeness exclusions, all
+asserted against independently measured literals (CSV + NetCDF probes,
+not the builder's own stores).
 """
 
 from pathlib import Path
@@ -15,7 +15,7 @@ REPO_ROOT = Path("/home/ben/projects/darwin")
 
 
 def test_gar_sampled_store_carries_jan2020_nearest_series(tmp_path):
-    """GAR store: 12 monthly nearest rates, Jan rate constant over 744h/31d."""
+    """GAR store: 12 monthly nearest rates; hourly/daily depths (rate x 1h/24h)."""
     from darwin.publisher.comparison_series import build_comparison_series
 
     out = build_comparison_series(REPO_ROOT, tmp_path)
@@ -29,8 +29,13 @@ def test_gar_sampled_store_carries_jan2020_nearest_series(tmp_path):
     assert group["hourly"].shape == (744,)
     assert group["daily"].shape == (31,)
     assert bool((group["hourly"][:] == float(monthly[0])).all())
-    assert bool((group["daily"][:] == float(monthly[0])).all())
-    assert group.attrs["units"] == "mm h-1"
+    assert bool((group["daily"][:] == float(monthly[0]) * 24.0).all())
+    assert group["monthly"].attrs["units"] == "mm h-1"
+    # Both disaggregated series are depths so they pair unit-clean with
+    # the AWS tip-sum depths (hourly depth = rate x 1h, numerically the rate).
+    assert group["hourly"].attrs["units"] == "mm"
+    assert group["daily"].attrs["units"] == "mm"
+    assert group.attrs["constant_series"] is True
     assert int(group.attrs["grid_y"]) == 101
     assert int(group.attrs["grid_x"]) == 121
 
@@ -60,3 +65,5 @@ def test_aws_january_store_has_real_exclusions(tmp_path):
     assert abs(float(hourly[hourly_valid].sum()) - 135.8) < 1e-6
     assert float(hourly[0]) == 0.0
     assert group.attrs["units"] == "mm"
+    assert group["hourly"].attrs["units"] == "mm"
+    assert group["daily"].attrs["units"] == "mm"

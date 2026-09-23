@@ -7,7 +7,7 @@
 # the measured source max 1.65 mm/h ([0, 600] rendered the slice flat);
 # the Normal product keeps [0, 600] for monthly totals.
 # T6 addition re-reviewed: two comparison-series products (GAR sampled
-# nearest the CerroCrocker station, AWS January-2025 tip sums) plus a
+# nearest the Station location record, AWS January-2025 tip sums) plus a
 # pointer update on the comparison-spec; same version label, so revision
 # re-binds and the release is rebuilt.
 # Any change re-binds `revision` (sha256 of these exact bytes) and needs
