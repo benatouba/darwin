@@ -85,6 +85,7 @@ def build_comparison_series(
         lon = np.asarray(source.variables["lon"][:])
         lat = np.asarray(source.variables["lat"][:])
         prcp = np.asarray(source.variables["prcp"][:])
+        crs = str(source.pyproj_srs)
     finally:
         source.close()
     nearest_flat_index = int(np.argmin((lon - station_lon) ** 2 + (lat - station_lat) ** 2))
@@ -106,6 +107,7 @@ def build_comparison_series(
     )
     gar_group.attrs["constant_series"] = True
     gar_group.attrs["method"] = "nearest"
+    gar_group.attrs["crs"] = crs
     gar_group.attrs["grid_y"] = grid_y
     gar_group.attrs["grid_x"] = grid_x
     gar_group.attrs["cell_lon"] = float(lon[grid_y, grid_x])

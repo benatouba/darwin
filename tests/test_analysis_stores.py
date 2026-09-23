@@ -28,6 +28,10 @@ def test_slice_store_matches_source_bytes(tmp_path):
     assert [int(v) for v in group["time"][:]] == [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335]
     assert abs(float(array[:].max()) - 1.6485823392868042) < 1e-9
     assert abs(float(array[:].mean()) - 0.047143787145614624) < 1e-9
+    assert group.attrs["crs"] == (
+        "+k_0=1.0 +units=m +lat_0=2.0 +lon_0=-90.31006622 +x_0=0.0 +y_0=0.0"
+        " +ellps=WGS84 +datum=WGS84 +name=WRFMercator +proj=merc +no_defs"
+    )
 
 
 def test_mask_store_matches_static_landmask(tmp_path):
@@ -43,3 +47,7 @@ def test_mask_store_matches_static_landmask(tmp_path):
     assert set(int(v) for v in mask.flat) <= {0, 1}
     assert abs(float(mask.mean()) - 0.03472936898469925) < 1e-9
     assert float(group["x"][0]) == -244000.0
+    assert group.attrs["crs"] == (
+        "+k_0=1.0 +units=m +lat_0=2.0 +lon_0=-90.31006622 +x_0=0.0 +y_0=0.0"
+        " +ellps=WGS84 +datum=WGS84 +name=WRFMercator +proj=merc +no_defs"
+    )

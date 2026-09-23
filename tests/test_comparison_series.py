@@ -38,6 +38,11 @@ def test_gar_sampled_store_carries_jan2020_nearest_series(tmp_path):
     assert group.attrs["constant_series"] is True
     assert int(group.attrs["grid_y"]) == 101
     assert int(group.attrs["grid_x"]) == 121
+    # Native GAR projection: verbatim source pyproj_srs (WRF Mercator).
+    assert group.attrs["crs"] == (
+        "+k_0=1.0 +units=m +lat_0=2.0 +lon_0=-90.31006622 +x_0=0.0 "
+        "+y_0=0.0 +ellps=WGS84 +datum=WGS84 +name=WRFMercator +proj=merc +no_defs"
+    )
 
 
 def test_aws_january_store_has_real_exclusions(tmp_path):

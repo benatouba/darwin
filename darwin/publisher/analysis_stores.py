@@ -36,6 +36,7 @@ def build_smoke_analysis_stores(repo_root: str | Path, out_dir: str | Path) -> d
         xs = [float(v) for v in source.variables["west_east"][:].tolist()]
         ys = [float(v) for v in source.variables["south_north"][:].tolist()]
         prcp = source.variables["prcp"][:]
+        crs = str(source.pyproj_srs)
     finally:
         source.close()
     slice_path = out_dir / SLICE_STORE
@@ -45,10 +46,12 @@ def build_smoke_analysis_stores(repo_root: str | Path, out_dir: str | Path) -> d
     group.create_array("y", data=np.asarray(ys))
     group.create_array("time", data=np.asarray(time_values))
     group.attrs["time_units"] = time_units
+    group.attrs["crs"] = crs
 
     mask_source = nc.Dataset(str(repo_root / MASK_SOURCE))
     try:
         landmask = mask_source.variables["landmask"][0]
+        mask_crs = str(mask_source.pyproj_srs)
     finally:
         mask_source.close()
     mask_path = out_dir / MASK_STORE
@@ -56,5 +59,6 @@ def build_smoke_analysis_stores(repo_root: str | Path, out_dir: str | Path) -> d
     mask_group.create_array("landmask", data=np.asarray(landmask), chunks=landmask.shape)
     mask_group.create_array("x", data=np.asarray(xs))
     mask_group.create_array("y", data=np.asarray(ys))
+    mask_group.attrs["crs"] = mask_crs
 
     return {"slice": slice_path, "mask": mask_path}
