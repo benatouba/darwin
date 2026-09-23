@@ -1,8 +1,9 @@
 """Comparison series stores (T6): published GAR/AWS January series.
 
 Reads the pinned GAR monthly prcp field and the CerroCrocker AWS
-tipuse series, and writes two seed Zarr stores with verbatim values:
-the GAR January-2020 monthly rate sampled nearest the station
+tip-bucket series, and writes two seed Zarr stores with verbatim values:
+the GAR January-2020 monthly rate sampled nearest the Station location
+record
 uniformly disaggregated to constant hourly/daily series, and the AWS
 January hourly/daily tip-sum depths with completeness masks. The
 hourly/daily completeness rules reuse the comparison-engine
@@ -40,7 +41,7 @@ MISSING_TOKENS = frozenset({"", "NA", "NaN", "NULL"})
 
 
 def _station_point(meta_path: Path) -> tuple[float, float]:
-    """Station lon/lat from the degenerate meta.xml bounding box."""
+    """Station-location-record lon/lat from the degenerate meta.xml bounding box."""
     root = ElementTree.parse(str(meta_path)).getroot()
     box = root.find(".//boundingCoordinates")
     assert box is not None, f"no boundingCoordinates in {meta_path}"

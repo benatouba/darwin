@@ -62,8 +62,8 @@ products:
   - product_id: AWS-PCerroCrocker_2020-01
     kind: observation
     citation: >-
-      AWS observation product, CerroCrocker station, January 2020
-      (data/11_AWS-PCerroCrocker_data.csv)
+      AWS observation product for the CerroCrocker Station location
+      record, January 2020 (data/11_AWS-PCerroCrocker_data.csv)
     station_id: "11_AWS-PCerroCrocker"
     variable: "pcp"
     domain: "d02km"
@@ -75,8 +75,8 @@ products:
   - product_id: AWS-CerroCrocker_2025-01
     kind: observation
     citation: >-
-      AWS observation product, CerroCrocker station, January 2025
-      (data/11_AWS-PCerroCrocker_data.csv)
+      AWS observation product for the CerroCrocker Station location
+      record, January 2025 (data/11_AWS-PCerroCrocker_data.csv)
     station_id: "11_AWS-PCerroCrocker"
     variable: "pcp"
     domain: "d02km"
@@ -88,8 +88,9 @@ products:
   - product_id: GAR-CerroCrocker-sampled_2020
     kind: sampled
     citation: >-
-      GAR monthly precipitation sampled nearest the CerroCrocker station,
-      full year 2020 (GAR_d02km_m_2d_prcp_2020.nc)
+      GAR station-sampled product: monthly precipitation sampled
+      nearest the CerroCrocker Station location record, full year 2020
+      (GAR_d02km_m_2d_prcp_2020.nc)
     method: "nearest"
     variable: "prcp"
     domain: "d02km"
@@ -102,8 +103,8 @@ products:
     kind: comparison-spec
     citation: >-
       Precipitation Comparison variable specification pairing GAR prcp
-      sampled nearest CerroCrocker with the CerroCrocker January-2025 AWS
-      observation field. Same-month-different-year pairing: the GAR
+      sampled nearest the CerroCrocker Station location record with the
+      CerroCrocker January-2025 AWS observation field. Same-month-different-year pairing: the GAR
       January-2020 monthly rate is uniformly disaggregated, so the GAR
       side is constant and correlation is not defined.
     model_product: GAR-CerroCrocker-sampled_2020

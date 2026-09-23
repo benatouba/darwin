@@ -6,7 +6,7 @@ rate sampled nearest the CerroCrocker station uniformly disaggregated
 to constant hourly/daily series, and the AWS January hourly/daily
 depths with real completeness exclusions, all asserted against
 independently measured literals (CSV + NetCDF probes, not the
-builder's own output).
+builder's own stores).
 """
 
 from pathlib import Path
