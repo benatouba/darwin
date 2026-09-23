@@ -6,6 +6,10 @@
 # T4 correction re-reviewed: the slice fixed range is [0, 2] mm/h against
 # the measured source max 1.65 mm/h ([0, 600] rendered the slice flat);
 # the Normal product keeps [0, 600] for monthly totals.
+# T6 addition re-reviewed: two comparison-series products (GAR sampled
+# nearest the CerroCrocker station, AWS January-2025 tip sums) plus a
+# pointer update on the comparison-spec; same version label, so revision
+# re-binds and the release is rebuilt.
 # Any change re-binds `revision` (sha256 of these exact bytes) and needs
 # a fresh review before the release is rebuilt.
 #
@@ -68,14 +72,43 @@ products:
     transform: "linear"
     color_range: [0.0, 600.0]
     uris: {analysis: "s3://darwin-published/AWS-PCerroCrocker_2020-01/1/analysis.zarr"}
+  - product_id: AWS-CerroCrocker_2025-01
+    kind: observation
+    citation: >-
+      AWS observation product, CerroCrocker station, January 2025
+      (data/11_AWS-PCerroCrocker_data.csv)
+    station_id: "11_AWS-PCerroCrocker"
+    variable: "pcp"
+    domain: "d02km"
+    format: "csv"
+    palette: "Blues"
+    transform: "linear"
+    color_range: [0.0, 600.0]
+    uris: {analysis: "s3://darwin-published/AWS-CerroCrocker_2025-01/1/analysis.zarr"}
+  - product_id: GAR-CerroCrocker-sampled_2020
+    kind: sampled
+    citation: >-
+      GAR monthly precipitation sampled nearest the CerroCrocker station,
+      full year 2020 (GAR_d02km_m_2d_prcp_2020.nc)
+    method: "nearest"
+    variable: "prcp"
+    domain: "d02km"
+    format: "zarr-v3-consolidated"
+    palette: "Blues"
+    transform: "linear"
+    color_range: [0.0, 2.0]
+    uris: {analysis: "s3://darwin-published/GAR-CerroCrocker-sampled_2020/1/analysis.zarr"}
   - product_id: CMP_prcp_CerroCrocker_2020-01
     kind: comparison-spec
     citation: >-
-      Precipitation Comparison variable specification pairing GAR prcp_sum
-      with the CerroCrocker AWS observation field
-    model_product: GAR_d02km_m_2d_prcp_2020-01
+      Precipitation Comparison variable specification pairing GAR prcp
+      sampled nearest CerroCrocker with the CerroCrocker January-2025 AWS
+      observation field. Same-month-different-year pairing: the GAR
+      January-2020 monthly rate is uniformly disaggregated, so the GAR
+      side is constant and correlation is not defined.
+    model_product: GAR-CerroCrocker-sampled_2020
     model_variable: prcp
-    observation_product: AWS-PCerroCrocker_2020-01
+    observation_product: AWS-CerroCrocker_2025-01
     observation_field: PCP_tot_bucket
     variable: "prcp"
     domain: "d02km"

@@ -23,6 +23,8 @@ EXPECTED_PRODUCTS = (
     "GAR_d02km_m_2d_prcp_2020-01",
     "GAR_d02km_prcp_sum_1991-2020_01",
     "AWS-PCerroCrocker_2020-01",
+    "AWS-CerroCrocker_2025-01",
+    "GAR-CerroCrocker-sampled_2020",
     "CMP_prcp_CerroCrocker_2020-01",
 )
 
@@ -72,10 +74,13 @@ def test_comparison_spec_carries_machine_readable_pairing(tmp_path):
     handoff = build_smoke_release(MANIFEST_PATH, tmp_path / "handoff.json")
     by_id = {item["product_id"]: item for item in handoff["products"]}
     comparison = by_id["CMP_prcp_CerroCrocker_2020-01"]
-    assert comparison["model_product"] == "GAR_d02km_m_2d_prcp_2020-01"
+    assert comparison["model_product"] == "GAR-CerroCrocker-sampled_2020"
     assert comparison["model_variable"] == "prcp"
-    assert comparison["observation_product"] == "AWS-PCerroCrocker_2020-01"
+    assert comparison["observation_product"] == "AWS-CerroCrocker_2025-01"
     assert comparison["observation_field"] == "PCP_tot_bucket"
+    # The sampled model product declares the nearest method the dashboard
+    # comparison requires; anything else is not a comparable series.
+    assert by_id["GAR-CerroCrocker-sampled_2020"]["method"] == "nearest"
     # Both ends of the pairing resolve to products in the same release.
     assert comparison["model_product"] in by_id
     assert comparison["observation_product"] in by_id
