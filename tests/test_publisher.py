@@ -15,7 +15,7 @@ import pytest
 from darwin.publisher import lifecycle as _lifecycle  # noqa: F401
 from darwin.publisher.candidate import run_manifest
 from darwin.publisher.catalogue import Catalogue
-from darwin.publisher.manifest import load_manifest
+from darwin.publisher.manifest import AggregationSpec, load_manifest
 
 MANIFEST_TEXT = """\
 name: d02km-normals-1991-2020
@@ -101,3 +101,73 @@ def test_invalid_transitions_raise(manifest_path):
         catalogue.publish(candidate.candidate_id)
     with pytest.raises(ValueError):
         catalogue.fail(candidate.candidate_id, "again")
+
+
+AGGREGATION_MANIFEST_TEXT = """\
+name: d02km-aggregation-contract
+release: v1
+products:
+  - product_id: GAR_d02km_m_2d_prcp_2020-01
+    kind: slice
+    aggregations:
+      - method: sum
+        interval: daily
+        missing_data: require-complete
+      - method: mean
+        interval: monthly
+        missing_data: exclude-missing
+  - product_id: GAR_d02km_static_landmask
+    kind: reference
+"""
+
+
+def test_manifest_parses_per_product_aggregations(tmp_path):
+    path = tmp_path / "manifest.yaml"
+    path.write_text(AGGREGATION_MANIFEST_TEXT)
+    manifest = load_manifest(path)
+    by_id = {spec.product_id: spec for spec in manifest.products}
+    assert by_id["GAR_d02km_m_2d_prcp_2020-01"].aggregations == (
+        AggregationSpec(method="sum", interval="daily", missing_data="require-complete"),
+        AggregationSpec(method="mean", interval="monthly", missing_data="exclude-missing"),
+    )
+    assert by_id["GAR_d02km_static_landmask"].aggregations == ()
+
+
+@pytest.mark.parametrize(
+    "aggregation_yaml",
+    [
+        "      - method: median\n        interval: daily\n        missing_data: require-complete",
+        "      - method: sum\n        interval: hourly\n        missing_data: require-complete",
+        "      - method: sum\n        interval: daily\n        missing_data: ignore-gaps",
+        "      - method: sum\n        interval: daily",
+        "      - {method: sum, interval: daily, missing_data: require-complete, extra: 1}",
+        "      - not-a-mapping",
+    ],
+)
+def test_manifest_rejects_invalid_aggregation_declarations(tmp_path, aggregation_yaml):
+    path = tmp_path / "manifest.yaml"
+    path.write_text(
+        "name: broken-aggregations\n"
+        "release: v1\n"
+        "products:\n"
+        "  - product_id: GAR_d02km_m_2d_prcp_2020-01\n"
+        "    kind: slice\n"
+        "    aggregations:\n" + aggregation_yaml + "\n"
+    )
+    with pytest.raises(ValueError, match="GAR_d02km_m_2d_prcp_2020-01"):
+        load_manifest(path)
+
+
+@pytest.mark.parametrize("declaration", ["5", "{method: sum}", ""])
+def test_manifest_rejects_non_list_aggregations(tmp_path, declaration):
+    path = tmp_path / "manifest.yaml"
+    path.write_text(
+        "name: broken-aggregations\n"
+        "release: v1\n"
+        "products:\n"
+        "  - product_id: GAR_d02km_m_2d_prcp_2020-01\n"
+        "    kind: slice\n"
+        f"    aggregations: {declaration}\n"
+    )
+    with pytest.raises(ValueError, match="GAR_d02km_m_2d_prcp_2020-01"):
+        load_manifest(path)

@@ -77,6 +77,14 @@ def build_smoke_release(
                 "transform": spec.transform,
                 "color_range": list(spec.color_range),
                 "uris": dict(spec.uris),
+                "aggregations": [
+                    {
+                        "method": agg.method,
+                        "interval": agg.interval,
+                        "missing_data": agg.missing_data,
+                    }
+                    for agg in spec.aggregations
+                ],
             }
         )
     handoff = {

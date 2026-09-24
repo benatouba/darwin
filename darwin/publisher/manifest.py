@@ -8,6 +8,17 @@ from pathlib import Path
 
 import yaml
 
+AGGREGATION_METHODS = ("mean", "min", "max", "sum")
+AGGREGATION_INTERVALS = ("daily", "monthly", "annual")
+AGGREGATION_MISSING_DATA = ("exclude-missing", "require-complete")
+
+_AGGREGATION_KEYS = frozenset({"method", "interval", "missing_data"})
+_AGGREGATION_VOCABULARIES = {
+    "method": AGGREGATION_METHODS,
+    "interval": AGGREGATION_INTERVALS,
+    "missing_data": AGGREGATION_MISSING_DATA,
+}
+
 
 @dataclass(frozen=True)
 class SourceEntry:
@@ -15,6 +26,20 @@ class SourceEntry:
 
     path: str
     sha256: str
+
+
+@dataclass(frozen=True)
+class AggregationSpec:
+    """One permitted time-span aggregation for a product.
+
+    The publisher declares which aggregations a product allows; a
+    consumer must never aggregate outside this set. `interval` is the
+    target interval the aggregated output covers.
+    """
+
+    method: str
+    interval: str
+    missing_data: str
 
 
 @dataclass(frozen=True)
@@ -27,7 +52,9 @@ class ProductSpec:
     to Comparison variable specifications, `variable`/`domain`/`format`
     to the catalogue identity of every product, and `palette`,
     `transform`, `color_range` plus the `uris` analysis store to the
-    publisher-declared map presentation of every product.
+    publisher-declared map presentation of every product, and
+    `aggregations` to the permitted time-span aggregations of a
+    product (empty tuple when the product permits none).
     """
 
     product_id: str
@@ -47,6 +74,7 @@ class ProductSpec:
     transform: str = ""
     color_range: tuple[float, float] = ()
     uris: dict[str, str] = field(default_factory=dict)
+    aggregations: tuple[AggregationSpec, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -62,6 +90,39 @@ class Manifest:
     sources: tuple[SourceEntry, ...]
     products: tuple[ProductSpec, ...]
     revision: str = field(compare=False)
+
+
+def _parse_aggregations(product_id: str, raw: object) -> tuple[AggregationSpec, ...]:
+    """Parse the permitted aggregations of one product, or fail loudly.
+
+    A reviewed manifest may only declare combinations of the closed
+    vocabularies above: `method` values how the span combines, `interval`
+    is the target interval of the output, and `missing_data` states
+    whether missing inputs are dropped (`exclude-missing`) or refuse the
+    aggregation (`require-complete`).
+    """
+    if not isinstance(raw, list):
+        raise ValueError(f"product {product_id}: aggregations must be a list")
+    specs = []
+    for entry in raw:
+        if not isinstance(entry, dict) or set(entry) != _AGGREGATION_KEYS:
+            raise ValueError(
+                f"product {product_id}: each aggregation needs exactly "
+                "method, interval and missing_data"
+            )
+        spec = AggregationSpec(
+            method=entry["method"],
+            interval=entry["interval"],
+            missing_data=entry["missing_data"],
+        )
+        for name, allowed in _AGGREGATION_VOCABULARIES.items():
+            value = getattr(spec, name)
+            if value not in allowed:
+                raise ValueError(
+                    f"product {product_id}: unknown aggregation {name} {value!r}"
+                )
+        specs.append(spec)
+    return tuple(specs)
 
 
 def load_manifest(path: str | Path) -> Manifest:
@@ -95,6 +156,9 @@ def load_manifest(path: str | Path) -> Manifest:
                 transform=item.get("transform", ""),
                 color_range=tuple(item.get("color_range", ())),
                 uris=dict(item.get("uris", {})),
+                aggregations=_parse_aggregations(
+                    item["product_id"], item.get("aggregations", [])
+                ),
             )
             for item in data.get("products", [])
         ),

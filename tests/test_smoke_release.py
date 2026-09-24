@@ -130,3 +130,51 @@ def test_build_writes_handoff_file(tmp_path):
     handoff = build_smoke_release(MANIFEST_PATH, out_path)
     assert out_path.exists()
     assert json.loads(out_path.read_text()) == handoff
+
+
+AGGREGATION_HANDOFF_MANIFEST = """\
+name: d02km-handoff-aggregations
+release: v1
+products:
+  - product_id: GAR_d02km_m_2d_prcp_2020-01
+    kind: slice
+    aggregations:
+      - method: sum
+        interval: daily
+        missing_data: require-complete
+      - method: mean
+        interval: monthly
+        missing_data: exclude-missing
+  - product_id: GAR_d02km_static_landmask
+    kind: reference
+"""
+
+
+def test_handoff_products_carry_declared_aggregations(tmp_path):
+    manifest_path = tmp_path / "manifest.yaml"
+    manifest_path.write_text(AGGREGATION_HANDOFF_MANIFEST)
+    handoff = build_smoke_release(manifest_path, tmp_path / "handoff.json")
+    by_id = {item["product_id"]: item for item in handoff["products"]}
+    assert by_id["GAR_d02km_m_2d_prcp_2020-01"]["aggregations"] == [
+        {"method": "sum", "interval": "daily", "missing_data": "require-complete"},
+        {"method": "mean", "interval": "monthly", "missing_data": "exclude-missing"},
+    ]
+    assert by_id["GAR_d02km_static_landmask"]["aggregations"] == []
+
+
+def test_smoke_handoff_declares_permitted_time_span_aggregations(tmp_path):
+    handoff = build_smoke_release(MANIFEST_PATH, tmp_path / "handoff.json")
+    by_id = {item["product_id"]: item for item in handoff["products"]}
+    prcp_sum = {"method": "sum", "interval": "daily", "missing_data": "require-complete"}
+    monthly_sum = {"method": "sum", "interval": "monthly", "missing_data": "require-complete"}
+    assert by_id["GAR_d02km_m_2d_prcp_2020-01"]["aggregations"] == [prcp_sum, monthly_sum]
+    assert by_id["GAR_d02km_prcp_sum_1991-2020_01"]["aggregations"] == [
+        {"method": "sum", "interval": "annual", "missing_data": "require-complete"}
+    ]
+    assert by_id["AWS-PCerroCrocker_2020-01"]["aggregations"] == [prcp_sum, monthly_sum]
+    assert by_id["AWS-CerroCrocker_2025-01"]["aggregations"] == [prcp_sum, monthly_sum]
+    assert by_id["GAR-CerroCrocker-sampled_2020"]["aggregations"] == [
+        {"method": "mean", "interval": "annual", "missing_data": "exclude-missing"}
+    ]
+    assert by_id["GAR_d02km_static_landmask"]["aggregations"] == []
+    assert by_id["CMP_prcp_CerroCrocker_2020-01"]["aggregations"] == []

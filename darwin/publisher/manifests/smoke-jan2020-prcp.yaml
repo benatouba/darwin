@@ -10,6 +10,13 @@
 # nearest the Station location record, AWS January-2025 tip sums) plus a
 # pointer update on the comparison-spec; same version label, so revision
 # re-binds and the release is rebuilt.
+# Aggregation contract (dashboard#16) re-reviewed: each product declares its permitted
+# time-span aggregations (method, target interval, missing-data
+# semantics); a consumer must never aggregate outside the declaration.
+# Precipitation products permit sums over daily/monthly spans requiring
+# complete inputs; the Normal permits an annual sum; the sampled series
+# permits an annual mean excluding missing inputs; the static mask and
+# the comparison-spec permit no time-span aggregation.
 # Any change re-binds `revision` (sha256 of these exact bytes) and needs
 # a fresh review before the release is rebuilt.
 #
@@ -47,6 +54,14 @@ products:
     transform: "linear"
     color_range: [0.0, 2.0]
     uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_2020-01/1/analysis.zarr"}
+
+    aggregations:
+      - method: sum
+        interval: daily
+        missing_data: require-complete
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
   - product_id: GAR_d02km_prcp_sum_1991-2020_01
     kind: normal
     citation: "GAR January precipitation Climate normal over 1991-2020, 2 km domain"
@@ -59,6 +74,11 @@ products:
     transform: "linear"
     color_range: [0.0, 600.0]
     uris: {analysis: "s3://darwin-published/GAR_d02km_prcp_sum_1991-2020_01/1/analysis.zarr"}
+
+    aggregations:
+      - method: sum
+        interval: annual
+        missing_data: require-complete
   - product_id: AWS-PCerroCrocker_2020-01
     kind: observation
     citation: >-
@@ -72,6 +92,14 @@ products:
     transform: "linear"
     color_range: [0.0, 600.0]
     uris: {analysis: "s3://darwin-published/AWS-PCerroCrocker_2020-01/1/analysis.zarr"}
+
+    aggregations:
+      - method: sum
+        interval: daily
+        missing_data: require-complete
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
   - product_id: AWS-CerroCrocker_2025-01
     kind: observation
     citation: >-
@@ -85,6 +113,14 @@ products:
     transform: "linear"
     color_range: [0.0, 600.0]
     uris: {analysis: "s3://darwin-published/AWS-CerroCrocker_2025-01/1/analysis.zarr"}
+
+    aggregations:
+      - method: sum
+        interval: daily
+        missing_data: require-complete
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
   - product_id: GAR-CerroCrocker-sampled_2020
     kind: sampled
     citation: >-
@@ -99,6 +135,11 @@ products:
     transform: "linear"
     color_range: [0.0, 2.0]
     uris: {analysis: "s3://darwin-published/GAR-CerroCrocker-sampled_2020/1/analysis.zarr"}
+
+    aggregations:
+      - method: mean
+        interval: annual
+        missing_data: exclude-missing
   - product_id: CMP_prcp_CerroCrocker_2020-01
     kind: comparison-spec
     citation: >-
