@@ -7,7 +7,8 @@ full per-product provenance (manifest revision, creator, creation time,
 citation, normal period/method where applicable, the
 model/observation pairing for Comparison variable specifications) and
 the publisher-declared map presentation (palette, transform, fixed
-colour range, analysis-store uris).
+colour range, analysis-store uris) and the permitted time-span
+aggregations (method, target interval, missing-data semantics).
 `created_at` stamps build time, so rebuilds share the manifest revision
 but diverge in stamp.
 """
@@ -15,7 +16,8 @@ but diverge in stamp.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from dataclasses import asdict
+from datetime import UTC, datetime
 from pathlib import Path
 
 from darwin.publisher.candidate import run_manifest
@@ -27,7 +29,7 @@ CREATOR = "darwin.publisher"
 
 def _utc_now() -> str:
     """Return the current UTC time in trailing-Z ISO-8601 form."""
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def build_smoke_release(
@@ -77,14 +79,7 @@ def build_smoke_release(
                 "transform": spec.transform,
                 "color_range": list(spec.color_range),
                 "uris": dict(spec.uris),
-                "aggregations": [
-                    {
-                        "method": agg.method,
-                        "interval": agg.interval,
-                        "missing_data": agg.missing_data,
-                    }
-                    for agg in spec.aggregations
-                ],
+                "aggregations": [asdict(agg) for agg in spec.aggregations],
             }
         )
     handoff = {

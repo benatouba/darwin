@@ -31,7 +31,7 @@ products:
 """
 
 
-@pytest.fixture()
+@pytest.fixture
 def manifest_path(tmp_path):
     path = tmp_path / "manifest.yaml"
     path.write_text(MANIFEST_TEXT)
@@ -59,7 +59,8 @@ def test_run_creates_immutable_candidate_with_manifest_revision(manifest_path):
 
 def test_run_never_scans_source_data(manifest_path):
     """Source paths in the manifest need not exist: checksums come from
-    the background manifest, the publisher never scans the archive."""
+    the background manifest, the publisher never scans the archive.
+    """
     manifest = load_manifest(manifest_path)
     assert not Path(manifest.sources[0].path).exists()
     candidate = run_manifest(manifest, Catalogue())
@@ -103,28 +104,8 @@ def test_invalid_transitions_raise(manifest_path):
         catalogue.fail(candidate.candidate_id, "again")
 
 
-AGGREGATION_MANIFEST_TEXT = """\
-name: d02km-aggregation-contract
-release: v1
-products:
-  - product_id: GAR_d02km_m_2d_prcp_2020-01
-    kind: slice
-    aggregations:
-      - method: sum
-        interval: daily
-        missing_data: require-complete
-      - method: mean
-        interval: monthly
-        missing_data: exclude-missing
-  - product_id: GAR_d02km_static_landmask
-    kind: reference
-"""
-
-
-def test_manifest_parses_per_product_aggregations(tmp_path):
-    path = tmp_path / "manifest.yaml"
-    path.write_text(AGGREGATION_MANIFEST_TEXT)
-    manifest = load_manifest(path)
+def test_manifest_parses_per_product_aggregations(aggregation_manifest_path):
+    manifest = load_manifest(aggregation_manifest_path)
     by_id = {spec.product_id: spec for spec in manifest.products}
     assert by_id["GAR_d02km_m_2d_prcp_2020-01"].aggregations == (
         AggregationSpec(method="sum", interval="daily", missing_data="require-complete"),
@@ -158,7 +139,21 @@ def test_manifest_rejects_invalid_aggregation_declarations(tmp_path, aggregation
         load_manifest(path)
 
 
-@pytest.mark.parametrize("declaration", ["5", "{method: sum}", ""])
+def test_manifest_treats_null_aggregations_as_permits_none(tmp_path):
+    path = tmp_path / "manifest.yaml"
+    path.write_text(
+        "name: null-aggregations\n"
+        "release: v1\n"
+        "products:\n"
+        "  - product_id: GAR_d02km_m_2d_prcp_2020-01\n"
+        "    kind: slice\n"
+        "    aggregations:\n"
+    )
+    manifest = load_manifest(path)
+    assert manifest.products[0].aggregations == ()
+
+
+@pytest.mark.parametrize("declaration", ["5", "{method: sum}"])
 def test_manifest_rejects_non_list_aggregations(tmp_path, declaration):
     path = tmp_path / "manifest.yaml"
     path.write_text(

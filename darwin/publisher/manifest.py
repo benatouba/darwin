@@ -12,12 +12,12 @@ AGGREGATION_METHODS = ("mean", "min", "max", "sum")
 AGGREGATION_INTERVALS = ("daily", "monthly", "annual")
 AGGREGATION_MISSING_DATA = ("exclude-missing", "require-complete")
 
-_AGGREGATION_KEYS = frozenset({"method", "interval", "missing_data"})
 _AGGREGATION_VOCABULARIES = {
     "method": AGGREGATION_METHODS,
     "interval": AGGREGATION_INTERVALS,
     "missing_data": AGGREGATION_MISSING_DATA,
 }
+_AGGREGATION_KEYS = frozenset(_AGGREGATION_VOCABULARIES)
 
 
 @dataclass(frozen=True)
@@ -99,8 +99,12 @@ def _parse_aggregations(product_id: str, raw: object) -> tuple[AggregationSpec, 
     vocabularies above: `method` values how the span combines, `interval`
     is the target interval of the output, and `missing_data` states
     whether missing inputs are dropped (`exclude-missing`) or refuse the
-    aggregation (`require-complete`).
+    aggregation (`require-complete`). An absent or null declaration means
+    the product permits no time-span aggregation; any other non-list is
+    rejected.
     """
+    if raw is None:
+        return ()
     if not isinstance(raw, list):
         raise ValueError(f"product {product_id}: aggregations must be a list")
     specs = []
@@ -157,7 +161,7 @@ def load_manifest(path: str | Path) -> Manifest:
                 color_range=tuple(item.get("color_range", ())),
                 uris=dict(item.get("uris", {})),
                 aggregations=_parse_aggregations(
-                    item["product_id"], item.get("aggregations", [])
+                    item["product_id"], item.get("aggregations")
                 ),
             )
             for item in data.get("products", [])

@@ -132,28 +132,10 @@ def test_build_writes_handoff_file(tmp_path):
     assert json.loads(out_path.read_text()) == handoff
 
 
-AGGREGATION_HANDOFF_MANIFEST = """\
-name: d02km-handoff-aggregations
-release: v1
-products:
-  - product_id: GAR_d02km_m_2d_prcp_2020-01
-    kind: slice
-    aggregations:
-      - method: sum
-        interval: daily
-        missing_data: require-complete
-      - method: mean
-        interval: monthly
-        missing_data: exclude-missing
-  - product_id: GAR_d02km_static_landmask
-    kind: reference
-"""
-
-
-def test_handoff_products_carry_declared_aggregations(tmp_path):
-    manifest_path = tmp_path / "manifest.yaml"
-    manifest_path.write_text(AGGREGATION_HANDOFF_MANIFEST)
-    handoff = build_smoke_release(manifest_path, tmp_path / "handoff.json")
+def test_handoff_products_carry_declared_aggregations(
+    aggregation_manifest_path, tmp_path
+):
+    handoff = build_smoke_release(aggregation_manifest_path, tmp_path / "handoff.json")
     by_id = {item["product_id"]: item for item in handoff["products"]}
     assert by_id["GAR_d02km_m_2d_prcp_2020-01"]["aggregations"] == [
         {"method": "sum", "interval": "daily", "missing_data": "require-complete"},
