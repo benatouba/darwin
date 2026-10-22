@@ -475,7 +475,7 @@ class Experiment:
                     fontweight="bold",
                     backgroundcolor="white",
                 )
-       if cbar:
+        if cbar:
             base_map.append_colorbar(ax=ax, label=unit)
         if isinstance(write, str):
             plt.savefig(write)
