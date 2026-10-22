@@ -1,0 +1,418 @@
+# DRAFT — stations comparison manifest (spec #32). NOT YET REVIEWED.
+# Requires a fresh user review before run_manifest (repo policy).
+name: stations-compare-v1
+release: stations1
+sources:
+  - path: GAR_d02km_m_2d_prcp_2023.nc
+    sha256: c00524ba4c5cb853c2c923dd2ff50a7fce3010a69111f0fc43d2064e8461f31a
+  - path: GAR_d02km_m_2d_t2_2022.nc
+    sha256: a6104c42ed45d7837588e508d93e595d591abd49c43c690a25f39e004ab11dee
+  - path: GAR_d02km_m_2d_t2_2023.nc
+    sha256: a6b1a402c5d842c258a27af8374af12b967c724bca8292bd48465235bffd165b
+  - path: GAR_d02km_m_2d_t2_2024.nc
+    sha256: e75cc028b85f4e5297ecae41a2c562c62822c16f4ac7fb1b76a419a428fff793
+  - path: data/09_AWS-PSantaRosa_data.csv
+    sha256: a25f3ae36a1f85e51546aeb85b6942d79d5e1a02dc594f2fe6cd0fed3dfc24f9
+  - path: data/11_AWS-PCerroCrocker_data.csv
+    sha256: ebd57825e5ba3566e5a369f1aa425097fb67c8bd6735f9f672062317d0ab5667
+  - path: data/14_AWS-PSierraNegra_data.csv
+    sha256: bc0bbc07e92e43b0fe3b6c1e70dbe6648bc18bd77eea94dd4eae03311290f561
+  - path: data/16_AWS-PCuevadeSucre_data.csv
+    sha256: 8bfb668523f388d27d72a4eef905f9f0e0468e636c48701e0cff56edce5301b6
+  - path: data/18_AWS-PLaGalapaguera_data.csv
+    sha256: c8abf4095fc8e4b75a2e7427d3830252cfa61b29b32c2693920e6a88c6768b70
+  - path: data/20_AWS-PElJunco_data.csv
+    sha256: fd8289dffed63098af13af2449aa1eece732d51647112ec809afd6d8c6467eb7
+  - path: data/22_AWS-PPuertoBaquerizoMoreno_data.csv
+    sha256: 986cd1fa560f36c31ac57228d6d5e51278988707bf1f705761a29874656e0154
+  - path: data/24_AWS-PPuertoVillamil_data.csv
+    sha256: a053efb4efe05eecb5ed2700ab861fa0c4120e86d03806a6debbb4eb3aee53b9
+  - path: data/26_AWS-PPuertoAyora_data.csv
+    sha256: 581bc00c4d67e9e9a97d60b0837c24db67c648fb446d28a785593564596c7e85
+  - path: data/28_AWS-PMilitar_data.csv
+    sha256: 092c81dd82431d119db6cdc674538f17a5b5908b061ba850e11436097a962ca3
+products:
+  - product_id: AWS-SantaRosa-T_2022-12
+    kind: observation
+    variable: t2
+    domain: AWS
+    station_id: 09_AWS-PSantaRosa
+    format: csv
+    units: K
+    uris:
+      analysis: s3://darwin-published/AWS-SantaRosa-T_2022-12/1/analysis.zarr
+      store_sha256: 088cb562139267d70906d9d07177ffa39fafe4ce3640364483a829c9ca2f2b2e
+  - product_id: GAR-SantaRosa-sampled-t2_2022
+    kind: sampled
+    variable: t2
+    domain: GAR
+    method: nearest
+    units: K
+    uris:
+      analysis: s3://darwin-published/GAR-SantaRosa-sampled-t2_2022/1/analysis.zarr
+      store_sha256: 9675053a50071aadc9e1448cae5238382bc9c0187f7bafc5760a175fa67d156f
+  - product_id: CMP_t2_SantaRosa_2022-12
+    kind: comparison-spec
+    variable: t2
+    domain: CMP
+    station_id: 09_AWS-PSantaRosa
+    format: json
+    model_product: GAR-SantaRosa-sampled-t2_2022
+    model_variable: t2
+    observation_product: AWS-SantaRosa-T_2022-12
+    observation_field: T
+    method: nearest
+    uris:
+      analysis: s3://darwin-published/CMP_t2_SantaRosa_2022-12/1/analysis.zarr
+  - product_id: AWS-CerroCrocker-T_2024-02
+    kind: observation
+    variable: t2
+    domain: AWS
+    station_id: 11_AWS-PCerroCrocker
+    format: csv
+    units: K
+    uris:
+      analysis: s3://darwin-published/AWS-CerroCrocker-T_2024-02/1/analysis.zarr
+      store_sha256: 3be90ddbd0e4249d312a6643457c968c5dcdf6fbda28dba8e1febeb71f1b13a5
+  - product_id: GAR-CerroCrocker-sampled-t2_2024
+    kind: sampled
+    variable: t2
+    domain: GAR
+    method: nearest
+    units: K
+    uris:
+      analysis: s3://darwin-published/GAR-CerroCrocker-sampled-t2_2024/1/analysis.zarr
+      store_sha256: b661166028a936c5bf036559ca23073c0f2fa74fe32457a82d8fbc6393ea77b9
+  - product_id: CMP_t2_CerroCrocker_2024-02
+    kind: comparison-spec
+    variable: t2
+    domain: CMP
+    station_id: 11_AWS-PCerroCrocker
+    format: json
+    model_product: GAR-CerroCrocker-sampled-t2_2024
+    model_variable: t2
+    observation_product: AWS-CerroCrocker-T_2024-02
+    observation_field: T
+    method: nearest
+    uris:
+      analysis: s3://darwin-published/CMP_t2_CerroCrocker_2024-02/1/analysis.zarr
+  - product_id: AWS-SierraNegra-T_2023-01
+    kind: observation
+    variable: t2
+    domain: AWS
+    station_id: 14_AWS-PSierraNegra
+    format: csv
+    units: K
+    uris:
+      analysis: s3://darwin-published/AWS-SierraNegra-T_2023-01/1/analysis.zarr
+      store_sha256: 72054f0cd66129edd34c6632192bbb4de84092a1c19a7f46c1ac108c43dbaa8b
+  - product_id: GAR-SierraNegra-sampled-t2_2023
+    kind: sampled
+    variable: t2
+    domain: GAR
+    method: nearest
+    units: K
+    uris:
+      analysis: s3://darwin-published/GAR-SierraNegra-sampled-t2_2023/1/analysis.zarr
+      store_sha256: 59de78ff55926963e1e41ce3a68d7fa729200edb625d0000857f6374f0c1e939
+  - product_id: CMP_t2_SierraNegra_2023-01
+    kind: comparison-spec
+    variable: t2
+    domain: CMP
+    station_id: 14_AWS-PSierraNegra
+    format: json
+    model_product: GAR-SierraNegra-sampled-t2_2023
+    model_variable: t2
+    observation_product: AWS-SierraNegra-T_2023-01
+    observation_field: T
+    method: nearest
+    uris:
+      analysis: s3://darwin-published/CMP_t2_SierraNegra_2023-01/1/analysis.zarr
+  - product_id: AWS-CuevaSucre-T_2023-03
+    kind: observation
+    variable: t2
+    domain: AWS
+    station_id: 16_AWS-PCuevadeSucre
+    format: csv
+    units: K
+    uris:
+      analysis: s3://darwin-published/AWS-CuevaSucre-T_2023-03/1/analysis.zarr
+      store_sha256: f527ea728547657308ae1cb9dd573f70df355e856ef95542472ff85394ac25e0
+  - product_id: GAR-CuevaSucre-sampled-t2_2023
+    kind: sampled
+    variable: t2
+    domain: GAR
+    method: nearest
+    units: K
+    uris:
+      analysis: s3://darwin-published/GAR-CuevaSucre-sampled-t2_2023/1/analysis.zarr
+      store_sha256: cfa6f118efbb7b771d500bede4379c705dc22bf607a6f245455ca8d750f0fe66
+  - product_id: CMP_t2_CuevaSucre_2023-03
+    kind: comparison-spec
+    variable: t2
+    domain: CMP
+    station_id: 16_AWS-PCuevadeSucre
+    format: json
+    model_product: GAR-CuevaSucre-sampled-t2_2023
+    model_variable: t2
+    observation_product: AWS-CuevaSucre-T_2023-03
+    observation_field: T
+    method: nearest
+    uris:
+      analysis: s3://darwin-published/CMP_t2_CuevaSucre_2023-03/1/analysis.zarr
+  - product_id: AWS-LaGalapaguera-T_2023-06
+    kind: observation
+    variable: t2
+    domain: AWS
+    station_id: 18_AWS-PLaGalapaguera
+    format: csv
+    units: K
+    uris:
+      analysis: s3://darwin-published/AWS-LaGalapaguera-T_2023-06/1/analysis.zarr
+      store_sha256: 9afaa7374b3c4c778dc1dcdfdab57b24c457e0a3b535d97f9dc31d3f9e97235d
+  - product_id: GAR-LaGalapaguera-sampled-t2_2023
+    kind: sampled
+    variable: t2
+    domain: GAR
+    method: nearest
+    units: K
+    uris:
+      analysis: s3://darwin-published/GAR-LaGalapaguera-sampled-t2_2023/1/analysis.zarr
+      store_sha256: f666763d7ba1f21f2e19c375ee0f59ee67a4acb9b6f25da7c95cc3ca5fe52ae7
+  - product_id: CMP_t2_LaGalapaguera_2023-06
+    kind: comparison-spec
+    variable: t2
+    domain: CMP
+    station_id: 18_AWS-PLaGalapaguera
+    format: json
+    model_product: GAR-LaGalapaguera-sampled-t2_2023
+    model_variable: t2
+    observation_product: AWS-LaGalapaguera-T_2023-06
+    observation_field: T
+    method: nearest
+    uris:
+      analysis: s3://darwin-published/CMP_t2_LaGalapaguera_2023-06/1/analysis.zarr
+  - product_id: AWS-ElJunco-T_2023-03
+    kind: observation
+    variable: t2
+    domain: AWS
+    station_id: 20_AWS-PElJunco
+    format: csv
+    units: K
+    uris:
+      analysis: s3://darwin-published/AWS-ElJunco-T_2023-03/1/analysis.zarr
+      store_sha256: 9e2052c937aa7398e75596487da77cfb3e053552e2fd8fc1cdfe2a60aed15044
+  - product_id: GAR-ElJunco-sampled-t2_2023
+    kind: sampled
+    variable: t2
+    domain: GAR
+    method: nearest
+    units: K
+    uris:
+      analysis: s3://darwin-published/GAR-ElJunco-sampled-t2_2023/1/analysis.zarr
+      store_sha256: d309b5261437e31f607d17175f99fe4147529cb62a264d97720859cb5bd6bf97
+  - product_id: CMP_t2_ElJunco_2023-03
+    kind: comparison-spec
+    variable: t2
+    domain: CMP
+    station_id: 20_AWS-PElJunco
+    format: json
+    model_product: GAR-ElJunco-sampled-t2_2023
+    model_variable: t2
+    observation_product: AWS-ElJunco-T_2023-03
+    observation_field: T
+    method: nearest
+    uris:
+      analysis: s3://darwin-published/CMP_t2_ElJunco_2023-03/1/analysis.zarr
+  - product_id: AWS-Baquerizo-T_2023-06
+    kind: observation
+    variable: t2
+    domain: AWS
+    station_id: 22_AWS-PPuertoBaquerizoMoreno
+    format: csv
+    units: K
+    uris:
+      analysis: s3://darwin-published/AWS-Baquerizo-T_2023-06/1/analysis.zarr
+      store_sha256: bed66a597ba2debf606da1499516d260ffaf7ac273cfee92e75f9fecb41fbf74
+  - product_id: GAR-Baquerizo-sampled-t2_2023
+    kind: sampled
+    variable: t2
+    domain: GAR
+    method: nearest
+    units: K
+    uris:
+      analysis: s3://darwin-published/GAR-Baquerizo-sampled-t2_2023/1/analysis.zarr
+      store_sha256: 063ff7a6832ca12cc0f044655a365a6e997cca99709407e24d927e16726e78cd
+  - product_id: CMP_t2_Baquerizo_2023-06
+    kind: comparison-spec
+    variable: t2
+    domain: CMP
+    station_id: 22_AWS-PPuertoBaquerizoMoreno
+    format: json
+    model_product: GAR-Baquerizo-sampled-t2_2023
+    model_variable: t2
+    observation_product: AWS-Baquerizo-T_2023-06
+    observation_field: T
+    method: nearest
+    uris:
+      analysis: s3://darwin-published/CMP_t2_Baquerizo_2023-06/1/analysis.zarr
+  - product_id: AWS-Villamil-T_2023-05
+    kind: observation
+    variable: t2
+    domain: AWS
+    station_id: 24_AWS-PPuertoVillamil
+    format: csv
+    units: K
+    uris:
+      analysis: s3://darwin-published/AWS-Villamil-T_2023-05/1/analysis.zarr
+      store_sha256: 9db2d347183e49e022c3d3d42d13c4d1c59733aa886bfdb3226fb71d5e75b1e9
+  - product_id: GAR-Villamil-sampled-t2_2023
+    kind: sampled
+    variable: t2
+    domain: GAR
+    method: nearest
+    units: K
+    uris:
+      analysis: s3://darwin-published/GAR-Villamil-sampled-t2_2023/1/analysis.zarr
+      store_sha256: e4b7c607d47cd51edae57f45f55981dd9ce8d8499969a14f6030001be74799ab
+  - product_id: CMP_t2_Villamil_2023-05
+    kind: comparison-spec
+    variable: t2
+    domain: CMP
+    station_id: 24_AWS-PPuertoVillamil
+    format: json
+    model_product: GAR-Villamil-sampled-t2_2023
+    model_variable: t2
+    observation_product: AWS-Villamil-T_2023-05
+    observation_field: T
+    method: nearest
+    uris:
+      analysis: s3://darwin-published/CMP_t2_Villamil_2023-05/1/analysis.zarr
+  - product_id: AWS-Villamil_2023-05
+    kind: observation
+    variable: prcp
+    domain: AWS
+    station_id: 24_AWS-PPuertoVillamil
+    format: csv
+    units: mm h-1
+    uris:
+      analysis: s3://darwin-published/AWS-Villamil_2023-05/1/analysis.zarr
+      store_sha256: 9c10e2cf77c4e40512c16ffb2d4669021c816f4767aea541ad86d92bc0617e16
+  - product_id: GAR-Villamil-sampled_2023
+    kind: sampled
+    variable: prcp
+    domain: GAR
+    method: nearest
+    units: mm h-1
+    uris:
+      analysis: s3://darwin-published/GAR-Villamil-sampled_2023/1/analysis.zarr
+      store_sha256: 2421c427ea25349bee7c0028abc78e7de0683e70cbdb88fb8d4cc86718e91d9c
+  - product_id: CMP_prcp_Villamil_2023-05
+    kind: comparison-spec
+    variable: prcp
+    domain: CMP
+    station_id: 24_AWS-PPuertoVillamil
+    format: json
+    model_product: GAR-Villamil-sampled_2023
+    model_variable: prcp
+    observation_product: AWS-Villamil_2023-05
+    observation_field: PCP_tot_bucket
+    method: nearest
+    uris:
+      analysis: s3://darwin-published/CMP_prcp_Villamil_2023-05/1/analysis.zarr
+  - product_id: AWS-Ayora-T_2023-05
+    kind: observation
+    variable: t2
+    domain: AWS
+    station_id: 26_AWS-PPuertoAyora
+    format: csv
+    units: K
+    uris:
+      analysis: s3://darwin-published/AWS-Ayora-T_2023-05/1/analysis.zarr
+      store_sha256: 832cc2074396d351b01f8bf29584c699bf25855afcd52c9d558a57998a7c5ce0
+  - product_id: GAR-Ayora-sampled-t2_2023
+    kind: sampled
+    variable: t2
+    domain: GAR
+    method: nearest
+    units: K
+    uris:
+      analysis: s3://darwin-published/GAR-Ayora-sampled-t2_2023/1/analysis.zarr
+      store_sha256: 20eed10bf1f15d621d8535ce5b66f9623269f2058995b31eef9d35f65f093371
+  - product_id: CMP_t2_Ayora_2023-05
+    kind: comparison-spec
+    variable: t2
+    domain: CMP
+    station_id: 26_AWS-PPuertoAyora
+    format: json
+    model_product: GAR-Ayora-sampled-t2_2023
+    model_variable: t2
+    observation_product: AWS-Ayora-T_2023-05
+    observation_field: T
+    method: nearest
+    uris:
+      analysis: s3://darwin-published/CMP_t2_Ayora_2023-05/1/analysis.zarr
+  - product_id: AWS-Ayora_2023-05
+    kind: observation
+    variable: prcp
+    domain: AWS
+    station_id: 26_AWS-PPuertoAyora
+    format: csv
+    units: mm h-1
+    uris:
+      analysis: s3://darwin-published/AWS-Ayora_2023-05/1/analysis.zarr
+      store_sha256: ee117bf1df9329265f2616980a2b3576c0d9323d9126e54eacd87d82decb3110
+  - product_id: GAR-Ayora-sampled_2023
+    kind: sampled
+    variable: prcp
+    domain: GAR
+    method: nearest
+    units: mm h-1
+    uris:
+      analysis: s3://darwin-published/GAR-Ayora-sampled_2023/1/analysis.zarr
+      store_sha256: 35b5e6985498c31f782b5dbd30e206d514c826e45adfaa9b6b3b3b7fb36a367e
+  - product_id: CMP_prcp_Ayora_2023-05
+    kind: comparison-spec
+    variable: prcp
+    domain: CMP
+    station_id: 26_AWS-PPuertoAyora
+    format: json
+    model_product: GAR-Ayora-sampled_2023
+    model_variable: prcp
+    observation_product: AWS-Ayora_2023-05
+    observation_field: PCP_tot_bucket
+    method: nearest
+    uris:
+      analysis: s3://darwin-published/CMP_prcp_Ayora_2023-05/1/analysis.zarr
+  - product_id: AWS-Militar-T_2023-05
+    kind: observation
+    variable: t2
+    domain: AWS
+    station_id: 28_AWS-PMilitar
+    format: csv
+    units: K
+    uris:
+      analysis: s3://darwin-published/AWS-Militar-T_2023-05/1/analysis.zarr
+      store_sha256: f6ce22d2d1d85007da8980299b07e78ac77436ae722351b5e15055e0584e5f6b
+  - product_id: GAR-Militar-sampled-t2_2023
+    kind: sampled
+    variable: t2
+    domain: GAR
+    method: nearest
+    units: K
+    uris:
+      analysis: s3://darwin-published/GAR-Militar-sampled-t2_2023/1/analysis.zarr
+      store_sha256: 5babdc9785ecf27c8e4cc38d8b4aede807681cc58b0268816e9913872133c032
+  - product_id: CMP_t2_Militar_2023-05
+    kind: comparison-spec
+    variable: t2
+    domain: CMP
+    station_id: 28_AWS-PMilitar
+    format: json
+    model_product: GAR-Militar-sampled-t2_2023
+    model_variable: t2
+    observation_product: AWS-Militar-T_2023-05
+    observation_field: T
+    method: nearest
+    uris:
+      analysis: s3://darwin-published/CMP_t2_Militar_2023-05/1/analysis.zarr
