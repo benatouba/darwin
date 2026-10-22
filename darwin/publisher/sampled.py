@@ -10,6 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Mapping, Sequence
 
+from darwin.publisher.stations import StationRegistry
+
 #: Sampling methods with a published immutable series per station.
 METHODS = ("nearest", "prescribed", "bilinear")
 
@@ -68,7 +70,7 @@ def sample(
     station_lat: float,
     method: str,
     prescribed_points: Mapping[tuple[float, float], tuple[int, int]] | None = None,
-    station_registry: object | None = None,
+    station_registry: StationRegistry | Mapping[str, bool] | None = None,
     station_id: str | None = None,
 ) -> SampledSeries:
     """Sample a native-cadence grid series at a station location.
@@ -76,10 +78,17 @@ def sample(
     ``prescribed`` uses the approved prescribed-point register entry for
     the station coordinates; a missing entry raises LookupError so the
     option stays disabled instead of silently falling back to nearest.
+
+    When station identity or approval information is supplied, prescribed
+    sampling also requires an approved current station record. A mapping
+    of station IDs to approval flags may be used instead of a registry.
+    Calls supplying neither retain the approved-point-register contract.
     """
     if method not in METHODS:
         raise ValueError(f"unknown sampling method: {method!r}")
     if method == "prescribed":
+        if station_registry is not None or station_id is not None:
+            _require_approved_station(station_registry, station_id)
         return _prescribed(
             lons, lats, values, station_lon, station_lat, prescribed_points or {}
         )
@@ -95,6 +104,27 @@ def sample(
         grid_lat=lats[grid_y],
         values=tuple(step[grid_y][grid_x] for step in values),
     )
+
+
+def _require_approved_station(
+    registry: StationRegistry | Mapping[str, bool] | None,
+    station_id: str | None,
+) -> None:
+    """Reject unknown or pending current station records without a fallback."""
+    approved = False
+    if station_id is not None:
+        if isinstance(registry, StationRegistry):
+            try:
+                approved = registry.history(station_id)[-1].approved
+            except KeyError:
+                pass
+        elif registry is not None:
+            approved = registry.get(station_id) is True
+    if not approved:
+        raise LookupError(
+            "no approved station location record for prescribed sampling: "
+            "the option stays disabled, never a silent nearest fallback"
+        )
 
 
 def _prescribed(
