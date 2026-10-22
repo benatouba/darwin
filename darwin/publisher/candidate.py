@@ -34,7 +34,9 @@ def run_manifest(manifest: Manifest, catalogue: Catalogue) -> Candidate:
     """Register one candidate per requested product, without scanning sources."""
     registered: Candidate | None = None
     for spec in manifest.products:
-        version = catalogue.next_version(spec.product_id, manifest.release)
+        version = spec.version or catalogue.next_version(
+            spec.product_id, manifest.release
+        )
         digest = hashlib.sha256(
             f"{manifest.revision}|{spec.product_id}|{version}".encode("utf-8")
         ).hexdigest()[:16]

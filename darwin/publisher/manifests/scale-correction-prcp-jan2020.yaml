@@ -1,0 +1,43 @@
+# Scale correction (dashboard#31): re-reviewed corrective re-publication of the
+# January-2020 precipitation slice with the fixed scale widened from [0, 2]
+# to [0, 3.5] mm h-1.
+#
+# REVIEW: approved as a single-product corrective release. Evidence: the full
+# 1980-2025 monthly 2D prcp fetch (46 yearly sources, 552 monthly fields)
+# peaks at 3.49 mm h-1, so the T4 [0, 2] scale (set against the 2020-only
+# max 1.65) clips real extremes. Nothing else changes: same source bytes,
+# same analysis store, same aggregations, units now declared explicitly
+# (previously backfilled dashboard-side only).
+# The version label is pinned to smoke1.2 so the corrected candidate
+# supersedes smoke1.1 instead of colliding with it; any change re-binds
+# `revision` (sha256 of these exact bytes) and needs a fresh review.
+#
+# Source paths are relative to the repository root; the sha256 was recorded
+# from the reviewed bytes (matches smoke-jan2020-prcp.yaml).
+
+name: scale-correction-prcp-jan2020
+release: smoke1
+sources:
+  - path: GAR_d02km_m_2d_prcp_2020.nc
+    sha256: 5fb7bcbaed6a3b3d4df4f03455ce2acc1f7c424e7a33c5799888d2b122465adf
+products:
+  - product_id: GAR_d02km_m_2d_prcp_2020-01
+    kind: slice
+    version: smoke1.2
+    citation: "GAR monthly precipitation, January 2020, 2 km domain (GAR_d02km_m_2d_prcp_2020.nc)"
+    variable: "prcp"
+    domain: "d02km"
+    format: "zarr-v3-consolidated"
+    units: "mm h-1"
+    palette: "Blues"
+    transform: "linear"
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_2020-01/1/analysis.zarr"}
+
+    aggregations:
+      - method: sum
+        interval: daily
+        missing_data: require-complete
+      - method: sum
+        interval: monthly
+        missing_data: require-complete

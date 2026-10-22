@@ -8,7 +8,7 @@ from pathlib import Path
 
 import yaml
 
-AGGREGATION_METHODS = ("mean", "min", "max", "sum")
+AGGREGATION_METHODS = ("mean", "min", "max", "sum", "component_mean")
 AGGREGATION_INTERVALS = ("daily", "monthly", "annual")
 AGGREGATION_MISSING_DATA = ("exclude-missing", "require-complete")
 
@@ -70,11 +70,20 @@ class ProductSpec:
     variable: str = ""
     domain: str = ""
     format: str = ""
+    units: str = ""
     palette: str = ""
     transform: str = ""
     color_range: tuple[float, float] = ()
     uris: dict[str, str] = field(default_factory=dict)
     aggregations: tuple[AggregationSpec, ...] = ()
+    version: str = ""
+    """Explicit version-label pin for a corrective re-publication.
+
+    Empty (the default) auto-assigns the next label for the release via
+    ``Catalogue.next_version``. A reviewed corrective manifest may pin a
+    later label (e.g. ``smoke1.2``) so the corrected candidate supersedes
+    the earlier publication instead of colliding with it.
+    """
 
 
 @dataclass(frozen=True)
@@ -156,6 +165,7 @@ def load_manifest(path: str | Path) -> Manifest:
                 variable=item.get("variable", ""),
                 domain=item.get("domain", ""),
                 format=item.get("format", ""),
+                units=item.get("units", ""),
                 palette=item.get("palette", ""),
                 transform=item.get("transform", ""),
                 color_range=tuple(item.get("color_range", ())),
@@ -163,6 +173,7 @@ def load_manifest(path: str | Path) -> Manifest:
                 aggregations=_parse_aggregations(
                     item["product_id"], item.get("aggregations")
                 ),
+                version=str(item.get("version", "") or ""),
             )
             for item in data.get("products", [])
         ),

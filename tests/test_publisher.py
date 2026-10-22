@@ -166,3 +166,35 @@ def test_manifest_rejects_non_list_aggregations(tmp_path, declaration):
     )
     with pytest.raises(ValueError, match="GAR_d02km_m_2d_prcp_2020-01"):
         load_manifest(path)
+
+
+def test_manifest_version_pin_is_used_verbatim(tmp_path):
+    path = tmp_path / "manifest.yaml"
+    path.write_text(
+        "name: prcp-scale-correction\n"
+        "release: smoke1\n"
+        "products:\n"
+        "  - product_id: GAR_d02km_m_2d_prcp_2020-01\n"
+        "    kind: slice\n"
+        "    version: smoke1.2\n"
+    )
+    manifest = load_manifest(path)
+    assert manifest.products[0].version == "smoke1.2"
+    candidate = run_manifest(manifest, Catalogue())
+    assert candidate.version == "smoke1.2"
+    assert candidate.candidate_id.startswith("GAR_d02km_m_2d_prcp_2020-01@smoke1.2#")
+
+
+def test_manifest_without_version_pin_auto_assigns_next(tmp_path):
+    path = tmp_path / "manifest.yaml"
+    path.write_text(
+        "name: no-pin\n"
+        "release: smoke1\n"
+        "products:\n"
+        "  - product_id: GAR_d02km_m_2d_prcp_2020-01\n"
+        "    kind: slice\n"
+    )
+    manifest = load_manifest(path)
+    assert manifest.products[0].version == ""
+    candidate = run_manifest(manifest, Catalogue())
+    assert candidate.version == "smoke1.1"

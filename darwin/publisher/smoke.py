@@ -75,6 +75,7 @@ def build_smoke_release(
                 "variable": spec.variable,
                 "domain": spec.domain,
                 "format": spec.format,
+                "units": spec.units,
                 "palette": spec.palette,
                 "transform": spec.transform,
                 "color_range": list(spec.color_range),
