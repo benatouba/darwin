@@ -71,10 +71,21 @@ def test_precip_depth_integration_and_extras():
     assert extras.total_obs == pytest.approx(0.5)
     assert extras.wet_frequency_gar == pytest.approx(2 / 3)
     assert extras.wet_frequency_obs == pytest.approx(1 / 3)
-    assert (extras.hits, extras.misses) == (1, 1)
-    assert (extras.false_alarms, extras.correct_negatives) == (0, 1)
+    # AWS observation product is truth: miss = obs wet / GAR dry,
+    # false alarm = GAR wet / obs dry.
+    assert (extras.hits, extras.misses) == (1, 0)
+    assert (extras.false_alarms, extras.correct_negatives) == (1, 1)
 
 
+def test_empty_depths_carry_zero_extras_without_dividing_by_zero():
+    extras = precip_extras(gar_depths=(), obs_depths=())
+    assert extras.total_gar == 0.0
+    assert extras.total_obs == 0.0
+    assert (extras.hits, extras.misses, extras.false_alarms) == (0, 0, 0)
+
+
+def test_coarser_completeness_with_no_expected_hourlies_is_none():
+    assert complete_coarser((1.0,), expected=0) is None
 def test_compare_rejects_unknown_cadence():
     with pytest.raises(ValueError):
         compare("t2", "T", gar_values=(20.0,), obs_values=(21.0,), cadence="decadal")
@@ -99,5 +110,6 @@ def test_wind_circular_diagnostics_exclude_calm_pairs():
     assert result.excluded_calm == 1
     assert result.gar_circ_mean == pytest.approx(0.0)
     assert result.obs_circ_mean == pytest.approx(15.0)
-    assert result.signed_bias == pytest.approx(15.0)
+    # Bias convention is GAR minus OBS, matching scalar bias=g-o.
+    assert result.signed_bias == pytest.approx(-15.0)
     assert result.maae == pytest.approx(15.0)

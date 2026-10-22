@@ -150,6 +150,8 @@ def complete_coarser(
     hourly_values: Sequence[float | None], expected: int
 ) -> float | None:
     """Aggregate hourly values; None (excluded) below 90% coverage."""
+    if expected <= 0:
+        return None
     valid = [v for v in hourly_values if v is not None]
     if not valid or len(valid) / expected < COARSER_COVERAGE_REQUIRED:
         return None
@@ -183,18 +185,32 @@ def precip_extras(
     gar_depths: Sequence[float], obs_depths: Sequence[float]
 ) -> PrecipExtras:
     """Totals, wet frequency and zero/non-zero contingency for paired depths."""
+    count = len(gar_depths)
+    if count == 0:
+        return PrecipExtras(0.0, 0.0, 0.0, 0.0, 0, 0, 0, 0)
     gar_wet = [d > WET_THRESHOLD_MM for d in gar_depths]
     obs_wet = [d > WET_THRESHOLD_MM for d in obs_depths]
-    count = len(gar_depths)
+    hits = misses = false_alarms = correct_negatives = 0
+    for gar_is_wet, obs_is_wet in zip(gar_wet, obs_wet):
+        if gar_is_wet and obs_is_wet:
+            hits += 1
+        elif obs_is_wet:
+            # AWS observation product is truth: observed but not modeled.
+            misses += 1
+        elif gar_is_wet:
+            # Modeled but not observed.
+            false_alarms += 1
+        else:
+            correct_negatives += 1
     return PrecipExtras(
         total_gar=sum(gar_depths),
         total_obs=sum(obs_depths),
         wet_frequency_gar=sum(gar_wet) / count,
         wet_frequency_obs=sum(obs_wet) / count,
-        hits=sum(1 for g, o in zip(gar_wet, obs_wet) if g and o),
-        misses=sum(1 for g, o in zip(gar_wet, obs_wet) if g and not o),
-        false_alarms=sum(1 for g, o in zip(gar_wet, obs_wet) if not g and o),
-        correct_negatives=sum(1 for g, o in zip(gar_wet, obs_wet) if not g and not o),
+        hits=hits,
+        misses=misses,
+        false_alarms=false_alarms,
+        correct_negatives=correct_negatives,
     )
 
 
@@ -249,7 +265,8 @@ def circular_wind(
         return WindResult(0, excluded, None, None, None, None)
     gar_angles = [g for g, _ in eligible]
     obs_angles = [o for _, o in eligible]
-    diffs = [_wrap_signed(o - g) for g, o in eligible]
+    # Bias convention is GAR minus OBS, matching scalar bias=g-o.
+    diffs = [_wrap_signed(g - o) for g, o in eligible]
     return WindResult(
         paired_count=len(eligible),
         excluded_calm=excluded,
