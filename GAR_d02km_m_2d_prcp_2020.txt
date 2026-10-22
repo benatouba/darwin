@@ -1,0 +1,75 @@
+File GAR_d02km_m_2d_prcp_2020.nc (NC_FORMAT_NETCDF4):
+
+     3 variables (excluding dimension variables):
+        float lon[west_east,south_north]   (Contiguous storage)  
+            long_name: Longitude
+            units: degrees_east
+        float lat[west_east,south_north]   (Contiguous storage)  
+            long_name: Latitude
+            units: degrees_north
+        float prcp[west_east,south_north,time]   (Chunking: [245,230,1])  (Compression: shuffle,level 4)
+            long_name: total precipitation (step-wize)
+            units: mm h-1
+            agg_method: mean
+            coordinates: lon lat
+
+     3 dimensions:
+        time  Size:12   *** is unlimited *** 
+            long_name: Time
+            units: days since 2020-01-01 00:00:00
+            calendar: standard
+        west_east  Size:245 
+            long_name: x-coordinate in Cartesian system
+            units: m
+        south_north  Size:230 
+            long_name: y-coordinate in Cartesian system
+            units: m
+[1] ">>>> WARNING <<<  attribute GRID_NX is an 8-byte value, but R"
+[1] "does not support this data type. I am returning a double precision"
+[1] "floating point, but you must be aware that this could lose precision!"
+[1] ">>>> WARNING <<<  attribute GRID_NY is an 8-byte value, but R"
+[1] "does not support this data type. I am returning a double precision"
+[1] "floating point, but you must be aware that this could lose precision!"
+
+    41 global attributes:
+        TITLE: GAR V1
+        DATA_NOTES: File generated with the output of successive model runs of 36H (first 12 hours discarded for spin-up)
+        WRF_VERSION:  OUTPUT FROM WRF V4.3.3 MODEL
+        CREATED_BY: Benjamin Schmidt - benjamin.schmidt@tu-berlin.de
+        CREATION_DATE: 11.02.2024 13:07:57
+        SOFTWARE_NOTES: IDL V8.7.0, WAVE post V0.1
+        VARNAME: prcp
+        PROJECTION: WRF Mercator
+        PROJ_ENVI_STRING: {20, 6370000.00000000, 6370000.00000000,       2.00000000,     -90.31006622, 0.0, 0.0, WGS-84, WRF Mercator}
+        DATUM: WGS-84
+        DOMAIN: 2
+        NESTED: YES
+        TIME_ZONE: UTC
+        DX: 2000
+        DY: 2000
+        X0:    -244000.0
+        Y0:    -274001.4
+        PRODUCT_LEVEL: m
+        LEVEL_INFO: H: original simulation output; D: daily; M: monthly; Y: yearly; 
+        INSTITUTION: Technische Universität Berlin, Institut für Ökologie, Fachgebiet Klimatologie
+        GRID_INFO: Grid spacing: GRID_DX and GRID_DY (unit: m), Down left corner: GRID_X00 and GRID_Y00 (unit: m), Upper Left Corner: GRID_X01 and GRID_Y01 (unit: m)
+        experiment: GAR
+        year: 2020
+        PROJ_DATUM: wgs-84
+        Conventions: CF-1.8
+        pyproj_srs: +k_0=1.0 +units=m +lat_0=2.0 +lon_0=-90.31006622 +x_0=0.0 +y_0=0.0 +ellps=WGS84 +datum=WGS84 +name=WRFMercator +proj=merc +no_defs
+        frequency: m
+        dimensionality: 2d
+        GRID_DX: 2000
+        GRID_DY: 2000
+        GRID_X00: -244000
+        GRID_Y00: -274001.375
+        GRID_X01: -244000
+        GRID_Y01: 183998.625
+        GRID_NX: 245
+        GRID_NY: 230
+        CEN_LON: 0
+        PROJ_NAME: WRF Mercator
+        LON_0: -90.31006622
+        LAT_0: 2
+        TRUELAT1: 2
