@@ -1,4 +1,5 @@
 """Calculate and extract CAPE products from wrfpost files."""
+
 import argparse
 import os.path as path
 import subprocess
@@ -171,7 +172,7 @@ def extract_cape_month(fg_dir, working_dir, out_dir, year, month):
             run_cmd("rm -f " + local_wrf)
             return
 
-    out_name= f"GAR_d02km_h_2d_cape_{datetime(year, month, 1).strftime('%Y-%m')}.nc"
+    out_name = f"GAR_d02km_h_2d_cape_{datetime(year, month, 1).strftime('%Y-%m')}.nc"
     write_cape_to_nc(cape_all, salem.open_wrf_dataset(local_wrf), path.join(out_dir, out_name))
     run_cmd("rm -f " + local_wrf)
 

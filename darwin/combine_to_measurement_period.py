@@ -33,7 +33,7 @@ def parse_input(parser: argparse.ArgumentParser) -> argparse.Namespace:
         "--folder",
         help="Topfolder to search for files to process",
         type=Path,
-        default= Path.home() / "data" / "GAR" / "MM",
+        default=Path.home() / "data" / "GAR" / "MM",
     )
     parser.add_argument(
         "-s",

@@ -42,7 +42,7 @@ color_map = LinearSegmentedColormap.from_list(
 )
 
 
-class Station():
+class Station:
     def __init__(self, f):
         self.data = self.__read_csv__(f)
         return self.data

@@ -70,9 +70,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 c.retrieve(
-    "reanalysis-era5-single-levels"
-    if args.dataset == "sfc"
-    else "reanalysis-era5-pressure-levels",
+    "reanalysis-era5-single-levels" if args.dataset == "sfc" else "reanalysis-era5-pressure-levels",
     {
         "product_type": "reanalysis",
         "variable": args.variable,

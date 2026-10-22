@@ -360,5 +360,7 @@ def get_nino_index(index: str) -> xr.Dataset:
     """
     df = pd.read_csv("nino12index.csv")
     df_long = pd.melt(df, id_vars=["year"], var_name="month", value_name="value")
-    df_long["time"] = pd.to_datetime(df_long["year"].astype(str) + "-" + df_long["month"].astype(str))
+    df_long["time"] = pd.to_datetime(
+        df_long["year"].astype(str) + "-" + df_long["month"].astype(str)
+    )
     return xr.Dataset.from_dataframe(df_long[["value"]].set_index(df_long["time"])).sortby("time")

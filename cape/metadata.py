@@ -1,4 +1,5 @@
 """Hold metadata for products."""
+
 from datetime import datetime
 from os.path import path
 from platform import python_version
