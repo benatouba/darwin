@@ -8,7 +8,7 @@ researcher-invisible until an admin approves the record.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 
 @dataclass(frozen=True)
@@ -25,6 +25,8 @@ class StationLocationRecord:
     valid_from: str
     valid_to: str | None = None
     approved: bool = False
+    approved_by: str | None = None
+    approved_at: str | None = None
 
 
 class StationRegistry:
@@ -45,9 +47,7 @@ class StationRegistry:
         chain = self._records.setdefault(record.station_id, [])
         if chain and chain[-1].valid_to is None:
             previous = chain[-1]
-            chain[-1] = StationLocationRecord(
-                **{**previous.__dict__, "valid_to": record.valid_from}
-            )
+            chain[-1] = replace(previous, valid_to=record.valid_from)
         chain.append(record)
         return record
 
@@ -56,20 +56,32 @@ class StationRegistry:
         return tuple(self._records[station_id])
 
     def approve(self, station_id: str, approved_by: str, approved_at: str) -> StationLocationRecord:
-        """Approve the open record for a station, making it researcher-visible."""
+        """Approve the open record for a station, making it researcher-visible.
+
+        The approval stores who approved and when; the previously
+        registered object is left untouched and the chain entry is
+        replaced, never mutated in place.
+        """
         chain = self._records[station_id]
         record = chain[-1]
-        approved_record = StationLocationRecord(
-            **{**record.__dict__, "approved": True}
+        approved_record = replace(
+            record, approved=True, approved_by=approved_by, approved_at=approved_at
         )
         chain[-1] = approved_record
         return approved_record
 
     def visible_stations(self) -> tuple[StationLocationRecord, ...]:
-        """Return approved records only; pending records stay researcher-invisible."""
-        return tuple(
-            record
-            for chain in self._records.values()
-            for record in chain
-            if record.approved
-        )
+        """Return the latest approved record per station.
+
+        Pending records stay researcher-invisible; superseded end-dated
+        records are hidden once a newer record exists, except that the
+        most recently approved record remains visible while its
+        successor is still pending approval.
+        """
+        visible: list[StationLocationRecord] = []
+        for chain in self._records.values():
+            for record in reversed(chain):
+                if record.approved:
+                    visible.append(record)
+                    break
+        return tuple(visible)
