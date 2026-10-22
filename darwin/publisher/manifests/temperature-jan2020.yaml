@@ -1,0 +1,26 @@
+# Reviewed 2D monthly 2 m temperature slice; source file is retrieved
+# from https://data.klima.tu-berlin.de/GAR/v1/d02km/m/2d/ .
+# Store only the 2020-01 timestep in the dashboard seed; verify the exact
+# downloaded source checksum before extracting. Values remain in source K.
+name: temperature-jan2020
+release: temp1
+sources:
+  - path: GAR_d02km_m_2d_t2_2020.nc
+    sha256: 392067fad109006f311cb1121f8574459c637bd690cfa4126016aaabaeda5056
+products:
+  - product_id: GAR_d02km_m_2d_t2_2020-01
+    version: temp1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, January 2020, 2 km domain (GAR_d02km_m_2d_t2_2020.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_2020-01/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
