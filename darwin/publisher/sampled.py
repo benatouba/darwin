@@ -24,6 +24,40 @@ class SampledSeries:
     grid_lon: float
     grid_lat: float
     values: tuple[float, ...]
+    station_lon: float | None = None
+    station_lat: float | None = None
+    version: int = 1
+    product_id: str | None = None
+    cadence: str = "hourly"
+    manifest_revision: str | None = None
+
+
+# Bilinear weights are pure index arithmetic on the t2 grid axes, so no
+# xarray dependency is needed here.
+_AXIS_SOURCE = "t2-grid axes"
+
+
+def _cell_series(
+    values: Sequence[Sequence[Sequence[float]]], grid_x: int, grid_y: int
+) -> tuple[float, ...]:
+    """One value per timestep from a single grid cell."""
+    return tuple(step[grid_y][grid_x] for step in values)
+
+
+def _axis_weights(axis: Sequence[float], at: float) -> tuple[int, int, float]:
+    """Lower/upper indices and clamped fraction of ``at`` along ``axis``."""
+    if len(axis) < 2 or axis[-1] == axis[0]:
+        return 0, 0, 0.0
+    lo = max(0, min(len(axis) - 2, _lower(axis, at)))
+    hi = lo + 1
+    span = axis[hi] - axis[lo]
+    frac = 0.0 if span == 0 else (at - axis[lo]) / span
+    return lo, hi, max(0.0, min(1.0, frac))
+
+
+def _normalize_key(lon: float, lat: float) -> tuple[float, float]:
+    """Prescribed-point key without exact float equality."""
+    return (round(lon, 6), round(lat, 6))
 
 
 def sample(
@@ -34,6 +68,8 @@ def sample(
     station_lat: float,
     method: str,
     prescribed_points: Mapping[tuple[float, float], tuple[int, int]] | None = None,
+    station_registry: object | None = None,
+    station_id: str | None = None,
 ) -> SampledSeries:
     """Sample a native-cadence grid series at a station location.
 

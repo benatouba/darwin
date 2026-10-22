@@ -67,3 +67,19 @@ def test_prescribed_without_register_entry_is_disabled():
             method="prescribed",
             prescribed_points={},
         )
+
+
+def test_prescribed_requires_approved_station_approval():
+    lons, lats, values = _grid()
+    with pytest.raises(LookupError):
+        sample(
+            lons,
+            lats,
+            values,
+            station_lon=0.1,
+            station_lat=10.1,
+            method="prescribed",
+            prescribed_points={(0.1, 10.1): (2, 1)},
+            station_registry={"30": False},
+            station_id="99",
+        )
