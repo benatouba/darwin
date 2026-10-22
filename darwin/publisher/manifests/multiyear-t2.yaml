@@ -1,0 +1,975 @@
+# Reviewed multiyear batch: monthly 2D GAR 2 m air temperature, 1980-2025.
+# One year-product per source year, 12 monthly timesteps each.
+# Sources retrieved from https://data.klima.tu-berlin.de/GAR/v1/d02km/m/2d/ ;
+# sha256 checksums transcribed from the staging SHA256SUMS (92 lines).
+# Precipitation uses the corrected fixed scale 0-3.5 mm h-1 (spec #31).
+name: multiyear-t2
+release: multiyear1
+sources:
+  - path: GAR_d02km_m_2d_t2_1980.nc
+    sha256: 4a3e56d213144dd1da6e816f5d67876ad09db4ba6cd3e57ad7e1d901bd564ec8
+  - path: GAR_d02km_m_2d_t2_1981.nc
+    sha256: 7ecf986c86492e15b2cb9b3bf3ae0f0898d91c5956e1f0e9706a99047a9c5d59
+  - path: GAR_d02km_m_2d_t2_1982.nc
+    sha256: 6f27ef412cb98161fa1e4608490faa75d91eea57f16a4f76d699f28c03a7af8e
+  - path: GAR_d02km_m_2d_t2_1983.nc
+    sha256: cbe17d31cb71b9b7c7d40cc6bbe4c01d6ad829e5b9e7cc232da9ea499a58e441
+  - path: GAR_d02km_m_2d_t2_1984.nc
+    sha256: 5772a371bff6f6633f538aa4743d7f89df387e98179bdd64e341aad4f7fe9f60
+  - path: GAR_d02km_m_2d_t2_1985.nc
+    sha256: 919e2d28ea09c9a53a2c13502e8d4bac83954aa9f395e9ccf014e9ce0aff93b9
+  - path: GAR_d02km_m_2d_t2_1986.nc
+    sha256: abdcd7d8aaef864eca5b5d2f0144eca285e0b752be2048a380267ca3fd22eb7b
+  - path: GAR_d02km_m_2d_t2_1987.nc
+    sha256: 6a9de96cb787e65593cc9882fa368b78c98bf27e78240893f278ffb6663bff4d
+  - path: GAR_d02km_m_2d_t2_1988.nc
+    sha256: aeb4014f41dcc98c6d2e19206070fe7a612a7736729c73743a7c6ded2e56db8d
+  - path: GAR_d02km_m_2d_t2_1989.nc
+    sha256: d1b0c0d2ff9b99eb955d8be60476076ca1b497e6a082b0e7e10b0c553b827e1e
+  - path: GAR_d02km_m_2d_t2_1990.nc
+    sha256: 424445314cb5873d753116388ad617fe52618117660250b3a949d201f287aa2d
+  - path: GAR_d02km_m_2d_t2_1991.nc
+    sha256: 7e7b4d0f954c44f3135216f9472254d881abb1a7a8c906e221a1d815837318db
+  - path: GAR_d02km_m_2d_t2_1992.nc
+    sha256: 738aa0324026128f9a0e45f79295563adf5af0ef69b3c9aaf66afe8250bcf6e0
+  - path: GAR_d02km_m_2d_t2_1993.nc
+    sha256: 21e03e629652903ce51bf20748d76d9f0d2f30ae2676c45cc7f6289fbc770f9b
+  - path: GAR_d02km_m_2d_t2_1994.nc
+    sha256: 749861c006eb5a1a9c445cc09de5ade8a840d26659ed2499555d66eff9347ad6
+  - path: GAR_d02km_m_2d_t2_1995.nc
+    sha256: d8c332ed99e8066a51e86aa9606f5d40cd78f33a7bfe7aed6dea3cc0578f37c8
+  - path: GAR_d02km_m_2d_t2_1996.nc
+    sha256: 867d719c8b6649c96965e33fc818a2709c14e82246e3d5ecfd9207c212d6855b
+  - path: GAR_d02km_m_2d_t2_1997.nc
+    sha256: 924017c6c98dc561100d39d38719c814a4e42c37f819009e77d7be2544b8580f
+  - path: GAR_d02km_m_2d_t2_1998.nc
+    sha256: 623a9ff2366b1bedb2a0cf0dbeb44df290612885eff38287a3ab44f768a6d750
+  - path: GAR_d02km_m_2d_t2_1999.nc
+    sha256: 447f100b3f7dff7660ae167bb206981db4d1c74cf5497dbc2eb8dc38e6633cb5
+  - path: GAR_d02km_m_2d_t2_2000.nc
+    sha256: cf7cca78510ff556b9456d683bc67f3a1aa6b233e814a062603c68810984d73a
+  - path: GAR_d02km_m_2d_t2_2001.nc
+    sha256: da7fe9dab022fb835a1bdce129a83e52902108ee5a9298717d13471e92e67eaf
+  - path: GAR_d02km_m_2d_t2_2002.nc
+    sha256: eccc271461db57b24fba37c4c8eee9021efa9215a5dc5d47d787813653c05fd9
+  - path: GAR_d02km_m_2d_t2_2003.nc
+    sha256: 38600fbe965f2cfc2b6704a577e58512fb188f7d12c1873829054ae9223264b8
+  - path: GAR_d02km_m_2d_t2_2004.nc
+    sha256: ae3e8e677ce4db273dd64f9e8a4f628b6cda6824aacf89d87a670d6695be9a20
+  - path: GAR_d02km_m_2d_t2_2005.nc
+    sha256: 1438d51b2000d26bc3b44979f0bb7aa3b64c550a7e897129cd321648edab0b83
+  - path: GAR_d02km_m_2d_t2_2006.nc
+    sha256: fa3d49deb3fe9f679d852ee8507a837df869eb7eaab9900b0c782e57a9757917
+  - path: GAR_d02km_m_2d_t2_2007.nc
+    sha256: 58dc898c1400903c5d2b6af4449eeaff2530b3d46fa3ffb9c649ee57ae0fad25
+  - path: GAR_d02km_m_2d_t2_2008.nc
+    sha256: a90d0e45b68ec9720fc144549e2d7dfdf830f8544a3d7f847d7e5915ec338a63
+  - path: GAR_d02km_m_2d_t2_2009.nc
+    sha256: 3b5d786a2f9ded31cd6ab8f7e2fd92902bfb214330ada192ff6d66708bd6a429
+  - path: GAR_d02km_m_2d_t2_2010.nc
+    sha256: 18608133ef22f0229946311f6ac7cfb14b28a2f1eadc1e05b568c40fcf291149
+  - path: GAR_d02km_m_2d_t2_2011.nc
+    sha256: 9f5cc407d18bbef88ee4e34f24f5ebbd3e034b33dfa4744dd3b8716710e506f7
+  - path: GAR_d02km_m_2d_t2_2012.nc
+    sha256: aeec943323094dbf0c8a1c3b47f9e8bfe77bd22b09bd3e227084691fa2ee7c82
+  - path: GAR_d02km_m_2d_t2_2013.nc
+    sha256: 696e6b85233b7eceb4601ab83b0279eaceca51e7fb1a1417b04ffa7fa4af43ef
+  - path: GAR_d02km_m_2d_t2_2014.nc
+    sha256: fc91265b460a6a8e9574c92ed412b089869504f3ac58da8a3ca04ad99469919a
+  - path: GAR_d02km_m_2d_t2_2015.nc
+    sha256: 14f75f237b1e226e4a99e9861c9d18ea8815c10abce47c7b223cf862759c5efc
+  - path: GAR_d02km_m_2d_t2_2016.nc
+    sha256: 2a72dab4f7309fcc20438e076ad3e2926c426ab47b898b31ef09221f5d701831
+  - path: GAR_d02km_m_2d_t2_2017.nc
+    sha256: beb48782a391bf67b27c8a8051097d7b1220ed7238fcbadc2e0083ae29f064b9
+  - path: GAR_d02km_m_2d_t2_2018.nc
+    sha256: 26e7f03bd5fc488afb92fd2e8db96abc4d8c66f110ea21f5a105b6e9ea39b4dc
+  - path: GAR_d02km_m_2d_t2_2019.nc
+    sha256: 233f291320e3933f907e3d509ce48ec4448ee79c9ac62cb9ad6cf33e030c2110
+  - path: GAR_d02km_m_2d_t2_2020.nc
+    sha256: 392067fad109006f311cb1121f8574459c637bd690cfa4126016aaabaeda5056
+  - path: GAR_d02km_m_2d_t2_2021.nc
+    sha256: 9669dc33b3a97a4bd337ad1174e4e3e3393ed349cbbef66f424ff92c10b1db75
+  - path: GAR_d02km_m_2d_t2_2022.nc
+    sha256: a6104c42ed45d7837588e508d93e595d591abd49c43c690a25f39e004ab11dee
+  - path: GAR_d02km_m_2d_t2_2023.nc
+    sha256: a6b1a402c5d842c258a27af8374af12b967c724bca8292bd48465235bffd165b
+  - path: GAR_d02km_m_2d_t2_2024.nc
+    sha256: e75cc028b85f4e5297ecae41a2c562c62822c16f4ac7fb1b76a419a428fff793
+  - path: GAR_d02km_m_2d_t2_2025.nc
+    sha256: d78cbde4d61bdb18e3183279b12246bedc5720fcb80429ea77d48f6c85a0b547
+products:
+  - product_id: GAR_d02km_m_2d_t2_1980
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 1980, 2 km domain (GAR_d02km_m_2d_t2_1980.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_1980/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_1981
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 1981, 2 km domain (GAR_d02km_m_2d_t2_1981.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_1981/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_1982
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 1982, 2 km domain (GAR_d02km_m_2d_t2_1982.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_1982/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_1983
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 1983, 2 km domain (GAR_d02km_m_2d_t2_1983.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_1983/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_1984
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 1984, 2 km domain (GAR_d02km_m_2d_t2_1984.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_1984/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_1985
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 1985, 2 km domain (GAR_d02km_m_2d_t2_1985.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_1985/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_1986
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 1986, 2 km domain (GAR_d02km_m_2d_t2_1986.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_1986/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_1987
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 1987, 2 km domain (GAR_d02km_m_2d_t2_1987.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_1987/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_1988
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 1988, 2 km domain (GAR_d02km_m_2d_t2_1988.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_1988/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_1989
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 1989, 2 km domain (GAR_d02km_m_2d_t2_1989.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_1989/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_1990
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 1990, 2 km domain (GAR_d02km_m_2d_t2_1990.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_1990/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_1991
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 1991, 2 km domain (GAR_d02km_m_2d_t2_1991.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_1991/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_1992
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 1992, 2 km domain (GAR_d02km_m_2d_t2_1992.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_1992/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_1993
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 1993, 2 km domain (GAR_d02km_m_2d_t2_1993.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_1993/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_1994
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 1994, 2 km domain (GAR_d02km_m_2d_t2_1994.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_1994/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_1995
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 1995, 2 km domain (GAR_d02km_m_2d_t2_1995.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_1995/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_1996
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 1996, 2 km domain (GAR_d02km_m_2d_t2_1996.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_1996/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_1997
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 1997, 2 km domain (GAR_d02km_m_2d_t2_1997.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_1997/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_1998
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 1998, 2 km domain (GAR_d02km_m_2d_t2_1998.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_1998/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_1999
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 1999, 2 km domain (GAR_d02km_m_2d_t2_1999.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_1999/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_2000
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 2000, 2 km domain (GAR_d02km_m_2d_t2_2000.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_2000/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_2001
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 2001, 2 km domain (GAR_d02km_m_2d_t2_2001.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_2001/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_2002
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 2002, 2 km domain (GAR_d02km_m_2d_t2_2002.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_2002/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_2003
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 2003, 2 km domain (GAR_d02km_m_2d_t2_2003.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_2003/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_2004
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 2004, 2 km domain (GAR_d02km_m_2d_t2_2004.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_2004/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_2005
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 2005, 2 km domain (GAR_d02km_m_2d_t2_2005.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_2005/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_2006
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 2006, 2 km domain (GAR_d02km_m_2d_t2_2006.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_2006/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_2007
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 2007, 2 km domain (GAR_d02km_m_2d_t2_2007.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_2007/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_2008
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 2008, 2 km domain (GAR_d02km_m_2d_t2_2008.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_2008/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_2009
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 2009, 2 km domain (GAR_d02km_m_2d_t2_2009.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_2009/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_2010
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 2010, 2 km domain (GAR_d02km_m_2d_t2_2010.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_2010/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_2011
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 2011, 2 km domain (GAR_d02km_m_2d_t2_2011.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_2011/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_2012
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 2012, 2 km domain (GAR_d02km_m_2d_t2_2012.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_2012/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_2013
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 2013, 2 km domain (GAR_d02km_m_2d_t2_2013.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_2013/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_2014
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 2014, 2 km domain (GAR_d02km_m_2d_t2_2014.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_2014/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_2015
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 2015, 2 km domain (GAR_d02km_m_2d_t2_2015.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_2015/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_2016
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 2016, 2 km domain (GAR_d02km_m_2d_t2_2016.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_2016/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_2017
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 2017, 2 km domain (GAR_d02km_m_2d_t2_2017.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_2017/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_2018
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 2018, 2 km domain (GAR_d02km_m_2d_t2_2018.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_2018/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_2019
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 2019, 2 km domain (GAR_d02km_m_2d_t2_2019.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_2019/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_2020
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 2020, 2 km domain (GAR_d02km_m_2d_t2_2020.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_2020/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_2021
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 2021, 2 km domain (GAR_d02km_m_2d_t2_2021.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_2021/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_2022
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 2022, 2 km domain (GAR_d02km_m_2d_t2_2022.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_2022/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_2023
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 2023, 2 km domain (GAR_d02km_m_2d_t2_2023.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_2023/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_2024
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 2024, 2 km domain (GAR_d02km_m_2d_t2_2024.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_2024/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_t2_2025
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly 2 m air temperature, 2025, 2 km domain (GAR_d02km_m_2d_t2_2025.nc)"
+    variable: t2
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: K
+    palette: RdBu_r
+    transform: linear
+    color_range: [285.0, 305.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_t2_2025/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete

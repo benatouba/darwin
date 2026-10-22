@@ -1,0 +1,66 @@
+# Reviewed wind pilot: monthly 2D GAR 10 m wind, 2023.
+# Year-products for both components (u10 eastward, v10 northward) plus the
+# published wind speed (ws10), 12 monthly timesteps each. Pilot scope: a
+# single year to unblock the dashboard component_mean derivation (component
+# averaging before deriving wind speed/direction, spec §8); the published
+# ws10 value-locks the derived speed. Full 1980-2025 coverage is a later batch.
+# Sources retrieved from https://data.klima.tu-berlin.de/GAR/v1/d02km/m/2d/ ;
+# sha256 checksums verified from the downloaded bytes at build time.
+name: wind-2023
+release: wind1
+sources:
+  - path: GAR_d02km_m_2d_u10_2023.nc
+    sha256: e9db709f0504be3dac427089db917bae27c8fa453b6fef9082cb6d4316bc99ae
+  - path: GAR_d02km_m_2d_v10_2023.nc
+    sha256: 321a248208ab985734784942aeb060982f2ac27c2168bbf1a5536fa9cbfab1f0
+  - path: GAR_d02km_m_2d_ws10_2023.nc
+    sha256: be29620371569a717be8d7492e0bba0db7d73eac24fdfee41529f32214df53ea
+products:
+  - product_id: GAR_d02km_m_2d_u10_2023
+    kind: slice
+    citation: "GAR monthly 10 m eastward wind component, 2023, 2 km domain (GAR_d02km_m_2d_u10_2023.nc)"
+    variable: u10
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: m s-1
+    palette: viridis
+    transform: linear
+    color_range: [-7.0, 3.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_u10_2023/1/analysis.zarr"}
+    aggregations:
+      - method: component_mean
+        interval: monthly
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_v10_2023
+    kind: slice
+    citation: "GAR monthly 10 m northward wind component, 2023, 2 km domain (GAR_d02km_m_2d_v10_2023.nc)"
+    variable: v10
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: m s-1
+    palette: viridis
+    transform: linear
+    color_range: [-3.0, 8.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_v10_2023/1/analysis.zarr"}
+    aggregations:
+      - method: component_mean
+        interval: monthly
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_ws10_2023
+    kind: slice
+    citation: "GAR monthly 10 m wind speed, 2023, 2 km domain (GAR_d02km_m_2d_ws10_2023.nc)"
+    variable: ws10
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: m s-1
+    palette: viridis
+    transform: linear
+    color_range: [0.0, 9.0]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_ws10_2023/1/analysis.zarr"}
+    aggregations:
+      - method: mean
+        interval: monthly
+        missing_data: require-complete
+      - method: mean
+        interval: annual
+        missing_data: require-complete

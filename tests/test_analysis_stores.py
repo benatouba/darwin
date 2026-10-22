@@ -24,8 +24,21 @@ def test_slice_store_matches_source_bytes(tmp_path):
     assert float(group["x"][0]) == -244000.0
     assert float(group["x"][-1]) == 244000.0
     assert float(group["y"][0]) == -274001.375
-    assert group.attrs["time_units"] == "days since 2020-01-01 00:00:00"
-    assert [int(v) for v in group["time"][:]] == [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335]
+    assert group.attrs["time_units"] == "hours since 1970-01-01 00:00:00"
+    assert [int(v) for v in group["time"][:]] == [
+        438288,
+        439032,
+        439728,
+        440472,
+        441192,
+        441936,
+        442656,
+        443400,
+        444144,
+        444864,
+        445608,
+        446328,
+    ]
     assert abs(float(array[:].max()) - 1.6485823392868042) < 1e-9
     assert abs(float(array[:].mean()) - 0.047143787145614624) < 1e-9
     assert group.attrs["crs"] == (

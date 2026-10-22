@@ -1,0 +1,975 @@
+# Reviewed multiyear batch: monthly 2D GAR precipitation, 1980-2025.
+# One year-product per source year, 12 monthly timesteps each.
+# Sources retrieved from https://data.klima.tu-berlin.de/GAR/v1/d02km/m/2d/ ;
+# sha256 checksums transcribed from the staging SHA256SUMS (92 lines).
+# Precipitation uses the corrected fixed scale 0-3.5 mm h-1 (spec #31).
+name: multiyear-prcp
+release: multiyear1
+sources:
+  - path: GAR_d02km_m_2d_prcp_1980.nc
+    sha256: 8cd3033c945d62d530148b5de386d42ff41b2ca680ad4eedf991e7ff7399b110
+  - path: GAR_d02km_m_2d_prcp_1981.nc
+    sha256: b00904f90dba1cb449028e47db7599268a6f215ab84bd49ad66abf435330a71d
+  - path: GAR_d02km_m_2d_prcp_1982.nc
+    sha256: 62ca567a9fc1d74b13eff4416acf010a343e67fac43808384fdbb3d1a967ad1a
+  - path: GAR_d02km_m_2d_prcp_1983.nc
+    sha256: 49267c9d7f23046518bc3ce41a2cfececce800cc4dee6ff90b05c8d4ce99a4d3
+  - path: GAR_d02km_m_2d_prcp_1984.nc
+    sha256: 434ea45dc8537b724d5b3f39272bcad672e84c12e6bd7199330410502b97f818
+  - path: GAR_d02km_m_2d_prcp_1985.nc
+    sha256: ad2cf8cb82c35c109e17126fa6cad1f42227cd7913740ae18cf3443a0fb53a40
+  - path: GAR_d02km_m_2d_prcp_1986.nc
+    sha256: 447a33da55fe42dec6c9928fa59a53ba90d81f1eb6aa22e3909cadd6aabcd635
+  - path: GAR_d02km_m_2d_prcp_1987.nc
+    sha256: 011f5433c8ec60ff94d2ecacadd570cb78472824714e2b8ff58206a95f04d378
+  - path: GAR_d02km_m_2d_prcp_1988.nc
+    sha256: f1d495b8237989af648c9a05ac9ecea582acb692d2424f37fd88ce054c98d0d6
+  - path: GAR_d02km_m_2d_prcp_1989.nc
+    sha256: 7e7641afddb1e9d6eded1d89c27fa45f08f36045b797a7c7eb0118c77c3efa48
+  - path: GAR_d02km_m_2d_prcp_1990.nc
+    sha256: 763da0ab01cd08d865f7c46d451f49d4b286af85dd58f277ad79dbbfe54b4ad4
+  - path: GAR_d02km_m_2d_prcp_1991.nc
+    sha256: 59c621f98ca87ba6fdea530d786712500e78a91e8b56d857211c30e85de95d31
+  - path: GAR_d02km_m_2d_prcp_1992.nc
+    sha256: 055e41c8f491f724fd9fbbfb51b3fa537d8961cd0471823581748da14edffa31
+  - path: GAR_d02km_m_2d_prcp_1993.nc
+    sha256: 0200702fae0a08f40cd9a45909e9e92eeab67cc35c8586dfca191d3b2d4d5fc4
+  - path: GAR_d02km_m_2d_prcp_1994.nc
+    sha256: c517a5db385c256c7c2f6c09137b885b3905446d7d20d7fe0c05f627531e935c
+  - path: GAR_d02km_m_2d_prcp_1995.nc
+    sha256: 60a0a223ffcdfcf89650d9920a39227da7fd2ffbf94706db9b4bacb3492c36b0
+  - path: GAR_d02km_m_2d_prcp_1996.nc
+    sha256: dfc0444d4742c44f06c7e9da4cb194d57f81bb0f605efe867277ca0a7332af47
+  - path: GAR_d02km_m_2d_prcp_1997.nc
+    sha256: d7ee292b672035b72d41565e11d99cf7f5769fd39168abdde6d1853f35bdf82d
+  - path: GAR_d02km_m_2d_prcp_1998.nc
+    sha256: b60d5963299fb900ab8cc5ca6075e8b4fdda3c10d73b0b870628490ebfe560a5
+  - path: GAR_d02km_m_2d_prcp_1999.nc
+    sha256: 8f200540bad08d1abdd7b149d79effdd65c5ee0413441c225aa8cce8387f117c
+  - path: GAR_d02km_m_2d_prcp_2000.nc
+    sha256: da8e168446b23070f666e8a7ca39bbe26391bf4447e0c950f7222ae310222d3e
+  - path: GAR_d02km_m_2d_prcp_2001.nc
+    sha256: 9f3550584e88564015db47c6b10e705142aed9b8e9ee946c5b0384d228adfb87
+  - path: GAR_d02km_m_2d_prcp_2002.nc
+    sha256: 8ddbd8a6783d2129f31f3910a3a1ed37fca14977499c4519031064389bdd8b86
+  - path: GAR_d02km_m_2d_prcp_2003.nc
+    sha256: f98212b0fc1463f7132408244ad47883f95cdd8b436c9172acd6170014bba3dc
+  - path: GAR_d02km_m_2d_prcp_2004.nc
+    sha256: 9c8ab188e661295b7d2c590e5ac608d28c8e08b37a7ce3ea951958cabac1b40b
+  - path: GAR_d02km_m_2d_prcp_2005.nc
+    sha256: f84402aced9d8169e330d626244d5337a080586c2b1536ae9c4ed46892a18835
+  - path: GAR_d02km_m_2d_prcp_2006.nc
+    sha256: 676cd6928db60e96c979f494becccb4174f3060281840c1c7ec0658b7529cd57
+  - path: GAR_d02km_m_2d_prcp_2007.nc
+    sha256: ff075e3dba0c5b8fdd59cfa9b9dd64ac0d6c946959c718734ef6185bf170faa3
+  - path: GAR_d02km_m_2d_prcp_2008.nc
+    sha256: bcb8b4c4d26c4e6138c27aff9d406d93c34e461c1e9c831b9998734758a04e2e
+  - path: GAR_d02km_m_2d_prcp_2009.nc
+    sha256: 3f8717cdd5f29107b4d45293acc6537160e3c0739fb571237923950fb0e8f4e5
+  - path: GAR_d02km_m_2d_prcp_2010.nc
+    sha256: c9c23aaf0f2e21662a8ec59405b0faffa5de10a1d5b68c9f3f1edf1d5969c118
+  - path: GAR_d02km_m_2d_prcp_2011.nc
+    sha256: 2260e987bdcc44b948e9e9ccfe60ae77ee6bdf9cc0a6b5f6c72188755113eb81
+  - path: GAR_d02km_m_2d_prcp_2012.nc
+    sha256: bb612aec69973bece39a906a60ffbcf150a5a4e546996398db9f39a5ad580dda
+  - path: GAR_d02km_m_2d_prcp_2013.nc
+    sha256: bb3b0aae9fcf83c0d727f584170faecb375715efb0f1eb32f6307a6169ddade7
+  - path: GAR_d02km_m_2d_prcp_2014.nc
+    sha256: f076e323ec60a8cc544e7edf8e20bd3fd8bd96cc7a6f95346bfb8c0db6a80058
+  - path: GAR_d02km_m_2d_prcp_2015.nc
+    sha256: 248c1f7dacfc914cc202af7ae2737e0579ee80a67065ea38cdfa1c431837607d
+  - path: GAR_d02km_m_2d_prcp_2016.nc
+    sha256: 79c8545e32ea408a5e07745e57358edded9c155c9b04488c9efb5b1c0fb1e200
+  - path: GAR_d02km_m_2d_prcp_2017.nc
+    sha256: 1f3f984abcdd3972b49b929895b45e8355e39a8205d642b7644516afffa8ea5f
+  - path: GAR_d02km_m_2d_prcp_2018.nc
+    sha256: 2f07783cdbed6016dde1d39caa1541b41edae0dfe684e3879d07aac11cc1c075
+  - path: GAR_d02km_m_2d_prcp_2019.nc
+    sha256: b9785cfdefa5614320b5dfd5ef53261d971f5aa58afbcf274331032a222c99a2
+  - path: GAR_d02km_m_2d_prcp_2020.nc
+    sha256: 5fb7bcbaed6a3b3d4df4f03455ce2acc1f7c424e7a33c5799888d2b122465adf
+  - path: GAR_d02km_m_2d_prcp_2021.nc
+    sha256: 5b8cdbd971d808b1464f15169f79fed9e703db4c6b7ab6c006476f9272249bf9
+  - path: GAR_d02km_m_2d_prcp_2022.nc
+    sha256: 039970f96d2b015ab48ae3c2494c6f5e60863aeebe6495d61ffea4fab45e5e47
+  - path: GAR_d02km_m_2d_prcp_2023.nc
+    sha256: c00524ba4c5cb853c2c923dd2ff50a7fce3010a69111f0fc43d2064e8461f31a
+  - path: GAR_d02km_m_2d_prcp_2024.nc
+    sha256: 1a0e41faede0ae2b2ed8e2b1370d6b044f8b082c4414542d16c6e1cd66dde5e3
+  - path: GAR_d02km_m_2d_prcp_2025.nc
+    sha256: 5cd570ee613c1c59f125736e3d7a410fbfb2594d21651b39338c7b2b4d06c73d
+products:
+  - product_id: GAR_d02km_m_2d_prcp_1980
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 1980, 2 km domain (GAR_d02km_m_2d_prcp_1980.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_1980/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_1981
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 1981, 2 km domain (GAR_d02km_m_2d_prcp_1981.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_1981/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_1982
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 1982, 2 km domain (GAR_d02km_m_2d_prcp_1982.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_1982/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_1983
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 1983, 2 km domain (GAR_d02km_m_2d_prcp_1983.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_1983/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_1984
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 1984, 2 km domain (GAR_d02km_m_2d_prcp_1984.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_1984/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_1985
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 1985, 2 km domain (GAR_d02km_m_2d_prcp_1985.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_1985/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_1986
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 1986, 2 km domain (GAR_d02km_m_2d_prcp_1986.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_1986/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_1987
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 1987, 2 km domain (GAR_d02km_m_2d_prcp_1987.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_1987/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_1988
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 1988, 2 km domain (GAR_d02km_m_2d_prcp_1988.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_1988/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_1989
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 1989, 2 km domain (GAR_d02km_m_2d_prcp_1989.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_1989/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_1990
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 1990, 2 km domain (GAR_d02km_m_2d_prcp_1990.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_1990/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_1991
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 1991, 2 km domain (GAR_d02km_m_2d_prcp_1991.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_1991/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_1992
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 1992, 2 km domain (GAR_d02km_m_2d_prcp_1992.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_1992/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_1993
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 1993, 2 km domain (GAR_d02km_m_2d_prcp_1993.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_1993/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_1994
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 1994, 2 km domain (GAR_d02km_m_2d_prcp_1994.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_1994/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_1995
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 1995, 2 km domain (GAR_d02km_m_2d_prcp_1995.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_1995/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_1996
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 1996, 2 km domain (GAR_d02km_m_2d_prcp_1996.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_1996/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_1997
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 1997, 2 km domain (GAR_d02km_m_2d_prcp_1997.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_1997/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_1998
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 1998, 2 km domain (GAR_d02km_m_2d_prcp_1998.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_1998/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_1999
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 1999, 2 km domain (GAR_d02km_m_2d_prcp_1999.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_1999/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_2000
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 2000, 2 km domain (GAR_d02km_m_2d_prcp_2000.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_2000/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_2001
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 2001, 2 km domain (GAR_d02km_m_2d_prcp_2001.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_2001/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_2002
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 2002, 2 km domain (GAR_d02km_m_2d_prcp_2002.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_2002/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_2003
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 2003, 2 km domain (GAR_d02km_m_2d_prcp_2003.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_2003/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_2004
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 2004, 2 km domain (GAR_d02km_m_2d_prcp_2004.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_2004/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_2005
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 2005, 2 km domain (GAR_d02km_m_2d_prcp_2005.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_2005/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_2006
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 2006, 2 km domain (GAR_d02km_m_2d_prcp_2006.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_2006/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_2007
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 2007, 2 km domain (GAR_d02km_m_2d_prcp_2007.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_2007/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_2008
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 2008, 2 km domain (GAR_d02km_m_2d_prcp_2008.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_2008/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_2009
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 2009, 2 km domain (GAR_d02km_m_2d_prcp_2009.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_2009/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_2010
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 2010, 2 km domain (GAR_d02km_m_2d_prcp_2010.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_2010/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_2011
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 2011, 2 km domain (GAR_d02km_m_2d_prcp_2011.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_2011/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_2012
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 2012, 2 km domain (GAR_d02km_m_2d_prcp_2012.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_2012/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_2013
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 2013, 2 km domain (GAR_d02km_m_2d_prcp_2013.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_2013/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_2014
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 2014, 2 km domain (GAR_d02km_m_2d_prcp_2014.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_2014/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_2015
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 2015, 2 km domain (GAR_d02km_m_2d_prcp_2015.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_2015/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_2016
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 2016, 2 km domain (GAR_d02km_m_2d_prcp_2016.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_2016/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_2017
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 2017, 2 km domain (GAR_d02km_m_2d_prcp_2017.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_2017/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_2018
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 2018, 2 km domain (GAR_d02km_m_2d_prcp_2018.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_2018/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_2019
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 2019, 2 km domain (GAR_d02km_m_2d_prcp_2019.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_2019/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_2020
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 2020, 2 km domain (GAR_d02km_m_2d_prcp_2020.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_2020/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_2021
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 2021, 2 km domain (GAR_d02km_m_2d_prcp_2021.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_2021/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_2022
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 2022, 2 km domain (GAR_d02km_m_2d_prcp_2022.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_2022/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_2023
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 2023, 2 km domain (GAR_d02km_m_2d_prcp_2023.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_2023/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_2024
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 2024, 2 km domain (GAR_d02km_m_2d_prcp_2024.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_2024/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete
+  - product_id: GAR_d02km_m_2d_prcp_2025
+    version: multiyear1.2
+    kind: slice
+    citation: "GAR monthly precipitation, 2025, 2 km domain (GAR_d02km_m_2d_prcp_2025.nc)"
+    variable: prcp
+    domain: d02km
+    format: zarr-v3-consolidated
+    units: mm h-1
+    palette: Blues
+    transform: linear
+    color_range: [0.0, 3.5]
+    uris: {analysis: "s3://darwin-published/GAR_d02km_m_2d_prcp_2025/1/analysis.zarr"}
+    aggregations:
+      - method: sum
+        interval: monthly
+        missing_data: require-complete
+      - method: sum
+        interval: annual
+        missing_data: require-complete

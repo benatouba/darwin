@@ -25,14 +25,18 @@ def build_smoke_analysis_stores(repo_root: str | Path, out_dir: str | Path) -> d
     import numpy as np
     import zarr
 
+    from darwin.publisher.multiyear_store import TIME_UNITS, _normalize_time
+
     repo_root, out_dir = Path(repo_root), Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     source = nc.Dataset(str(repo_root / SLICE_SOURCE))
     try:
         time_var = source.variables["time"]
-        time_units = str(time_var.units)
-        time_values = [float(v) for v in time_var[:].tolist()]
+        time_values = _normalize_time(
+            str(time_var.units), np.asarray(time_var[:]), 2020
+        )
+        time_units = TIME_UNITS
         xs = [float(v) for v in source.variables["west_east"][:].tolist()]
         ys = [float(v) for v in source.variables["south_north"][:].tolist()]
         prcp = source.variables["prcp"][:]
@@ -44,7 +48,7 @@ def build_smoke_analysis_stores(repo_root: str | Path, out_dir: str | Path) -> d
     group.create_array("prcp", data=np.asarray(prcp), chunks=(1,) + prcp.shape[1:])
     group.create_array("x", data=np.asarray(xs))
     group.create_array("y", data=np.asarray(ys))
-    group.create_array("time", data=np.asarray(time_values))
+    group.create_array("time", data=np.asarray(time_values, dtype=np.int64))
     group.attrs["time_units"] = time_units
     group.attrs["crs"] = crs
 
