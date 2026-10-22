@@ -3,55 +3,55 @@ name = "darwin"
 version = "1.0.0"
 description = "Process and visualize measured and simulated data in the project DARWIN."
 authors = [{ name = "Benjamin Schmidt", email = "benschmidt@live.de" }]
-requires-python = ">=3.12,<=3.14"
+requires-python = ">=3.14,<=3.15"
 readme = "README.md"
 license-files = ["uc2-data-standard.pdf", "uc2-datenstandard.pdf"]
 dependencies = [
-    "cdo>=1.5.6",
-    "cdsapi>=0.6.1",
-    "cf-xarray>=0.7.4",
-    "cftime>=1.6.1",
-    "dask>=2022.9.0",
+    "cartopy>=0.26.0",
+    "cdo>=1.6.1",
+    "cdsapi>=0.7.7",
+    "cf-xarray>=0.11.3",
+    "cftime>=1.6.6.1",
+    "contextily>=1.7.1",
+    "dask>=2026.8.0",
     "descartes>=1.1.0",
-    "geopandas>=0.11.1",
-    "joblib>=1.1.0",
-    "matplotlib>=3.5.3",
-    "metpy>=1.3.1",
-    "nc-time-axis>=1.4.1",
-    "netCDF4>=1.6.0",
-    "pandas>=1.4.4",
-    "pint-xarray>=0.3",
-    "prettyprint>=0.1.5",
-    "rasterio>=1.3.2",
-    "salem",
-    "scikit-image>=0.19.3",
-    "tomli>=2.0.1",
-    "windrose>=1.7.0",
-    "xarray>=2022.6.0",
-    "zarr>=3.0.0",
-    "ipython>=8.23.0",
-    "statsmodels>=0.14.2",
-    "seaborn>=0.13.2",
-    "typer>=0.12.3",
-    "rioxarray>=0.17.0",
-    "pyqt6>=6.8.1",
-    "pint>=0.24.4",
-    "contextily>=1.6.2",
     "dotenv>=0.9.9",
-    "pyproj>=3.7.1",
-    "shapely>=2.1.0",
-    "elevation>=1.1.3",
-    "cartopy>=0.25.0",
+    "elevation>=2.0.1",
+    "geopandas>=1.2.0",
+    "ipython>=9.17.1",
+    "joblib>=1.6.0",
+    "matplotlib>=3.11.2",
+    "metpy>=1.7.1",
+    "nc-time-axis>=1.4.1",
+    "netCDF4>=1.7.5",
+    "pandas>=3.0.6",
+    "pint-xarray>=0.6.1",
+    "pint>=0.26.2",
+    "prettyprint>=0.1.5",
+    "pyproj>=3.8.0",
+    "pyqt6>=6.11.0",
+    "rasterio>=1.5.2",
+    "rioxarray>=0.23.0",
+    "salem",
+    "scikit-image>=0.26.0",
+    "seaborn>=0.13.2",
+    "shapely>=2.2.0",
+    "statsmodels>=0.15.0",
+    "tomli>=2.5.0",
+    "typer>=0.27.3",
+    "windrose>=1.10.0",
+    "xarray>=2026.9.0",
+    "zarr>=3.4.1",
 ]
 
 [dependency-groups]
 test = [
-    "pytest>=6.0.0",
-    "pytest-mock",
+    "pytest>=9.1.0",
+    "pytest-mock>=3.17.0",
 ]
 dev = [
-    "icecream>=2.1.3",
-    "pandas-stubs>=2.1.1.230928",
+    "icecream>=2.2.0",
+    "pandas-stubs>=3.0.4.260814",
 ]
 
 [tool.uv]

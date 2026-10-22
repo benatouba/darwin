@@ -22,7 +22,10 @@
         };
 
         devShells.default = pkgs.mkShell {
-          packages = [ poetry2nix.packages.${system}.poetry ];
+          packages = with pkgs; [
+            python312
+            uv
+          ];
         };
       });
 }
