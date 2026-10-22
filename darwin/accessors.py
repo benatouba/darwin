@@ -1,5 +1,7 @@
 import sys
+from calendar import monthrange
 from pathlib import Path
+from statistics import NormalDist
 from typing import Any
 
 import matplotlib as mpl
@@ -18,13 +20,14 @@ from darwin.defaults import (
     dry_wet_map,
     dry_wet_names,
     fixed_units,
+    ndims,
     pvalue_threshold,
     season_map,
     season_names,
     start_year,
 )
 from darwin.plot import DarwinBaseMap
-from darwin.utils import days_in_slot, nino_anomaly, time_slots
+from darwin.utils import nino_anomaly
 
 
 class _DarwinAccessorBase:
@@ -118,15 +121,18 @@ class _DarwinAccessorBase:
         Returns:
             Dataset: The filtered dataset.
         """
-        if "seasons" in self._obj.coords:
+        grouping = "dry-wet" if dry_wet else "quarterly"
+        if "season" in self._obj.coords and self._obj.season.attrs.get("grouping") == grouping:
             return self._obj
 
         new_coords = np.array(
             self._map_seasons(self._obj.time.dt.month.to_numpy(), dry_wet=dry_wet)
         )
-        self._obj = self._obj.assign_coords(season=("time", new_coords)).swap_dims(
-            {"time": "season"}
-        )
+        time_dim = self._obj.time.dims[0]
+        self._obj = self._obj.assign_coords(season=(time_dim, new_coords))
+        if time_dim != "season":
+            self._obj = self._obj.swap_dims({time_dim: "season"})
+        self._obj.season.attrs["grouping"] = grouping
         self._obj.attrs["time_varname"] = "season"
         return self._obj
 
@@ -201,7 +207,7 @@ class _DarwinAccessorBase:
             "pblh": "planetary boundary layer height in m",
         }
         ylabel = ylabels.get(self.varname, self.varname)
-        if self._obj.level:
+        if "level" in self._obj.coords:
             if self.varname == "geopotential":
                 ylabel = "layer thickness in m"
             ylabel = f"{self._obj.level} hPa {ylabel}"
@@ -263,8 +269,7 @@ class _DarwinAccessorBase:
             for j in range(n):
                 sigma[i, j] = rho_est ** abs(i - j)
 
-        sigma_inv = np.linalg.inv(sigma)
-        return sm.GLS(ydata, sm.add_constant(xdata), sigma=sigma_inv).fit()
+        return sm.GLS(ydata, sm.add_constant(xdata), sigma=sigma).fit()
 
     @staticmethod
     def __get_gls_hs(
@@ -274,11 +279,14 @@ class _DarwinAccessorBase:
     ) -> sm.regression.linear_model.RegressionResultsWrapper:
         ols_residuals = ols_model.resid
         resid_squared = ols_residuals**2
-        ols_variance_model = sm.OLS(resid_squared, sm.add_constant(xdata)).fit()
-        predicted_variances = ols_variance_model.fittedvalues
+        # Model log variance so the GLS covariance stays positive definite.
+        floor = max(float(np.mean(resid_squared)) * 1e-12, np.finfo(float).eps)
+        ols_variance_model = sm.OLS(
+            np.log(np.maximum(resid_squared, floor)), sm.add_constant(xdata)
+        ).fit()
+        predicted_variances = np.exp(ols_variance_model.fittedvalues)
         sigma = np.diag(predicted_variances)
-        sigma_inv = np.linalg.inv(sigma)
-        return sm.GLS(ydata, sm.add_constant(xdata), sigma=sigma_inv).fit()
+        return sm.GLS(ydata, sm.add_constant(xdata), sigma=sigma).fit()
 
     def plot_linear_regression(
         self,
@@ -290,18 +298,19 @@ class _DarwinAccessorBase:
         *,
         fill_between: bool = True,
     ) -> sm.regression.linear_model.RegressionResultsWrapper:
+        if model_type not in ("ols", "gls", "gls-ar1", "gls-hs", "rls"):
+            raise ValueError(f"unknown regression model: {model_type!r}")
         models = {}
         models["ols"] = sm.OLS(ydata, sm.add_constant(xdata)).fit()
-        if model_type == "gls-ar1":
+        if model_type == "gls":
+            models["gls"] = sm.GLS(ydata, sm.add_constant(xdata)).fit()
+        elif model_type == "gls-ar1":
             models["gls-ar1"] = self.__get_gls_ar1(models["ols"], xdata, ydata)
         elif model_type == "gls-hs":
             models["gls-hs"] = self.__get_gls_hs(models["ols"], xdata, ydata)
         elif model_type == "rls":
             models["rls"] = sm.RLM(ydata, sm.add_constant(xdata)).fit()
 
-        pred_summary = (
-            models[model_type].get_prediction(sm.add_constant(xdata)).summary_frame(alpha=0.05)
-        )
         color_map = {-1: "blue", 0: "black", 1: "red"}
         colors = [color_map[nino_cls] for nino_cls in nino_class]
         if self.varname in bar_vars and xdata[0] == start_year:
@@ -328,10 +337,23 @@ class _DarwinAccessorBase:
         # ax.plot(xdata, pred_summary["mean"], color="red")
         # ax.plot(np.linspace(0, 1, 100), np.linspace(0, 1, 100), color="black")
         if fill_between:
+            result = models[model_type]
+            design = sm.add_constant(xdata)
+            if model_type == "rls":
+                # RLM has no get_prediction; use its asymptotic parameter
+                # covariance for a 95% confidence band on the fitted mean.
+                mean = result.predict(design)
+                variance = np.einsum("ij,jk,ik->i", design, result.cov_params(), design)
+                margin = NormalDist().inv_cdf(0.975) * np.sqrt(np.maximum(variance, 0.0))
+                lower, upper = mean - margin, mean + margin
+            else:
+                pred_summary = result.get_prediction(design).summary_frame(alpha=0.05)
+                lower = pred_summary["mean_ci_lower"]
+                upper = pred_summary["mean_ci_upper"]
             ax.fill_between(
                 xdata,
-                pred_summary["mean_ci_lower"],
-                pred_summary["mean_ci_upper"],
+                lower,
+                upper,
                 color="grey",
                 alpha=0.2,
             )
@@ -469,31 +491,27 @@ class _DarwinAccessorBase:
             axes = ax
         else:
             axes = np.array([ax])
-        for i, time_val in enumerate(
-            # np.unique(self._obj.coords[self._time_varname].to_numpy())
-            np.arange(1, 5)
-        ):
+        for i, time_val in enumerate(np.unique(self._obj.season.to_numpy())):
             axi = axes[i // 2, i % 2] if axes.ndim > 1 else axes[i]
             years = self._obj.loc[{"season": time_val}].time.dt.year.to_numpy()
-            ndays_list = [days_in_slot(*time_slots[i], year) for year in np.unique(years)]
+            months = np.unique(
+                self._obj.loc[{"season": time_val}].time.dt.month.to_numpy()
+            )
+            ndays_list = [
+                sum(monthrange(int(year), int(month))[1] for month in months)
+                for year in np.unique(years)
+            ]
             data = (
                 self._obj.loc[{"season": time_val}]
                 .assign_coords(year=("season", years))
                 .swap_dims({"season": "year"})
             )
-            season_to_month_nums: dict[int, tuple[int, int, int]] = {
-                1: (1, 2, 3),
-                2: (4, 5, 6),
-                3: (7, 8, 9),
-                4: (10, 11, 12),
-            }
-            months = season_to_month_nums[int(time_val)]
             # select the months of nino_anomaly for this time val
-            nino_select = nino_anomaly.loc[nino_anomaly.index.month.isin(months)]
+            nino_select = nino_anomaly.loc[nino_anomaly.index.month.isin(months)].copy()
             nino_select.loc[:, "year"] = nino_select.index.year
-            nino_select_max = nino_select.groupby("year").max("year")
-            nino_select_min = nino_select.groupby("year").min("year")
-            nino_select = nino_select.groupby("year").mean("year")
+            nino_select_max = nino_select.groupby("year").max().reindex(np.unique(years))
+            nino_select_min = nino_select.groupby("year").min().reindex(np.unique(years))
+            nino_select = nino_select.groupby("year").mean().reindex(np.unique(years))
             nino_select["class"] = 0
             nino_select.loc[nino_select_min["value"] <= -1.13, "class"] = -1
             nino_select.loc[nino_select_max["value"] >= 1.13, "class"] = 1
@@ -577,7 +595,9 @@ class _DarwinAccessorBase:
 
             print(f"p-value: {reg_results.t_test('x1 = 0').pvalue}")
             pval_label = (
-                p_less if reg_results.t_test("x1 = 0").pvalue < pvalue_threshold else p_greater
+                "$p < 0.05$"
+                if reg_results.t_test("x1 = 0").pvalue < pvalue_threshold
+                else "$p \\geq 0.05$"
             )
             beta = mpunits.Quantity(reg_results.params[1], self._obj[self.varname].metpy.units)
             beta_units = f"{beta.units:~P}"
@@ -596,7 +616,7 @@ class _DarwinAccessorBase:
             labels = [
                 f"$\\overline{{y}}$ = {mean:.1f} {split_units[0]}",
                 f"$\\beta$ = {beta.magnitude:.3f} {beta_units}",
-                f"$R^2$ = {reg_results.rsquared:.2f}",
+                f"$R^2$ = {reg_results.rsquared:.2f}" if model_type != "rls" else "robust fit",
                 pval_label,
             ]
             labels = [" $|$  ".join(labels)]
