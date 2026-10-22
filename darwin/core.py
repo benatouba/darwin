@@ -360,8 +360,8 @@ class Experiment:
             gar_path / "MM" / f"MM_d02km_{frequency}_2d_v10.nc"
         ).sel(time=self.wrf_product.time)["v10"]
 
-        self.wrf_product["u10"] = u
-        self.wrf_product["v10"] = v
+        # self.wrf_product["u10"] = u
+        # self.wrf_product["v10"] = v
 
         varname = varname or self.__translate_varname(self.varname)
         base_map = self.wrf_product.salem.get_map(**kwargs)
@@ -475,7 +475,7 @@ class Experiment:
                     fontweight="bold",
                     backgroundcolor="white",
                 )
-        if cbar:
+       if cbar:
             base_map.append_colorbar(ax=ax, label=unit)
         if isinstance(write, str):
             plt.savefig(write)
