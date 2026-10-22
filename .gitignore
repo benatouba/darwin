@@ -13,3 +13,12 @@ data/
 .ipynb_checkpoints/
 pyrightconfig.json
 plots/
+
+.devenv/
+.claude/
+
+*.tif
+*.shp
+*.dbf
+*.shx
+*.html
