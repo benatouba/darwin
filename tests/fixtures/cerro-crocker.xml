@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<eml>
+  <dataset>
+    <coverage>
+      <geographicCoverage>
+        <boundingCoordinates>
+          <westBoundingCoordinate>-90.326°</westBoundingCoordinate>
+          <eastBoundingCoordinate>-90.326°</eastBoundingCoordinate>
+          <northBoundingCoordinate>-0.642398°</northBoundingCoordinate>
+          <southBoundingCoordinate>-0.642398°</southBoundingCoordinate>
+        </boundingCoordinates>
+      </geographicCoverage>
+    </coverage>
+  </dataset>
+</eml>

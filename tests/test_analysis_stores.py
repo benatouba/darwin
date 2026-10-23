@@ -6,16 +6,11 @@ axis and the static land mask, all asserted against independently
 measured literals (ncdump-equivalent, not the builder's own output).
 """
 
-from pathlib import Path
-
-REPO_ROOT = Path("/home/ben/projects/darwin")
-
-
-def test_slice_store_matches_source_bytes(tmp_path):
+def test_slice_store_matches_source_bytes(tmp_path, analysis_sources):
     """The slice store carries the real 12-month prcp field on native coords."""
     from darwin.publisher.analysis_stores import build_smoke_analysis_stores
 
-    out = build_smoke_analysis_stores(REPO_ROOT, tmp_path)
+    out = build_smoke_analysis_stores(analysis_sources, tmp_path)
     import zarr
 
     group = zarr.open_group(str(out["slice"]), mode="r")
@@ -47,11 +42,11 @@ def test_slice_store_matches_source_bytes(tmp_path):
     )
 
 
-def test_mask_store_matches_static_landmask(tmp_path):
+def test_mask_store_matches_static_landmask(tmp_path, analysis_sources):
     """The mask store carries the real binary land mask on the same grid."""
     from darwin.publisher.analysis_stores import build_smoke_analysis_stores
 
-    out = build_smoke_analysis_stores(REPO_ROOT, tmp_path)
+    out = build_smoke_analysis_stores(analysis_sources, tmp_path)
     import zarr
 
     group = zarr.open_group(str(out["mask"]), mode="r")

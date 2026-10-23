@@ -1,0 +1,30 @@
+# Test inputs
+
+`gar-sources.json` pins the three public GAR files used by real-data tests.
+Run `python scripts/fetch_test_fixtures.py` to populate the ignored cache.
+The files total 17,068,921 bytes; individual downloads are limited to 8 MiB
+and the complete plan to 20 MiB. Pytest never downloads fixtures.
+
+The current public land mask has different NetCDF metadata bytes from the
+historical smoke-release input. Its checksum is pinned here separately;
+the reviewed release manifest and its historical checksums remain unchanged.
+For the historical smoke builder, a temporary mask copy receives the same
+`pyproj_srs` annotation as the precipitation input, only after both native
+coordinate axes are verified equal within 1 cm of float32 rounding on the
+2 km grid. Cached downloads remain unmodified;
+mask values and coordinates are never synthesized or reprojected.
+
+`cerro-crocker-2025-01.csv` contains only January 2025 timestamps and the
+`PCP_tot_bucket` column (4,438 readings), extracted verbatim from the reviewed
+processed AWS-P Cerro Crocker observation product, DOI `10.5678/zayn-fw96`.
+The full source CSV's SHA-256 is
+`ebd57825e5ba3566e5a369f1aa425097fb67c8bd6735f9f672062317d0ab5667`.
+These processed observations are the same inputs used by the comparison
+smoke release. No raw station readings or additional personal metadata
+are bundled. `cerro-crocker.xml` retains only its bounding coordinates;
+the full source metadata's SHA-256 is
+`b3046adb916118283b438e220a8e571ed94f8d23a4869e0d7e383427b85694e8`.
+
+Trend/plot tests generate tiny, deterministic monthly grids covering
+1980–2023 in pytest temporary directories. They do not require the local
+multi-year NetCDF files in `tests/data`.

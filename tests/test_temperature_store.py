@@ -17,9 +17,9 @@ def _shifted_grid_source(source, dest):
         dataset.variables["west_east"][:] = xs + 1000.0
 
 
-def test_temperature_store_rejects_shifted_grid(tmp_path, monkeypatch):
+def test_temperature_store_rejects_shifted_grid(tmp_path, monkeypatch, gar_fixtures):
     source = tmp_path / "t2-shifted.nc"
-    _shifted_grid_source("/tmp/opencode/gar-monthly/GAR_d02km_m_2d_t2_2020.nc", source)
+    _shifted_grid_source(gar_fixtures / "GAR_d02km_m_2d_t2_2020.nc", source)
     monkeypatch.setattr(
         temperature_store,
         "SOURCE_SHA256",

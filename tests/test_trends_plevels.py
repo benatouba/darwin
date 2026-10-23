@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import numpy as np
 import pytest
 import xarray as xr
@@ -9,13 +7,18 @@ from darwin import accessors
 
 xr.set_options(keep_attrs=True)
 # pytest data directory
-datadir = Path(__file__).resolve().parent / "data"
-data_y_2d_prcp = datadir / "MM_d02km_y_2d_prcp.nc"
-data_m_2d_t2 = datadir / "MM_d02km_m_2d_t2.nc"
-data_m_2d_prcp = datadir / "MM_d02km_m_2d_prcp.nc"
-data_m_2d_et = datadir / "MM_d02km_m_2d_et.nc"
-data_landmask = datadir / "MM_d02km_static_landmask.nc"
-data_hgt = datadir / "MM_d02km_static_hgt.nc"
+@pytest.fixture(autouse=True)
+def input_paths(trend_fixtures, monkeypatch):
+    """Use tiny generated inputs rather than untracked multi-year datasets."""
+    for name, filename in {
+        "data_y_2d_prcp": "MM_d02km_y_2d_prcp.nc",
+        "data_m_2d_t2": "MM_d02km_m_2d_t2.nc",
+        "data_m_2d_prcp": "MM_d02km_m_2d_prcp.nc",
+        "data_m_2d_et": "MM_d02km_m_2d_et.nc",
+        "data_landmask": "MM_d02km_static_landmask.nc",
+        "data_hgt": "MM_d02km_static_hgt.nc",
+    }.items():
+        monkeypatch.setitem(globals(), name, trend_fixtures / filename)
 
 
 @pytest.fixture(autouse=True)

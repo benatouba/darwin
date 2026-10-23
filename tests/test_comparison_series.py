@@ -9,16 +9,11 @@ asserted against independently measured literals (CSV + NetCDF probes,
 not the builder's own stores).
 """
 
-from pathlib import Path
-
-REPO_ROOT = Path("/home/ben/projects/darwin")
-
-
-def test_gar_sampled_store_carries_jan2020_nearest_series(tmp_path):
+def test_gar_sampled_store_carries_jan2020_nearest_series(tmp_path, comparison_sources):
     """GAR store: 12 monthly nearest rates; hourly/daily depths (rate x 1h/24h)."""
     from darwin.publisher.comparison_series import build_comparison_series
 
-    out = build_comparison_series(REPO_ROOT, tmp_path)
+    out = build_comparison_series(comparison_sources, tmp_path)
     import zarr
 
     group = zarr.open_group(str(out["gar_sampled"]), mode="r")
@@ -45,7 +40,7 @@ def test_gar_sampled_store_carries_jan2020_nearest_series(tmp_path):
     )
 
 
-def test_aws_january_store_has_real_exclusions(tmp_path):
+def test_aws_january_store_has_real_exclusions(tmp_path, comparison_sources):
     """AWS store: Jan-2025 hourly/daily tip sums with 8 excluded hours.
 
     The engine threshold (HOURLY_READINGS_REQUIRED = 5) keeps the two
@@ -54,7 +49,7 @@ def test_aws_january_store_has_real_exclusions(tmp_path):
     """
     from darwin.publisher.comparison_series import build_comparison_series
 
-    out = build_comparison_series(REPO_ROOT, tmp_path)
+    out = build_comparison_series(comparison_sources, tmp_path)
     import zarr
 
     group = zarr.open_group(str(out["aws_january"]), mode="r")

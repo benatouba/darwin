@@ -22,3 +22,9 @@ plots/
 *.dbf
 *.shx
 *.html
+
+# Downloaded test fixtures and isolated validation environments
+tests/.cache/
+.venv-test/
+/.cache/uv/
+/test-results.xml

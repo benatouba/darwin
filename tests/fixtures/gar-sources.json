@@ -1,0 +1,20 @@
+[
+  {
+    "path": "GAR_d02km_m_2d_prcp_2020.nc",
+    "url": "https://data.klima.tu-berlin.de/GAR/v1/d02km/m/2d/GAR_d02km_m_2d_prcp_2020.nc",
+    "size": 6753864,
+    "sha256": "5fb7bcbaed6a3b3d4df4f03455ce2acc1f7c424e7a33c5799888d2b122465adf"
+  },
+  {
+    "path": "GAR_d02km_m_2d_t2_2020.nc",
+    "url": "https://data.klima.tu-berlin.de/GAR/v1/d02km/m/2d/GAR_d02km_m_2d_t2_2020.nc",
+    "size": 5650013,
+    "sha256": "392067fad109006f311cb1121f8574459c637bd690cfa4126016aaabaeda5056"
+  },
+  {
+    "path": "GAR_d02km_static_landmask.nc",
+    "url": "https://data.klima.tu-berlin.de/GAR/v1/d02km/static/GAR_d02km_static_landmask.nc",
+    "size": 4665044,
+    "sha256": "35af0ed94df37555ed628b55a8b5fa40ffd796b5982f66749d8e25941f98f282"
+  }
+]
