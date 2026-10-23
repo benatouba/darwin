@@ -456,7 +456,7 @@ requires-dist = [
     { name = "pyqt6", specifier = ">=6.11.0" },
     { name = "rasterio", specifier = ">=1.5.2" },
     { name = "rioxarray", specifier = ">=0.23.0" },
-    { name = "salem", directory = "../salem" },
+    { name = "salem", specifier = ">=0.3.11" },
     { name = "scikit-image", specifier = ">=0.26.0" },
     { name = "seaborn", specifier = ">=0.13.2" },
     { name = "shapely", specifier = ">=2.2.0" },
@@ -1846,7 +1846,8 @@ wheels = [
 
 [[package]]
 name = "salem"
-source = { directory = "../salem" }
+version = "0.3.11"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "joblib" },
     { name = "netcdf4" },
@@ -1856,16 +1857,9 @@ dependencies = [
     { name = "scipy" },
     { name = "xarray" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "joblib" },
-    { name = "netcdf4" },
-    { name = "numpy" },
-    { name = "pandas" },
-    { name = "pyproj" },
-    { name = "scipy" },
-    { name = "xarray" },
+sdist = { url = "https://files.pythonhosted.org/packages/c8/d7/890a4b643ecfafcee50bea3b4713f8556f8e285ee3508263b259ff9eea8b/salem-0.3.11.tar.gz", hash = "sha256:26574b9f9e3b6bb0a6423f3d0aa697e6d659e0916afc8010b07e7d578523e34a", size = 118248, upload-time = "2024-07-12T02:43:17.846Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/eb/d1/8a9108a806d2aedd7051555559408488be656c0d05ee3ff8b58305832cd9/salem-0.3.11-py2.py3-none-any.whl", hash = "sha256:25d613cda1d6c907ece1316812791ce1e988e4b10ccb224e3b69ca46055154a8", size = 86148, upload-time = "2024-07-12T02:43:13.405Z" },
 ]
 
 [[package]]

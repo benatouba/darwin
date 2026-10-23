@@ -11,7 +11,7 @@ import pint
 from darwin.defaults import basepath, default_end, default_start
 
 nino_anomaly: pd.DataFrame = pd.read_csv(
-    "./darwin/nino12_anomaly_long.csv", index_col=0, parse_dates=True
+    Path(__file__).with_name("nino12_anomaly_long.csv"), index_col=0, parse_dates=True
 ).loc[default_start:default_end]
 
 

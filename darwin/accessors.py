@@ -8,7 +8,6 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
-import salem
 import seaborn as sns
 import statsmodels.api as sm
 import xarray as xr
@@ -26,7 +25,6 @@ from darwin.defaults import (
     season_names,
     start_year,
 )
-from darwin.plot import DarwinBaseMap
 from darwin.utils import nino_anomaly
 
 
@@ -56,6 +54,8 @@ class _DarwinAccessorBase:
         else:
             self.cmap = "Blues"
         if topography:
+            import salem
+
             self.topography: xr.Dataset = salem.open_xr_dataset(topography)
         if landmask:
             self.landmask: xr.Dataset = xr.open_dataset(landmask)
@@ -147,6 +147,8 @@ class _DarwinAccessorBase:
             ax: The axes to plot on. Defaults to None.
             kwargs: Additional keyword arguments to pass to the salem Map class.
         """
+        from darwin.plot import DarwinBaseMap
+
         base_map = DarwinBaseMap(self._obj.salem.get_map())
         if isinstance(self._obj, xr.DataArray):
             base_map.plot_map(ax, self._obj, **kwargs)
@@ -381,6 +383,8 @@ class _DarwinAccessorBase:
             colorbarlabel: The label for the colorbar.
             ax: The axes to plot on.
         """
+        import salem  # noqa: F401 -- registers xarray's mapping accessor on demand
+
         if varname is None:
             varname = self.varname
         if isinstance(self._obj, xr.Dataset):
