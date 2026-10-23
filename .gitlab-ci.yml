@@ -1,0 +1,30 @@
+image: python:3.14-slim
+
+stages:
+  - test
+
+variables:
+  MPLBACKEND: Agg
+  UV_CACHE_DIR: "$CI_PROJECT_DIR/.cache/uv"
+  DARWIN_TEST_FIXTURES: "$CI_PROJECT_DIR/tests/.cache/gar"
+
+test:
+  stage: test
+  cache:
+    key:
+      files:
+        - uv.lock
+        - tests/fixtures/gar-sources.json
+    paths:
+      - .cache/uv/
+      - tests/.cache/gar/
+  before_script:
+    - python -m pip install --no-cache-dir uv==0.12.22
+    - uv sync --frozen --group test --no-group dev
+    - uv run --frozen --no-sync python scripts/fetch_test_fixtures.py
+  script:
+    - uv run --frozen --no-sync python -m pytest -q --junitxml=test-results.xml
+  artifacts:
+    when: always
+    reports:
+      junit: test-results.xml

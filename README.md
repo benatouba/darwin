@@ -21,3 +21,34 @@ There are scripts specifically to cater to the
 measurement network.
 
 BEWARE: This project is a WIP.
+
+## Tests on a fresh checkout
+
+Install [uv](https://docs.astral.sh/uv/) and Python 3.14, then run:
+
+```sh
+uv sync --frozen --group test --no-group dev
+uv run --frozen --no-sync python scripts/fetch_test_fixtures.py
+MPLBACKEND=Agg uv run --frozen --no-sync python -m pytest -q
+```
+
+The downloader fetches only three checksum-pinned GAR NetCDF files, about
+17 MB total, into the ignored `tests/.cache/gar/` directory. It enforces
+8 MiB per-file and 20 MiB total limits, bounds the response stream even if
+the server misreports its size, and removes incomplete downloads. Cached
+files are always verified; corrupt or changed upstream bytes fail rather
+than silently changing scientific test inputs. No hourly or 3D files are
+downloaded. Salem comes from the locked public package, not a sibling checkout.
+
+Set `DARWIN_TEST_FIXTURES` to use another cache location. To check a prepared
+cache offline, run `python scripts/fetch_test_fixtures.py --check`.
+Pytest itself never downloads test fixtures and fails with setup instructions
+if they are missing. Small processed station samples are checked in;
+multi-year plotting data is generated in temporary directories. See
+[`tests/fixtures/README.md`](tests/fixtures/README.md) for input provenance.
+Time-series/accessor imports also work outside the checkout and do not load
+Salem's map sample-data downloader; mapping support is loaded on demand.
+
+GitLab CI runs the same full test command headlessly, caches only downloaded
+fixtures and uv packages, and publishes JUnit results. Generated data and
+test environments must not be committed.
