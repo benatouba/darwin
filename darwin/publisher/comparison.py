@@ -12,6 +12,8 @@ import statistics
 from dataclasses import dataclass
 from typing import Sequence
 
+from darwin.publisher.series import TimeSeries, TimeValidationError, align_series
+
 
 @dataclass(frozen=True)
 class ComparisonSpec:
@@ -79,20 +81,38 @@ CADENCES = ("hourly", "daily", "monthly", "annual")
 def compare(
     gar_variable: str,
     aws_field: str,
-    gar_values: Sequence[float],
-    obs_values: Sequence[float],
+    gar_values: TimeSeries,
+    obs_values: TimeSeries,
     excluded_count: int = 0,
-    cadence: str = "hourly",
+    cadence: str | None = None,
 ) -> ComparisonResult:
-    """Compare paired GAR and observation values for one variable spec."""
-    if cadence not in CADENCES:
+    """Compare timestamp-aligned intervals; positional arrays are unsupported."""
+    if cadence is not None and cadence not in CADENCES:
         raise ValueError(f"unknown comparison cadence: {cadence!r}")
-    pairs = list(zip(gar_values, obs_values))
+    gar, obs, excluded = align_series(gar_values, obs_values)
+    if cadence is not None and cadence != gar_values.cadence:
+        raise TimeValidationError(
+            "cadence", "requested cadence differs from native series; aggregate explicitly"
+        )
+    cadence = gar_values.cadence
+    excluded_count += excluded
+    pairs = list(zip(gar, obs, strict=True))
     count = len(pairs)
     if count == 0:
         return ComparisonResult(
-            gar_variable, aws_field, 0, excluded_count,
-            None, None, None, None, None, None, None, None, cadence,
+            gar_variable,
+            aws_field,
+            0,
+            excluded_count,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            cadence,
         )
     gar_mean = statistics.fmean(g for g, _ in pairs)
     obs_mean = statistics.fmean(o for _, o in pairs)
@@ -146,9 +166,7 @@ def complete_hourly(readings: Sequence[float | None]) -> float | None:
 COARSER_COVERAGE_REQUIRED = 0.9
 
 
-def complete_coarser(
-    hourly_values: Sequence[float | None], expected: int
-) -> float | None:
+def complete_coarser(hourly_values: Sequence[float | None], expected: int) -> float | None:
     """Aggregate hourly values; None (excluded) below 90% coverage."""
     if expected <= 0:
         return None
@@ -181,9 +199,7 @@ class PrecipExtras:
     correct_negatives: int
 
 
-def precip_extras(
-    gar_depths: Sequence[float], obs_depths: Sequence[float]
-) -> PrecipExtras:
+def precip_extras(gar_depths: Sequence[float], obs_depths: Sequence[float]) -> PrecipExtras:
     """Totals, wet frequency and zero/non-zero contingency for paired depths."""
     count = len(gar_depths)
     if count == 0:

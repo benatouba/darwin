@@ -1,5 +1,7 @@
 """Comparison engine and v1 variable specifications (D7, darwin#9)."""
 
+from datetime import UTC, datetime, timedelta
+
 import pytest
 
 from darwin.publisher.comparison import (
@@ -11,6 +13,7 @@ from darwin.publisher.comparison import (
     precip_depth,
     precip_extras,
 )
+from darwin.publisher.series import TimeSeries
 
 
 def test_nine_declared_pairings_with_units_and_conversions():
@@ -19,16 +22,19 @@ def test_nine_declared_pairings_with_units_and_conversions():
     assert by_pair[("t2", "T")].conversion == "K to C"
     assert by_pair[("psfc", "Pabs")].conversion == "Pa to hPa"
     assert by_pair[("tslb", "ST")].conversion == "K to C"
-    prcp_fields = sorted(
-        spec.aws_field for spec in COMPARISON_SPECS if spec.gar_variable == "prcp"
-    )
+    prcp_fields = sorted(spec.aws_field for spec in COMPARISON_SPECS if spec.gar_variable == "prcp")
     assert prcp_fields == ["PCP_acoustic", "PCP_diff_radar", "PCP_tot_bucket"]
     assert by_pair[("wind10", "WS/WD")].aggregation == "vector"
 
 
+def test_comparison_requires_time_coordinates():
+    with pytest.raises(ValueError, match="time coordinates"):
+        compare("t2", "T", gar_values=(20.0,), obs_values=(21.0,))
+
+
 def test_compare_reports_scalar_stats():
     result = compare(
-        "t2", "T", gar_values=(20.0, 22.0, 24.0), obs_values=(21.0, 21.0, 25.0)
+        "t2", "T", gar_values=_series((20.0, 22.0, 24.0)), obs_values=_series((21.0, 21.0, 25.0))
     )
     assert result.paired_count == 3
     assert result.excluded_count == 0
@@ -43,7 +49,7 @@ def test_compare_reports_scalar_stats():
 
 
 def test_insufficient_pairs_carry_not_defined_markers():
-    result = compare("t2", "T", gar_values=(20.0,), obs_values=(21.0,))
+    result = compare("t2", "T", gar_values=_series((20.0,)), obs_values=_series((21.0,)))
     assert result.paired_count == 1
     assert result.gar_mean == pytest.approx(20.0)
     assert result.bias == pytest.approx(-1.0)
@@ -64,9 +70,7 @@ def test_coarser_completeness_needs_ninety_percent_of_hourlies():
 
 def test_precip_depth_integration_and_extras():
     assert precip_depth((1.0, 0.0, 2.0)) == (1.0, 0.0, 2.0)
-    extras = precip_extras(
-        gar_depths=(1.0, 0.0, 2.0), obs_depths=(0.5, 0.0, 0.0)
-    )
+    extras = precip_extras(gar_depths=(1.0, 0.0, 2.0), obs_depths=(0.5, 0.0, 0.0))
     assert extras.total_gar == pytest.approx(3.0)
     assert extras.total_obs == pytest.approx(0.5)
     assert extras.wet_frequency_gar == pytest.approx(2 / 3)
@@ -86,6 +90,8 @@ def test_empty_depths_carry_zero_extras_without_dividing_by_zero():
 
 def test_coarser_completeness_with_no_expected_hourlies_is_none():
     assert complete_coarser((1.0,), expected=0) is None
+
+
 def test_compare_rejects_unknown_cadence():
     with pytest.raises(ValueError):
         compare("t2", "T", gar_values=(20.0,), obs_values=(21.0,), cadence="decadal")
@@ -94,9 +100,21 @@ def test_compare_rejects_unknown_cadence():
 def test_compare_accepts_all_v1_cadences():
     for cadence in ("hourly", "daily", "monthly", "annual"):
         result = compare(
-            "t2", "T", gar_values=(20.0,), obs_values=(21.0,), cadence=cadence
+            "t2",
+            "T",
+            gar_values=_series((20.0,), cadence),
+            obs_values=_series((21.0,), cadence),
+            cadence=cadence,
         )
         assert result.cadence == cadence
+
+
+def _series(values, cadence="hourly"):
+    return TimeSeries(
+        values,
+        [datetime(2025, 1, 1, tzinfo=UTC) + timedelta(hours=i) for i in range(len(values))],
+        cadence,
+    )
 
 
 def test_wind_circular_diagnostics_exclude_calm_pairs():

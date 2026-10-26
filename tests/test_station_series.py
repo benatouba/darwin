@@ -1,14 +1,7 @@
-"""RED: parameterized per-station series builder (spec #32).
-
-Generalizes comparison_series.build_comparison_series (hardcoded
-CerroCrocker/Jan-2020/2025) to any station/month/variable, plus a
-temperature-means mode. All tests must FAIL until
-darwin.publisher.station_series.build_station_series exists.
-"""
+"""Native-cadence station stores, explicit observation time provenance (#15)."""
 
 import csv
 import hashlib
-from calendar import monthrange
 from datetime import datetime
 from xml.etree import ElementTree
 
@@ -104,27 +97,33 @@ def test_prcp_mode_layout_and_tip_sums(tmp_path):
         for hour in range(24):
             if day == 3 and hour == 5:
                 # Rain event: cumulative within the hour, then reset.
-                rows += [(s, v) for s, v in _hour_rows(2023, 2, day, hour,
-                          [0.0, 0.2, 0.6, 1.2, 2.0, 3.0])]
+                rows += [
+                    (s, v)
+                    for s, v in _hour_rows(2023, 2, day, hour, [0.0, 0.2, 0.6, 1.2, 2.0, 3.0])
+                ]
             elif day == 10:
                 # Only 3 readings: hour invalid (< 6 required).
-                rows += [(s, v) for s, v in _hour_rows(2023, 2, day, hour,
-                          [0.0, 0.0, 0.0])[:3]]
+                rows += [(s, v) for s, v in _hour_rows(2023, 2, day, hour, [0.0, 0.0, 0.0])[:3]]
             else:
-                rows += [(s, 0.0) for s, _ in _hour_rows(2023, 2, day, hour,
-                          [0.0] * 6)]
+                rows += [(s, 0.0) for s, _ in _hour_rows(2023, 2, day, hour, [0.0] * 6)]
     _write_csv(repo / "data" / "ST_data.csv", ["datetime", "PCP_tot_bucket"], rows)
     gar_bytes = (repo / "GAR_d02km_m_2d_prcp_2023.nc").read_bytes()
     obs_bytes = (repo / "data" / "ST_data.csv").read_bytes()
 
     result = build_station_series(
-        repo, out,
-        gar_source="GAR_d02km_m_2d_prcp_2023.nc", gar_variable="prcp",
-        obs_csv="data/ST_data.csv", obs_meta="data/ST_meta.xml",
-        obs_year=2023, obs_month=2,
+        repo,
+        out,
+        gar_source="GAR_d02km_m_2d_prcp_2023.nc",
+        gar_variable="prcp",
+        obs_csv="data/ST_data.csv",
+        obs_meta="data/ST_meta.xml",
+        obs_year=2023,
+        obs_month=2,
         gar_store_name="GAR-ST-sampled_2023.zarr",
         obs_store_name="AWS-ST_2023-02.zarr",
-        mode="sum", obs_field="PCP_tot_bucket",
+        mode="sum",
+        obs_field="PCP_tot_bucket",
+        obs_timezone="UTC",
         gar_sha256=hashlib.sha256(gar_bytes).hexdigest(),
         obs_sha256=hashlib.sha256(obs_bytes).hexdigest(),
     )
@@ -132,9 +131,8 @@ def test_prcp_mode_layout_and_tip_sums(tmp_path):
     gar = zarr.open_group(str(result["gar_sampled"]))
     assert len(gar["monthly"][:]) == 12
     assert gar["monthly"].attrs["units"] == "mm h-1"
-    # Constants disaggregate monthly[month - 1], not monthly[0].
-    assert float(gar["hourly"][0]) == pytest.approx(101.0)
-    assert float(gar["daily"][0]) == pytest.approx(101.0 * 24.0)
+    assert "hourly" not in gar and "daily" not in gar
+    assert float(gar["monthly"][1]) == pytest.approx(101.0)
     assert list(gar["time"][:]) == _month_start_epoch_hours(2023)
     assert gar["time"].attrs["units"] == TIME_UNITS
     assert gar.attrs["grid_x"] == 10 and gar.attrs["grid_y"] == 20
@@ -150,6 +148,13 @@ def test_prcp_mode_layout_and_tip_sums(tmp_path):
     assert bool(obs["hourly_valid"][(10 - 1) * 24]) is False
     assert bool(obs["daily_valid"][9]) is False
     assert float(obs["daily"][2]) == pytest.approx(3.0)
+    from darwin.publisher.series import load_series
+
+    assert len(load_series(result["gar_sampled"], "monthly").times) == 12
+    assert len(load_series(result["obs"], "hourly").times) == 28 * 24
+    assert len(load_series(result["obs"], "daily").times) == 28
+    assert obs.attrs["hourly_readings_required"] == 5
+    assert obs.attrs["scientific_status"] == "unassessed"
 
 
 def test_tips_carry_across_hour_boundary():
@@ -187,8 +192,7 @@ def test_temperature_mode_kelvin_means(tmp_path):
     (repo / "data").mkdir(parents=True)
     out = tmp_path / "out"
     # months-since axis (t2_2025-style) must normalize like days-since.
-    _native_netcdf(repo / "GAR_d02km_m_2d_t2_2025.nc", "t2", "k", 2025,
-                   months_since=True)
+    _native_netcdf(repo / "GAR_d02km_m_2d_t2_2025.nc", "t2", "k", 2025, months_since=True)
     _meta_xml(repo / "data" / "ST_meta.xml")
     rows = []
     for day in range(1, 31):
@@ -203,20 +207,27 @@ def test_temperature_mode_kelvin_means(tmp_path):
     obs_bytes = (repo / "data" / "ST_data.csv").read_bytes()
 
     result = build_station_series(
-        repo, out,
-        gar_source="GAR_d02km_m_2d_t2_2025.nc", gar_variable="t2",
-        obs_csv="data/ST_data.csv", obs_meta="data/ST_meta.xml",
-        obs_year=2025, obs_month=4,
+        repo,
+        out,
+        gar_source="GAR_d02km_m_2d_t2_2025.nc",
+        gar_variable="t2",
+        obs_csv="data/ST_data.csv",
+        obs_meta="data/ST_meta.xml",
+        obs_year=2025,
+        obs_month=4,
         gar_store_name="GAR-ST-sampled-t2_2025.zarr",
         obs_store_name="AWS-ST-T_2025-04.zarr",
-        mode="mean", obs_field="T",
+        mode="mean",
+        obs_field="T",
+        obs_timezone="UTC",
         gar_sha256=hashlib.sha256(gar_bytes).hexdigest(),
         obs_sha256=hashlib.sha256(obs_bytes).hexdigest(),
     )
 
     gar = zarr.open_group(str(result["gar_sampled"]))
     assert gar["monthly"].attrs["units"] == "K"
-    assert float(gar["hourly"][0]) == pytest.approx(103.0)
+    assert float(gar["monthly"][3]) == pytest.approx(103.0)
+    assert "hourly" not in gar
     assert list(gar["time"][:]) == _month_start_epoch_hours(2025)
 
     obs = zarr.open_group(str(result["obs"]))
@@ -237,21 +248,29 @@ def test_foreign_grid_rejected(tmp_path):
         xs = ds.variables["west_east"][:]
         ds.variables["west_east"][:] = xs + 1000.0
     _meta_xml(repo / "data" / "ST_meta.xml")
-    _write_csv(repo / "data" / "ST_data.csv",
-               ["datetime", "PCP_tot_bucket"],
-               [("2023-02-01 00:00:00", "0.0")])
+    _write_csv(
+        repo / "data" / "ST_data.csv",
+        ["datetime", "PCP_tot_bucket"],
+        [("2023-02-01 00:00:00", "0.0")],
+    )
     with pytest.raises(ValueError, match="native grid"):
         build_station_series(
-            repo, tmp_path / "out",
-            gar_source="GAR_d02km_m_2d_prcp_2023.nc", gar_variable="prcp",
-            obs_csv="data/ST_data.csv", obs_meta="data/ST_meta.xml",
-            obs_year=2023, obs_month=2,
-            gar_store_name="g.zarr", obs_store_name="o.zarr",
-            mode="sum", obs_field="PCP_tot_bucket",
+            repo,
+            tmp_path / "out",
+            gar_source="GAR_d02km_m_2d_prcp_2023.nc",
+            gar_variable="prcp",
+            obs_csv="data/ST_data.csv",
+            obs_meta="data/ST_meta.xml",
+            obs_year=2023,
+            obs_month=2,
+            gar_store_name="g.zarr",
+            obs_store_name="o.zarr",
+            mode="sum",
+            obs_field="PCP_tot_bucket",
             gar_sha256=hashlib.sha256(
-                (repo / "GAR_d02km_m_2d_prcp_2023.nc").read_bytes()).hexdigest(),
-            obs_sha256=hashlib.sha256(
-                (repo / "data" / "ST_data.csv").read_bytes()).hexdigest(),
+                (repo / "GAR_d02km_m_2d_prcp_2023.nc").read_bytes()
+            ).hexdigest(),
+            obs_sha256=hashlib.sha256((repo / "data" / "ST_data.csv").read_bytes()).hexdigest(),
         )
 
 
@@ -264,19 +283,27 @@ def test_missing_crs_falls_back_to_native(tmp_path):
     with nc.Dataset(str(repo / "GAR_d02km_m_2d_t2_2025.nc"), "r+") as ds:
         delattr(ds, "pyproj_srs")
     _meta_xml(repo / "data" / "ST_meta.xml")
-    _write_csv(repo / "data" / "ST_data.csv", ["datetime", "T"],
-               [("2025-04-01 00:00:00", "20.0")] * 6)
+    _write_csv(
+        repo / "data" / "ST_data.csv",
+        ["datetime", "T"],
+        [(f"2025-04-01 00:{minute:02d}:00", "20.0") for minute in range(0, 60, 10)],
+    )
     result = build_station_series(
-        repo, tmp_path / "out",
-        gar_source="GAR_d02km_m_2d_t2_2025.nc", gar_variable="t2",
-        obs_csv="data/ST_data.csv", obs_meta="data/ST_meta.xml",
-        obs_year=2025, obs_month=4,
-        gar_store_name="g.zarr", obs_store_name="o.zarr",
-        mode="mean", obs_field="T",
-        gar_sha256=hashlib.sha256(
-            (repo / "GAR_d02km_m_2d_t2_2025.nc").read_bytes()).hexdigest(),
-        obs_sha256=hashlib.sha256(
-            (repo / "data" / "ST_data.csv").read_bytes()).hexdigest(),
+        repo,
+        tmp_path / "out",
+        gar_source="GAR_d02km_m_2d_t2_2025.nc",
+        gar_variable="t2",
+        obs_csv="data/ST_data.csv",
+        obs_meta="data/ST_meta.xml",
+        obs_year=2025,
+        obs_month=4,
+        gar_store_name="g.zarr",
+        obs_store_name="o.zarr",
+        mode="mean",
+        obs_field="T",
+        obs_timezone="UTC",
+        gar_sha256=hashlib.sha256((repo / "GAR_d02km_m_2d_t2_2025.nc").read_bytes()).hexdigest(),
+        obs_sha256=hashlib.sha256((repo / "data" / "ST_data.csv").read_bytes()).hexdigest(),
     )
     gar = zarr.open_group(str(result["gar_sampled"]))
     assert gar.attrs["crs"] == NATIVE_CRS
@@ -289,17 +316,25 @@ def test_tampered_source_rejected(tmp_path):
     (repo / "data").mkdir(parents=True)
     _native_netcdf(repo / "GAR_d02km_m_2d_prcp_2023.nc", "prcp", "mm h-1", 2023)
     _meta_xml(repo / "data" / "ST_meta.xml")
-    _write_csv(repo / "data" / "ST_data.csv",
-               ["datetime", "PCP_tot_bucket"],
-               [("2023-02-01 00:00:00", "0.0")])
+    _write_csv(
+        repo / "data" / "ST_data.csv",
+        ["datetime", "PCP_tot_bucket"],
+        [("2023-02-01 00:00:00", "0.0")],
+    )
     with pytest.raises(ValueError, match="sha256"):
         build_station_series(
-            repo, tmp_path / "out",
-            gar_source="GAR_d02km_m_2d_prcp_2023.nc", gar_variable="prcp",
-            obs_csv="data/ST_data.csv", obs_meta="data/ST_meta.xml",
-            obs_year=2023, obs_month=2,
-            gar_store_name="g.zarr", obs_store_name="o.zarr",
-            mode="sum", obs_field="PCP_tot_bucket",
+            repo,
+            tmp_path / "out",
+            gar_source="GAR_d02km_m_2d_prcp_2023.nc",
+            gar_variable="prcp",
+            obs_csv="data/ST_data.csv",
+            obs_meta="data/ST_meta.xml",
+            obs_year=2023,
+            obs_month=2,
+            gar_store_name="g.zarr",
+            obs_store_name="o.zarr",
+            mode="sum",
+            obs_field="PCP_tot_bucket",
             gar_sha256="0" * 64,
             obs_sha256="0" * 64,
         )
@@ -311,3 +346,161 @@ def test_coverage_rule_uses_shared_threshold():
     min_valid_hours = math.ceil(24 * COARSER_COVERAGE_REQUIRED)
     assert min_valid_hours / 24 >= COARSER_COVERAGE_REQUIRED
     assert (min_valid_hours - 1) / 24 < COARSER_COVERAGE_REQUIRED
+
+
+def test_monthly_input_is_not_fabricated_into_native_hourly_series(tmp_path):
+    from darwin.publisher.station_series import build_station_series
+
+    (tmp_path / "data").mkdir()
+    source = tmp_path / "monthly.nc"
+    observations = tmp_path / "data" / "station.csv"
+    _native_netcdf(source, "t2", "K", 2025)
+    _meta_xml(tmp_path / "data" / "station.xml")
+    _write_csv(observations, ["datetime", "T"], [("2025-04-01T00:00:00", "20")])
+    paths = build_station_series(
+        tmp_path,
+        tmp_path / "out",
+        gar_source="monthly.nc",
+        gar_variable="t2",
+        obs_csv="data/station.csv",
+        obs_meta="data/station.xml",
+        obs_year=2025,
+        obs_month=4,
+        gar_store_name="model.zarr",
+        obs_store_name="obs.zarr",
+        mode="mean",
+        obs_field="T",
+        gar_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
+        obs_timezone="UTC",
+        obs_sha256=hashlib.sha256(observations.read_bytes()).hexdigest(),
+    )
+    model = zarr.open_group(paths["gar_sampled"], mode="r")
+    assert "hourly" not in model
+    assert "daily" not in model
+    assert model.attrs["cadence"] == "monthly"
+
+
+@pytest.fixture
+def station_inputs(tmp_path):
+    from darwin.publisher.station_series import build_station_series
+
+    _native_netcdf(tmp_path / "monthly.nc", "t2", "K", 2025)
+    _meta_xml(tmp_path / "station.xml")
+    _write_csv(tmp_path / "station.csv", ["datetime", "T"], [("2025-04-01T00:00:00", "20")])
+
+    def build(**overrides):
+        arguments = dict(
+            gar_source="monthly.nc",
+            gar_variable="t2",
+            obs_csv="station.csv",
+            obs_meta="station.xml",
+            obs_year=2025,
+            obs_month=4,
+            gar_store_name="model.zarr",
+            obs_store_name="obs.zarr",
+            mode="mean",
+            obs_field="T",
+            gar_sha256=hashlib.sha256((tmp_path / "monthly.nc").read_bytes()).hexdigest(),
+            obs_sha256=hashlib.sha256((tmp_path / "station.csv").read_bytes()).hexdigest(),
+            obs_timezone="UTC",
+        )
+        arguments.update(overrides)
+        return build_station_series(tmp_path, tmp_path / "out", **arguments)
+
+    return build
+
+
+def test_naive_observation_dates_require_reviewed_timezone(station_inputs, tmp_path):
+    from darwin.publisher.series import TimeValidationError
+
+    with pytest.raises(TimeValidationError, match="explicit timezone"):
+        station_inputs(obs_timezone=None)
+    assert not (tmp_path / "out").exists()
+
+
+def test_observation_coordinates_and_bounds_are_normalized_from_declared_timezone(station_inputs):
+    from darwin.publisher.series import load_series
+
+    result = station_inputs(obs_timezone="Pacific/Galapagos")
+    obs = load_series(result["obs"], "hourly")
+    assert obs.times[0].isoformat() == "2025-04-01T06:00:00+00:00"
+    assert obs.bounds[0][1].isoformat() == "2025-04-01T07:00:00+00:00"
+    assert obs.valid[0] is True
+    assert obs.valid[1] is False
+    daily = load_series(result["obs"], "daily")
+    assert daily.bounds[0][1].isoformat() == "2025-04-02T06:00:00+00:00"
+
+
+@pytest.mark.parametrize(
+    "failure", ["shifted", "fractional_month", "missing", "calendar", "bounds"]
+)
+def test_invalid_source_time_is_rejected_before_output(station_inputs, tmp_path, failure):
+    from darwin.publisher.series import TimeValidationError
+
+    with nc.Dataset(str(tmp_path / "monthly.nc"), "r+") as dataset:
+        axis = dataset.variables["time"]
+        if failure == "shifted":
+            axis[:] = axis[:] + 0.5
+        elif failure == "fractional_month":
+            axis.units = "months since 2025-01-01 00:00:00"
+            axis[:] = np.arange(12) + 0.1
+        elif failure == "missing":
+            dataset.renameVariable("time", "missing_time")
+        elif failure == "calendar":
+            axis.calendar = "360_day"
+        else:
+            axis.bounds = "missing_bounds"
+    with pytest.raises(TimeValidationError):
+        station_inputs()
+    assert not (tmp_path / "out").exists()
+
+
+def test_duplicate_observations_cannot_inflate_completeness(station_inputs, tmp_path):
+    from darwin.publisher.series import TimeValidationError
+
+    _write_csv(tmp_path / "station.csv", ["datetime", "T"], [("2025-04-01T00:00:00", "20")] * 6)
+    with pytest.raises(TimeValidationError, match="strictly increasing"):
+        station_inputs()
+
+
+def test_existing_station_stores_are_never_rewritten(station_inputs):
+    from darwin.publisher.multiyear_store import hash_store
+
+    original = station_inputs()
+    hashes = {key: hash_store(path) for key, path in original.items()}
+    with pytest.raises(FileExistsError, match="immutable"):
+        station_inputs()
+    assert hashes == {key: hash_store(path) for key, path in original.items()}
+
+
+@pytest.mark.parametrize(
+    "corruption", ["schema", "axis", "bounds_units", "bounds_shape", "mask", "synthetic"]
+)
+def test_store_reader_rejects_missing_or_unsafe_time_contract(station_inputs, corruption):
+    from darwin.publisher.series import TimeValidationError, load_series
+
+    paths = station_inputs()
+    group = zarr.open_group(paths["obs"], mode="a")
+    if corruption == "schema":
+        del group.attrs["series_schema_version"]
+    elif corruption == "axis":
+        del group["hourly_time"]
+    elif corruption == "bounds_units":
+        group["hourly_time_bounds"].attrs["units"] = "days since 1970-01-01 00:00:00"
+    elif corruption == "bounds_shape":
+        del group["hourly_time_bounds"]
+        group.create_array("hourly_time_bounds", data=np.zeros((720, 1)))
+    elif corruption == "mask":
+        del group["hourly_valid"]
+    else:
+        group.attrs["synthetic"] = True
+    with pytest.raises(TimeValidationError):
+        load_series(paths["obs"], "hourly")
+
+
+def test_store_reader_never_substitutes_a_finer_native_cadence(station_inputs):
+    from darwin.publisher.series import TimeValidationError, load_series
+
+    paths = station_inputs()
+    with pytest.raises(TimeValidationError, match="native hourly series is unavailable"):
+        load_series(paths["gar_sampled"], "hourly")

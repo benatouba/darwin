@@ -1,5 +1,15 @@
 # Analysis tools for the [DARWIN](https://vhrz669.hrz.uni-marburg.de/darwin/) project and GAR data
 
+The approved [integration specification](docs/integration-spec.md) defines Darwin's
+analysis, reproducible-recipe and publication-preparation role, its Python/CLI
+interfaces, and current migration gaps. The legacy tools below are implementation
+context, not permission to mutate original source data or bypass versioning.
+
+Station-series callers must follow the [version-2 time contract](docs/station-series-time-contract.md):
+native cadence, explicit timestamp provenance and interval joins replace monthly
+repetition and positional comparison. The document inventories legacy products
+requiring reassessment and the outstanding dashboard migration.
+
 The GAR dataset is modelled on a WRF Mercator grid with 2 km grid spacing. The
 [salem](https://salem.readthedocs.io/en/stable/index.html) package provides methods for easy access to the data that are
 used in this project.

@@ -1,9 +1,9 @@
 [project]
 name = "darwin"
-version = "1.0.0"
+version = "1.1.0"
 description = "Process and visualize measured and simulated data in the project DARWIN."
 authors = [{ name = "Benjamin Schmidt", email = "benschmidt@live.de" }]
-requires-python = ">=3.14,<=3.15"
+requires-python = ">=3.14,<3.15"
 readme = "README.md"
 license-files = ["uc2-data-standard.pdf", "uc2-datenstandard.pdf"]
 dependencies = [
@@ -46,12 +46,12 @@ dependencies = [
 
 [dependency-groups]
 test = [
-    "pytest>=9.1.0",
+    "pytest>=9.1.1",
     "pytest-mock>=3.17.0",
 ]
 dev = [
     "icecream>=2.2.0",
-    "pandas-stubs>=3.0.4.260814",
+    "pandas-stubs>=3.0.5.260914",
 ]
 
 [tool.uv]
@@ -61,13 +61,10 @@ default-groups = [
 ]
 
 [tool.hatch.build.targets.sdist]
-include = ["./darwin"]
+include = ["/darwin", "/README.md", "/pyproject.toml"]
 
 [tool.hatch.build.targets.wheel]
-include = ["./darwin"]
-
-[tool.hatch.build.targets.wheel.sources]
-"./darwin" = "darwin"
+packages = ["darwin"]
 
 [build-system]
 requires = ["hatchling"]
@@ -85,7 +82,7 @@ jobs = 1
 limit-inference-results = 100
 persistent = true
 
-py-version = "3.9"
+py-version = "3.14"
 
 suggestion-mode = true
 
@@ -178,7 +175,7 @@ max-complexity = 10
 
 [tool.ruff]
 line-length = 100
-target-version = "py312"
+target-version = "py314"
 
 [tool.ruff.lint]
 fixable = ["ALL"]

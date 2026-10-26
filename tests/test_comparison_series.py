@@ -1,19 +1,14 @@
-"""Comparison series stores (T6): published GAR/AWS January series.
+"""Legacy smoke inputs retain values but cannot establish paired model skill.
 
-The dashboard serves the real prcp Comparison result from these seed
-stores, so they must carry true values: the GAR January-2020 monthly
-rate sampled nearest the Station location record, uniformly
-disaggregated to constant hourly/daily depth series, and the AWS
-January hourly/daily depths with real completeness exclusions, all
-asserted against independently measured literals (CSV + NetCDF probes,
-not the builder's own stores).
+UTC below is an explicit test declaration, not an approval of real-source timezone.
 """
 
+
 def test_gar_sampled_store_carries_jan2020_nearest_series(tmp_path, comparison_sources):
-    """GAR store: 12 monthly nearest rates; hourly/daily depths (rate x 1h/24h)."""
+    """GAR store: 12 authoritative monthly rates, no fabricated fine cadences."""
     from darwin.publisher.comparison_series import build_comparison_series
 
-    out = build_comparison_series(comparison_sources, tmp_path)
+    out = build_comparison_series(comparison_sources, tmp_path, obs_timezone="UTC")
     import zarr
 
     group = zarr.open_group(str(out["gar_sampled"]), mode="r")
@@ -21,16 +16,10 @@ def test_gar_sampled_store_carries_jan2020_nearest_series(tmp_path, comparison_s
     assert monthly.shape == (12,)
     # float32 source precision: the probe literal is the float64 rounding.
     assert abs(float(monthly[0]) - 0.15625376) < 1e-7
-    assert group["hourly"].shape == (744,)
-    assert group["daily"].shape == (31,)
-    assert bool((group["hourly"][:] == float(monthly[0])).all())
-    assert bool((group["daily"][:] == float(monthly[0]) * 24.0).all())
+    assert "hourly" not in group and "daily" not in group
     assert group["monthly"].attrs["units"] == "mm h-1"
-    # Both disaggregated series are depths so they pair unit-clean with
-    # the AWS tip-sum depths (hourly depth = rate x 1h, numerically the rate).
-    assert group["hourly"].attrs["units"] == "mm"
-    assert group["daily"].attrs["units"] == "mm"
-    assert group.attrs["constant_series"] is True
+    assert group.attrs["cadences"] == ["monthly"]
+    assert group.attrs["source_coverage"]["start"].startswith("2020-01-01")
     assert int(group.attrs["grid_y"]) == 101
     assert int(group.attrs["grid_x"]) == 121
     # Native GAR projection: verbatim source pyproj_srs (WRF Mercator).
@@ -49,7 +38,7 @@ def test_aws_january_store_has_real_exclusions(tmp_path, comparison_sources):
     """
     from darwin.publisher.comparison_series import build_comparison_series
 
-    out = build_comparison_series(comparison_sources, tmp_path)
+    out = build_comparison_series(comparison_sources, tmp_path, obs_timezone="UTC")
     import zarr
 
     group = zarr.open_group(str(out["aws_january"]), mode="r")
@@ -67,3 +56,32 @@ def test_aws_january_store_has_real_exclusions(tmp_path, comparison_sources):
     assert group.attrs["units"] == "mm"
     assert group["hourly"].attrs["units"] == "mm"
     assert group["daily"].attrs["units"] == "mm"
+    assert group["hourly_time"].shape == (744,)
+    assert group["hourly_time_bounds"].shape == (744, 2)
+    assert group.attrs["source_coverage"]["first_timestamp"].startswith("2025-01-01")
+
+
+def test_legacy_sources_are_not_repaired_by_guessing_a_timezone(tmp_path, comparison_sources):
+    import pytest
+
+    from darwin.publisher.comparison_series import build_comparison_series
+    from darwin.publisher.series import TimeValidationError
+
+    with pytest.raises(TimeValidationError, match="explicit timezone"):
+        build_comparison_series(comparison_sources, tmp_path / "new")
+    assert not (tmp_path / "new").exists()
+
+
+def test_actual_legacy_model_year_cannot_be_paired_with_2025(tmp_path, comparison_sources):
+    import pytest
+
+    from darwin.publisher.comparison import compare
+    from darwin.publisher.comparison_series import build_comparison_series
+    from darwin.publisher.series import TimeSeries, TimeValidationError, load_series
+
+    paths = build_comparison_series(comparison_sources, tmp_path, obs_timezone="UTC")
+    model = load_series(paths["gar_sampled"], "monthly")
+    # Even an explicitly prepared monthly observation cannot overlap the wrong year.
+    observations = TimeSeries([135.8], ["2025-01-01T00:00:00+00:00"], "monthly")
+    with pytest.raises(TimeValidationError, match="no overlapping"):
+        compare("prcp", "PCP_tot_bucket", model, observations)
