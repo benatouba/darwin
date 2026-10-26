@@ -28,3 +28,8 @@ tests/.cache/
 .venv-test/
 /.cache/uv/
 /test-results.xml
+
+# Producer-owned JSON contract fixture only; keep scientific data ignored.
+!tests/data/
+tests/data/*
+!tests/data/cjc-output-v1.fixture.json

@@ -20,6 +20,7 @@ dependencies = [
     "geopandas>=1.2.0",
     "ipython>=9.17.1",
     "joblib>=1.6.0",
+    "jsonschema>=4.25.1",
     "matplotlib>=3.11.2",
     "metpy>=1.7.1",
     "nc-time-axis>=1.4.1",

@@ -1,0 +1,29 @@
+{
+  "contract":"cjc.simulation-output/1",
+  "id":"synthetic-day-one-d02",
+  "simulation":{
+    "id":"synthetic-simulation","mode":"continuous",
+    "configuration":{"id":"configuration","sha256":"0000000000000000000000000000000000000000000000000000000000000000"},
+    "controller":{"id":"controller","sha256":"0000000000000000000000000000000000000000000000000000000000000000"},
+    "wrf_build":{"id":"wrf-build","sha256":"0000000000000000000000000000000000000000000000000000000000000000"},
+    "wps_build":{"id":"wps-build","sha256":"0000000000000000000000000000000000000000000000000000000000000000"},
+    "scientific_policy":{"id":"scientific-policy","sha256":"0000000000000000000000000000000000000000000000000000000000000000"},
+    "output_policy":{"id":"output-policy","sha256":"0000000000000000000000000000000000000000000000000000000000000000"},
+    "initial_state":{"id":"initial-state","sha256":"0000000000000000000000000000000000000000000000000000000000000000"}
+  },
+  "domain":"d02",
+  "grid":{"id":"synthetic-grid","sha256":"0000000000000000000000000000000000000000000000000000000000000000"},
+  "variables":[{"name":"T2","units":"K"}],
+  "start":"2001-01-01T00:00:00Z","end":"2001-01-02T00:00:00Z","history_seconds":43200,
+  "completeness":"complete","missing_times":[],"partial_reason":null,
+  "artifacts":[{"id":"synthetic-native","sha256":"2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881","bytes":1}],
+  "segments":[
+    {"id":"initial","attempt_id":"attempt-1","restart_parent":null},
+    {"id":"restart","attempt_id":"attempt-2","restart_parent":{"id":"checkpoint-1","sha256":"0000000000000000000000000000000000000000000000000000000000000000"}}
+  ],
+  "selections":[
+    {"time":"2001-01-01T12:00:00Z","artifact_id":"synthetic-native","record_index":0,"segment_id":"initial"},
+    {"time":"2001-01-02T00:00:00Z","artifact_id":"synthetic-native","record_index":1,"segment_id":"restart"}
+  ],
+  "execution_evidence":{"id":"synthetic-execution","sha256":"0000000000000000000000000000000000000000000000000000000000000000"}
+}
