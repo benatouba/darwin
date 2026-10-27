@@ -9,7 +9,14 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from darwin.operations import OperationError, execute, make_recipe, source_identity
+from darwin.operations import (
+    OperationError,
+    execute,
+    inventory,
+    make_recipe,
+    source_identity,
+    validate_recipe,
+)
 
 
 def write_source(path, start=0, *, units="mm", x=(1.0, 2.0), offset=0):
@@ -173,3 +180,117 @@ def test_nan_amounts_are_not_silently_dropped(tmp_path):
     execute(recipe, {"native": path}, tmp_path / "out")
     with xr.open_dataset(tmp_path / "out/data.nc") as result:
         assert np.isnan(result.prcp.item())
+
+
+@pytest.mark.parametrize(
+    "operation",
+    ["resample", "interpolate", "regrid", "convert_units", "fill_gaps", "average"],
+)
+def test_unsupported_operations_are_refused_explicitly(tmp_path, operation):
+    source = write_source(tmp_path / "source.nc")
+    recipe = make_recipe({"native": source}, [copy.deepcopy(SELECT)])
+    recipe["operations"].append({"operation": operation, "parameters": {}})
+    with pytest.raises(OperationError) as caught:
+        validate_recipe(recipe)
+    assert caught.value.code == "unsupported_operation"
+    assert operation in str(caught.value)
+
+
+def test_rate_integration_is_refused_not_approximated(tmp_path):
+    source = write_source(tmp_path / "source.nc")
+    recipe = make_recipe({"native": source}, [copy.deepcopy(SELECT)])
+    recipe["operations"].append(
+        {
+            "operation": "integrate",
+            "parameters": {"dimension": "time", "variables": ["prcp"], "method": "trapezoid"},
+        }
+    )
+    with pytest.raises(OperationError) as caught:
+        execute(recipe, {"native": source}, tmp_path / "out")
+    assert caught.value.code == "unsupported_method"
+    assert not (tmp_path / "out").exists()
+
+
+def run_cli(*arguments):
+    return subprocess.run(
+        [sys.executable, "-m", "darwin.operations", *map(str, arguments)],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+
+def test_inventory_is_identical_through_python_and_cli():
+    listed = inventory()
+    assert listed["contract"] == "darwin.operations/1"
+    assert sorted(item["operation"] for item in listed["supported"]) == [
+        "assemble",
+        "crop",
+        "cut",
+        "integrate",
+        "select",
+    ]
+    integrate = next(item for item in listed["supported"] if item["operation"] == "integrate")
+    assert integrate["methods"] == ["sum-discrete-amounts"]
+    assert {"resample", "interpolate", "regrid"} <= set(listed["unsupported"])
+    completed = run_cli("--inventory")
+    assert completed.returncode == 0, completed.stderr
+    assert json.loads(completed.stdout) == listed
+
+
+def test_python_and_cli_report_the_same_structured_failure(tmp_path):
+    source = write_source(tmp_path / "source.nc")
+    recipe = make_recipe({"native": source}, [copy.deepcopy(SELECT)])
+    recipe["operations"].append({"operation": "resample", "parameters": {}})
+    with pytest.raises(OperationError) as caught:
+        execute(recipe, {"native": str(source)}, tmp_path / "python")
+    (tmp_path / "recipe.json").write_text(json.dumps(recipe))
+    (tmp_path / "locations.json").write_text(json.dumps({"native": str(source)}))
+    completed = run_cli(
+        tmp_path / "recipe.json",
+        "--locations",
+        tmp_path / "locations.json",
+        "--output",
+        tmp_path / "cli",
+    )
+    assert completed.returncode == 2
+    assert completed.stdout == ""
+    assert json.loads(completed.stderr) == {
+        "code": caught.value.code,
+        "message": str(caught.value),
+    }
+    assert not (tmp_path / "python").exists()
+    assert not (tmp_path / "cli").exists()
+
+
+def test_recipe_roundtrips_through_json_and_the_written_bundle(tmp_path):
+    a = write_source(tmp_path / "a.nc")
+    b = write_source(tmp_path / "b.nc", 2, offset=10)
+    recipe = make_recipe(
+        {"a": a, "b": b},
+        [
+            ASSEMBLE,
+            SELECT,
+            {
+                "operation": "cut",
+                "parameters": {
+                    "dimension": "time",
+                    "start": "2020-01-01T01:00",
+                    "end": "2020-01-01T03:00",
+                },
+            },
+        ],
+    )
+    reloaded = json.loads(json.dumps(recipe))
+    validate_recipe(reloaded)
+    assert reloaded == recipe
+    locations = {"a": str(a), "b": str(b)}
+    first = execute(reloaded, locations, tmp_path / "first")
+    written = json.loads((tmp_path / "first/recipe.json").read_text())
+    assert written == recipe
+    assert [source["id"] for source in written["sources"]] == ["a", "b"]
+    second = execute(written, locations, tmp_path / "second")
+    assert first == second
+    assert (tmp_path / "first/data.nc").read_bytes() == (tmp_path / "second/data.nc").read_bytes()
+    with xr.open_dataset(tmp_path / "second/data.nc") as result:
+        assert result.prcp.values[:, 0].tolist() == [3.0, 11.0]

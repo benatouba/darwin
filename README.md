@@ -32,6 +32,26 @@ measurement network.
 
 BEWARE: This project is a WIP.
 
+## Installation and optional dependencies
+
+Installing a Darwin release wheel without extras provides only what the
+supported interface needs: `darwin.operations`, `darwin.comparison`,
+`darwin.simulation_output`, `darwin.observation_qc` and the publisher. The
+historical research, mapping and plotting modules need extras
+(for example `uv add "darwin[research,visualization] @ <wheel>"`):
+
+| Extra | Contents | Needed by |
+| --- | --- | --- |
+| `research` | metpy, pint, statsmodels, dask, cdsapi, pandas, ... | `core`, `utils`, `accessors`, download/analysis scripts |
+| `native` | cdo, rasterio, rioxarray, salem, geopandas, pyproj, shapely, elevation | reprojection, maps, raster conversion |
+| `visualization` | matplotlib, seaborn, cartopy, contextily, PyQt6, ... | `plot*`, `accessors`, map scripts |
+| `all` | all of the above | development; the `test` group installs it |
+
+`tests/test_installed_release.py` builds the wheel and installs it, runtime
+dependencies only, into a fresh environment from an empty directory (offline,
+from the uv cache), then runs the Python interface and CLI there.
+See [`docs/operations.md`](docs/operations.md) for the supported operation inventory.
+
 ## Tests on a fresh checkout
 
 Install [uv](https://docs.astral.sh/uv/) and Python 3.14, then run:

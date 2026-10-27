@@ -19,6 +19,22 @@ from darwin.publisher.immutable import staged_artifact
 
 CONTRACT = "darwin.operations/1"
 OPERATIONS = ("select", "cut", "crop", "integrate", "assemble")
+INTEGRATION_METHODS = ("sum-discrete-amounts",)
+
+# Requested transformations that version 1 refuses instead of approximating.
+UNSUPPORTED = {
+    "resample": "temporal resampling is not implemented; no implicit aggregation",
+    "interpolate": "interpolation is not implemented; no nearest/linear fallback",
+    "regrid": "regridding/reprojection is not implemented",
+    "convert_units": "unit conversion is not implemented; units are preserved exactly",
+    "fill_gaps": "gap filling is not implemented; gaps fail assembly",
+    "average": "averaging is not implemented; only declared discrete sums",
+    "reconcile": "metadata reconciliation is not implemented; differences fail assembly",
+}
+UNSUPPORTED_INTEGRATION = {
+    "rate-integral": "time/bounds-aware rate integration is not implemented",
+    "trapezoid": "numerical rate integration is not implemented",
+}
 
 
 class OperationError(ValueError):
@@ -75,6 +91,7 @@ def validate_recipe(recipe: dict) -> None:
         json.dumps(recipe, allow_nan=False)
     except (TypeError, ValueError) as error:
         raise OperationError("invalid_recipe", "recipe must contain finite JSON values") from error
+    _refuse_unsupported(recipe.get("operations"))
     from importlib.resources import files
 
     import jsonschema
@@ -87,6 +104,24 @@ def validate_recipe(recipe: dict) -> None:
     ids = [source["id"] for source in recipe["sources"]]
     if len(ids) != len(set(ids)):
         raise OperationError("invalid_recipe", "duplicate source identities")
+
+
+def _refuse_unsupported(operations) -> None:
+    """Name unsupported operations/methods instead of a generic schema failure."""
+    if not isinstance(operations, list):
+        return
+    for operation in operations:
+        if not isinstance(operation, dict):
+            continue
+        name = operation.get("operation")
+        if isinstance(name, str) and name not in OPERATIONS:
+            reason = UNSUPPORTED.get(name, "not in the supported operation inventory")
+            raise OperationError("unsupported_operation", f"{name}: {reason}")
+        parameters = operation.get("parameters")
+        method = parameters.get("method") if isinstance(parameters, dict) else None
+        if name == "integrate" and isinstance(method, str) and method not in INTEGRATION_METHODS:
+            reason = UNSUPPORTED_INTEGRATION.get(method, "not a supported integration method")
+            raise OperationError("unsupported_method", f"integrate {method}: {reason}")
 
 
 def _axis(dataset, name):
@@ -267,13 +302,61 @@ def execute(recipe: dict, locations: dict, destination: str | Path) -> dict:
         raise OperationError("invalid_input", str(error)) from error
 
 
+def inventory() -> dict:
+    """Machine-readable version-1 operation inventory, shared by Python and CLI.
+
+    Anything absent from ``supported`` is refused with a structured error; the
+    ``unsupported`` reasons name commonly requested transformations explicitly.
+    """
+    return {
+        "contract": CONTRACT,
+        "input_format": "CF-NetCDF via xarray/netCDF4",
+        "supported": [
+            {"operation": "select", "parameters": ["variables"]},
+            {
+                "operation": "cut",
+                "parameters": ["dimension", "start", "end"],
+                "scope": "half-open interval on a standard datetime64 dimension coordinate",
+            },
+            {
+                "operation": "crop",
+                "parameters": ["dimension", "start", "end"],
+                "scope": "half-open numeric interval on a 1-D increasing dimension coordinate",
+            },
+            {
+                "operation": "integrate",
+                "parameters": ["dimension", "variables", "method"],
+                "methods": list(INTEGRATION_METHODS),
+                "scope": "sum of discrete amounts; missing values propagate",
+            },
+            {
+                "operation": "assemble",
+                "parameters": ["dimension", "cadence_seconds"],
+                "scope": "ordered concatenation with identical inventories and strict cadence",
+            },
+        ],
+        "unsupported": dict(UNSUPPORTED),
+        "unsupported_integration_methods": dict(UNSUPPORTED_INTEGRATION),
+    }
+
+
 def main() -> None:
     """Run an exact recipe with deployment-local source locations."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("recipe", type=Path)
-    parser.add_argument("--locations", type=Path, required=True)
-    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("recipe", type=Path, nargs="?")
+    parser.add_argument("--locations", type=Path)
+    parser.add_argument("--output", type=Path)
+    parser.add_argument(
+        "--inventory", action="store_true", help="print the supported operation inventory"
+    )
     args = parser.parse_args()
+    if args.inventory:
+        if args.recipe or args.locations or args.output:
+            parser.error("--inventory takes no recipe, --locations or --output")
+        print(json.dumps(inventory(), sort_keys=True))
+        return
+    if not (args.recipe and args.locations and args.output):
+        parser.error("recipe, --locations and --output are required")
     try:
         report = execute(
             json.loads(args.recipe.read_text()), json.loads(args.locations.read_text()), args.output

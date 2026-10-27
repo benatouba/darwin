@@ -6,48 +6,63 @@ authors = [{ name = "Benjamin Schmidt", email = "benschmidt@live.de" }]
 requires-python = ">=3.14,<3.15"
 readme = "README.md"
 license-files = ["uc2-data-standard.pdf", "uc2-datenstandard.pdf"]
+# Runtime prerequisites of the supported interface only (darwin.operations,
+# darwin.comparison, darwin.simulation_output, darwin.observation_qc and the
+# publisher). Historical research, native-library and plotting modules need extras.
 dependencies = [
-    "cartopy>=0.26.0",
-    "cdo>=1.6.1",
-    "cdsapi>=0.7.7",
-    "cf-xarray>=0.11.3",
-    "cftime>=1.6.6.1",
-    "contextily>=1.7.1",
-    "dask>=2026.8.0",
-    "descartes>=1.1.0",
-    "dotenv>=0.9.9",
-    "elevation>=2.0.1",
-    "geopandas>=1.2.0",
-    "ipython>=9.17.1",
-    "joblib>=1.6.0",
     "jsonschema>=4.25.1",
-    "matplotlib>=3.11.2",
-    "metpy>=1.7.1",
-    "nc-time-axis>=1.4.1",
     "netCDF4>=1.7.5",
-    "pandas>=3.0.6",
-    "pint-xarray>=0.6.1",
-    "pint>=0.26.2",
-    "prettyprint>=0.1.5",
-    "pyproj>=3.8.0",
+    "numpy>=2.5.4",
     "pyyaml>=6.0.3",
-    "pyqt6>=6.11.0",
-    "rasterio>=1.5.2",
-    "rioxarray>=0.23.0",
-    "salem>=0.3.11",
-    "scikit-image>=0.26.0",
-    "seaborn>=0.13.2",
-    "shapely>=2.2.0",
-    "statsmodels>=0.15.0",
-    "tomli>=2.5.0",
-    "typer>=0.27.3",
-    "windrose>=1.10.0",
     "xarray>=2026.9.0",
     "zarr>=3.4.1",
 ]
 
+[project.optional-dependencies]
+research = [
+    "cdsapi>=0.7.7",
+    "cf-xarray>=0.11.3",
+    "cftime>=1.6.6.1",
+    "dask>=2026.8.0",
+    "dotenv>=0.9.9",
+    "ipython>=9.17.1",
+    "joblib>=1.6.0",
+    "metpy>=1.7.1",
+    "pandas>=3.0.6",
+    "pint-xarray>=0.6.1",
+    "pint>=0.26.2",
+    "prettyprint>=0.1.5",
+    "scikit-image>=0.26.0",
+    "statsmodels>=0.15.0",
+    "tomli>=2.5.0",
+    "typer>=0.27.3",
+]
+native = [
+    "cdo>=1.6.1",
+    "elevation>=2.0.1",
+    "geopandas>=1.2.0",
+    "pyproj>=3.8.0",
+    "rasterio>=1.5.2",
+    "rioxarray>=0.23.0",
+    "salem>=0.3.11",
+    "shapely>=2.2.0",
+]
+visualization = [
+    "cartopy>=0.26.0",
+    "contextily>=1.7.1",
+    "descartes>=1.1.0",
+    "matplotlib>=3.11.2",
+    "nc-time-axis>=1.4.1",
+    "pyqt6>=6.11.0",
+    "seaborn>=0.13.2",
+    "windrose>=1.10.0",
+]
+all = ["darwin[research,native,visualization]"]
+
 [dependency-groups]
 test = [
+    "darwin[all]",
+    "packaging>=25.0",
     "pytest>=9.1.1",
     "pytest-mock>=3.17.0",
 ]
