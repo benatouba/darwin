@@ -1,10 +1,15 @@
-"""GAR product publication platform (darwin#2, D1).
+"""GAR product preparation (darwin#2, D1; migrated by darwin#18).
 
-The single seam for all publisher work: a reviewed, version-controlled
-YAML manifest goes in, an immutable product candidate comes out, and the
-catalogue enforces the candidate/published/superseded/failed lifecycle.
-Source paths/checksums always come from the background manifest; the
-publisher never scans the source archive on run or request paths.
+A reviewed, version-controlled YAML manifest goes in and immutable product
+candidates come out; ``darwin.handoff.prepare_handoff`` describes them for
+the dashboard. Source paths/checksums always come from the background
+manifest; the publisher never scans the source archive on run or request
+paths.
+
+``Catalogue`` is a legacy in-memory lifecycle model kept for existing
+callers and tests. It is not a publication authority: the dashboard
+catalogue owns publication, access and current-version pointers, and no
+Darwin builder publishes through ``Catalogue.publish`` any more.
 """
 
 from darwin.publisher.candidate import Candidate, run_manifest

@@ -17,8 +17,32 @@ A versioned spatial dataset derived from GAR source data and described by its do
 _Avoid_: file, output
 
 **Product candidate**:
-A validated GAR product version awaiting explicit scientific approval before publication.
-_Avoid_: draft output
+An immutable GAR product version Darwin prepared from a reviewed release manifest. It awaits a dashboard publication decision; its scientific status is recorded separately and is not changed by that decision.
+_Avoid_: draft output, approved product
+
+**Product handoff**:
+Darwin's versioned, publication-ready description of prepared product candidates (`darwin.product-handoff/2`): exact artifacts and checksums, source and recipe identities, execution completeness, scientific status and acceptance references. Preparing one never publishes, moves a current-version pointer or grants access.
+_Avoid_: release (for the document), published handoff
+
+**Execution completeness**:
+Whether the run that produced a product finished (`complete`) or not (`partial`), as reported with its execution evidence. It says nothing about scientific validity.
+_Avoid_: success, done
+
+**Assessment evidence**:
+A Darwin receipt (`darwin.assessment-evidence/1`) of one check outcome for one criterion of an exact requirements revision and an exact dataset. Evidence is never a decision.
+_Avoid_: validation result, approval
+
+**Acceptance assessment**:
+A portable record (setups contract `darwin-wrf-setups.acceptance-assessment/1`) stating that an exact dataset is accepted, rejected or unassessed under an exact requirements revision, citing exact evidence and, for a decision, the reviewer or authorized policy that made it. A reassessment supersedes an earlier record without rewriting it.
+_Avoid_: approval flag, QC pass
+
+**Scientific status**:
+The status of a product's latest acceptance assessment: accepted, rejected or unassessed (no assessment). Independent of execution completeness and publication.
+_Avoid_: approved, validated
+
+**Publication**:
+The dashboard catalogue's decision to make an exact product version visible and accessible, and to move its current-version pointer. Darwin never publishes.
+_Avoid_: release (for the decision), acceptance
 
 **Native GAR projection**:
 The spatial reference system declared in a GAR product's metadata and used for that product's spatial coordinates.

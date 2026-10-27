@@ -1,0 +1,27 @@
+{
+  "contract": "darwin-wrf-setups.acceptance-assessment/1",
+  "id": "synthetic:unassessed",
+  "synthetic": true,
+  "dataset": {
+    "id": "synthetic:dataset",
+    "version": "1",
+    "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
+  },
+  "requirements": {
+    "id": "synthetic:requirements",
+    "revision": "1",
+    "sha256": "b5a7d3ea218154aacf3fb64ceafecc46ae171733038dd17d94becf39b47c1015"
+  },
+  "status": "unassessed",
+  "evidence": [],
+  "authority": {
+    "kind": "reviewer",
+    "id": "synthetic:reviewer",
+    "authorization": {
+      "id": "synthetic:reviewer-authorization",
+      "version": "1",
+      "sha256": "44beb9be6083709be51762c04df8921acb1dad31dd947a99c6ec8db664cfe5ec"
+    }
+  },
+  "supersedes": null
+}

@@ -1,0 +1,555 @@
+{
+  "fixture_set": "darwin-wrf-setups.acceptance-assessment-fixtures/1",
+  "synthetic": true,
+  "notice": "Synthetic interoperability fixtures only: not scientific acceptance, not reviewed requirements and not a real reviewer, policy or authorization. All identities use the synthetic: namespace, which validators refuse outside explicit test mode.",
+  "cases": [
+    {
+      "name": "unassessed",
+      "assessment": "unassessed.json",
+      "requirements": "requirements.json",
+      "dataset": {
+        "id": "synthetic:dataset",
+        "version": "1",
+        "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
+      },
+      "evidence": {},
+      "prior": null,
+      "test_mode": true,
+      "expect": {
+        "status": "unassessed",
+        "assessment_sha256": "06d1b0dbd176190bb41dbd5a9f83ce0972c3a096c9e2f219376ac05f04350a03",
+        "requirements_sha256": "b5a7d3ea218154aacf3fb64ceafecc46ae171733038dd17d94becf39b47c1015",
+        "authority": null,
+        "evidence": [],
+        "supersedes": null
+      }
+    },
+    {
+      "name": "accepted",
+      "assessment": "accepted.json",
+      "requirements": "requirements.json",
+      "dataset": {
+        "id": "synthetic:dataset",
+        "version": "1",
+        "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
+      },
+      "evidence": {
+        "synthetic:receipt-a": "evidence/receipt-a.json",
+        "synthetic:receipt-b": "evidence/receipt-b.json"
+      },
+      "prior": null,
+      "test_mode": true,
+      "expect": {
+        "status": "accepted",
+        "assessment_sha256": "75c5372593e91f0a3acad6d8a95bb529b98b2bc8d98593ccf8b5c134d9c31d8e",
+        "requirements_sha256": "b5a7d3ea218154aacf3fb64ceafecc46ae171733038dd17d94becf39b47c1015",
+        "authority": {
+          "kind": "reviewer",
+          "id": "synthetic:reviewer",
+          "authorization": {
+            "id": "synthetic:reviewer-authorization",
+            "version": "1",
+            "sha256": "44beb9be6083709be51762c04df8921acb1dad31dd947a99c6ec8db664cfe5ec"
+          }
+        },
+        "evidence": [
+          {
+            "criterion": "synthetic:criterion-a",
+            "evidence_type": "synthetic:test-receipt",
+            "artifact": {
+              "id": "synthetic:receipt-a",
+              "version": "1",
+              "sha256": "32a903c2d5f4cdb24ab365eaf8b124b143468698eed35b50e2964c4dca7f6e9e"
+            }
+          },
+          {
+            "criterion": "synthetic:criterion-b",
+            "evidence_type": "synthetic:test-receipt",
+            "artifact": {
+              "id": "synthetic:receipt-b",
+              "version": "1",
+              "sha256": "f184161fee0d82b1e92dbbb1d96a3bdeddfc8d5b60b0e090fb6a0800d4627d61"
+            }
+          }
+        ],
+        "supersedes": null
+      }
+    },
+    {
+      "name": "rejected",
+      "assessment": "rejected.json",
+      "requirements": "requirements.json",
+      "dataset": {
+        "id": "synthetic:dataset",
+        "version": "1",
+        "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
+      },
+      "evidence": {
+        "synthetic:receipt-a-rejecting": "evidence/receipt-a-rejecting.json"
+      },
+      "prior": null,
+      "test_mode": true,
+      "expect": {
+        "status": "rejected",
+        "assessment_sha256": "35862c7b3e8e2c5e5cdc10dbe958fa0f4c056cceb33f635dfa079ec5193ef83e",
+        "requirements_sha256": "b5a7d3ea218154aacf3fb64ceafecc46ae171733038dd17d94becf39b47c1015",
+        "authority": {
+          "kind": "policy",
+          "id": "synthetic:policy",
+          "authorization": {
+            "id": "synthetic:policy-authorization",
+            "version": "1",
+            "sha256": "25c980cad6173e11696dc964ead37e23624b44d8d25c0641caf5b618a271b5bd"
+          }
+        },
+        "evidence": [
+          {
+            "criterion": "synthetic:criterion-a",
+            "evidence_type": "synthetic:test-receipt",
+            "artifact": {
+              "id": "synthetic:receipt-a-rejecting",
+              "version": "1",
+              "sha256": "32a903c2d5f4cdb24ab365eaf8b124b143468698eed35b50e2964c4dca7f6e9e"
+            }
+          }
+        ],
+        "supersedes": null
+      }
+    },
+    {
+      "name": "reassessment-accepted",
+      "assessment": "reassessment-accepted.json",
+      "requirements": "requirements.json",
+      "dataset": {
+        "id": "synthetic:dataset",
+        "version": "1",
+        "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
+      },
+      "evidence": {
+        "synthetic:receipt-a-rejecting": "evidence/receipt-a-rejecting.json",
+        "synthetic:receipt-a": "evidence/receipt-a.json",
+        "synthetic:receipt-b": "evidence/receipt-b.json"
+      },
+      "prior": "rejected.json",
+      "test_mode": true,
+      "expect": {
+        "status": "accepted",
+        "assessment_sha256": "d0b745cce2a37382610c205cad035801982880b25d982ebb2acffb7e22de07e8",
+        "requirements_sha256": "b5a7d3ea218154aacf3fb64ceafecc46ae171733038dd17d94becf39b47c1015",
+        "authority": {
+          "kind": "reviewer",
+          "id": "synthetic:reviewer",
+          "authorization": {
+            "id": "synthetic:reviewer-authorization",
+            "version": "1",
+            "sha256": "44beb9be6083709be51762c04df8921acb1dad31dd947a99c6ec8db664cfe5ec"
+          }
+        },
+        "evidence": [
+          {
+            "criterion": "synthetic:criterion-a",
+            "evidence_type": "synthetic:test-receipt",
+            "artifact": {
+              "id": "synthetic:receipt-a-rejecting",
+              "version": "1",
+              "sha256": "32a903c2d5f4cdb24ab365eaf8b124b143468698eed35b50e2964c4dca7f6e9e"
+            }
+          },
+          {
+            "criterion": "synthetic:criterion-a",
+            "evidence_type": "synthetic:test-receipt",
+            "artifact": {
+              "id": "synthetic:receipt-a",
+              "version": "1",
+              "sha256": "32a903c2d5f4cdb24ab365eaf8b124b143468698eed35b50e2964c4dca7f6e9e"
+            }
+          },
+          {
+            "criterion": "synthetic:criterion-b",
+            "evidence_type": "synthetic:test-receipt",
+            "artifact": {
+              "id": "synthetic:receipt-b",
+              "version": "1",
+              "sha256": "f184161fee0d82b1e92dbbb1d96a3bdeddfc8d5b60b0e090fb6a0800d4627d61"
+            }
+          }
+        ],
+        "supersedes": {
+          "id": "synthetic:rejected",
+          "sha256": "35862c7b3e8e2c5e5cdc10dbe958fa0f4c056cceb33f635dfa079ec5193ef83e"
+        }
+      }
+    },
+    {
+      "name": "tampered-requirements",
+      "assessment": "accepted.json",
+      "requirements": "negative/requirements-tampered.json",
+      "dataset": {
+        "id": "synthetic:dataset",
+        "version": "1",
+        "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
+      },
+      "evidence": {
+        "synthetic:receipt-a": "evidence/receipt-a.json",
+        "synthetic:receipt-b": "evidence/receipt-b.json"
+      },
+      "prior": null,
+      "test_mode": true,
+      "expect": {
+        "error": "requirements_mismatch"
+      }
+    },
+    {
+      "name": "mismatched-requirements-revision",
+      "assessment": "negative/mismatched-requirements-revision.json",
+      "requirements": "requirements.json",
+      "dataset": {
+        "id": "synthetic:dataset",
+        "version": "1",
+        "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
+      },
+      "evidence": {
+        "synthetic:receipt-a": "evidence/receipt-a.json",
+        "synthetic:receipt-b": "evidence/receipt-b.json"
+      },
+      "prior": null,
+      "test_mode": true,
+      "expect": {
+        "error": "requirements_mismatch"
+      }
+    },
+    {
+      "name": "mismatched-dataset",
+      "assessment": "accepted.json",
+      "requirements": "requirements.json",
+      "dataset": {
+        "id": "synthetic:dataset",
+        "version": "2",
+        "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
+      },
+      "evidence": {
+        "synthetic:receipt-a": "evidence/receipt-a.json",
+        "synthetic:receipt-b": "evidence/receipt-b.json"
+      },
+      "prior": null,
+      "test_mode": true,
+      "expect": {
+        "error": "dataset_mismatch"
+      }
+    },
+    {
+      "name": "tampered-evidence",
+      "assessment": "accepted.json",
+      "requirements": "requirements.json",
+      "dataset": {
+        "id": "synthetic:dataset",
+        "version": "1",
+        "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
+      },
+      "evidence": {
+        "synthetic:receipt-a": "negative/receipt-a-tampered.json",
+        "synthetic:receipt-b": "evidence/receipt-b.json"
+      },
+      "prior": null,
+      "test_mode": true,
+      "expect": {
+        "error": "evidence_mismatch"
+      }
+    },
+    {
+      "name": "missing-evidence",
+      "assessment": "accepted.json",
+      "requirements": "requirements.json",
+      "dataset": {
+        "id": "synthetic:dataset",
+        "version": "1",
+        "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
+      },
+      "evidence": {
+        "synthetic:receipt-a": "evidence/receipt-a.json"
+      },
+      "prior": null,
+      "test_mode": true,
+      "expect": {
+        "error": "evidence_unavailable"
+      }
+    },
+    {
+      "name": "unlisted-authority",
+      "assessment": "negative/unlisted-authority.json",
+      "requirements": "requirements.json",
+      "dataset": {
+        "id": "synthetic:dataset",
+        "version": "1",
+        "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
+      },
+      "evidence": {
+        "synthetic:receipt-a": "evidence/receipt-a.json",
+        "synthetic:receipt-b": "evidence/receipt-b.json"
+      },
+      "prior": null,
+      "test_mode": true,
+      "expect": {
+        "error": "unauthorized_authority"
+      }
+    },
+    {
+      "name": "altered-authorization",
+      "assessment": "negative/altered-authorization.json",
+      "requirements": "requirements.json",
+      "dataset": {
+        "id": "synthetic:dataset",
+        "version": "1",
+        "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
+      },
+      "evidence": {
+        "synthetic:receipt-a": "evidence/receipt-a.json",
+        "synthetic:receipt-b": "evidence/receipt-b.json"
+      },
+      "prior": null,
+      "test_mode": true,
+      "expect": {
+        "error": "unauthorized_authority"
+      }
+    },
+    {
+      "name": "accepted-incomplete-evidence",
+      "assessment": "negative/accepted-incomplete-evidence.json",
+      "requirements": "requirements.json",
+      "dataset": {
+        "id": "synthetic:dataset",
+        "version": "1",
+        "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
+      },
+      "evidence": {
+        "synthetic:receipt-a": "evidence/receipt-a.json"
+      },
+      "prior": null,
+      "test_mode": true,
+      "expect": {
+        "error": "incomplete_evidence"
+      }
+    },
+    {
+      "name": "unknown-criterion",
+      "assessment": "negative/unknown-criterion.json",
+      "requirements": "requirements.json",
+      "dataset": {
+        "id": "synthetic:dataset",
+        "version": "1",
+        "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
+      },
+      "evidence": {
+        "synthetic:receipt-a": "evidence/receipt-a.json",
+        "synthetic:receipt-b": "evidence/receipt-b.json"
+      },
+      "prior": null,
+      "test_mode": true,
+      "expect": {
+        "error": "unknown_criterion"
+      }
+    },
+    {
+      "name": "unassessed-with-authority",
+      "assessment": "negative/unassessed-with-authority.json",
+      "requirements": "requirements.json",
+      "dataset": {
+        "id": "synthetic:dataset",
+        "version": "1",
+        "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
+      },
+      "evidence": {},
+      "prior": null,
+      "test_mode": true,
+      "expect": {
+        "error": "invalid_assessment"
+      }
+    },
+    {
+      "name": "decision-without-evidence",
+      "assessment": "negative/decision-without-evidence.json",
+      "requirements": "requirements.json",
+      "dataset": {
+        "id": "synthetic:dataset",
+        "version": "1",
+        "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
+      },
+      "evidence": {},
+      "prior": null,
+      "test_mode": true,
+      "expect": {
+        "error": "invalid_assessment"
+      }
+    },
+    {
+      "name": "accepted-against-draft-requirements",
+      "assessment": "negative/accepted-against-draft-requirements.json",
+      "requirements": "negative/requirements-draft.json",
+      "dataset": {
+        "id": "synthetic:dataset",
+        "version": "1",
+        "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
+      },
+      "evidence": {
+        "synthetic:receipt-a": "evidence/receipt-a.json",
+        "synthetic:receipt-b": "evidence/receipt-b.json"
+      },
+      "prior": null,
+      "test_mode": true,
+      "expect": {
+        "error": "requirements_not_reviewed"
+      }
+    },
+    {
+      "name": "dynamic-dataset-version",
+      "assessment": "negative/dynamic-dataset-version.json",
+      "requirements": "requirements.json",
+      "dataset": {
+        "id": "synthetic:dataset",
+        "version": "1",
+        "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
+      },
+      "evidence": {
+        "synthetic:receipt-a": "evidence/receipt-a.json",
+        "synthetic:receipt-b": "evidence/receipt-b.json"
+      },
+      "prior": null,
+      "test_mode": true,
+      "expect": {
+        "error": "invalid_assessment"
+      }
+    },
+    {
+      "name": "unsupported-contract",
+      "assessment": "negative/unsupported-contract.json",
+      "requirements": "requirements.json",
+      "dataset": {
+        "id": "synthetic:dataset",
+        "version": "1",
+        "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
+      },
+      "evidence": {
+        "synthetic:receipt-a": "evidence/receipt-a.json",
+        "synthetic:receipt-b": "evidence/receipt-b.json"
+      },
+      "prior": null,
+      "test_mode": true,
+      "expect": {
+        "error": "unsupported_contract"
+      }
+    },
+    {
+      "name": "reassessment-tampered-prior",
+      "assessment": "reassessment-accepted.json",
+      "requirements": "requirements.json",
+      "dataset": {
+        "id": "synthetic:dataset",
+        "version": "1",
+        "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
+      },
+      "evidence": {
+        "synthetic:receipt-a-rejecting": "evidence/receipt-a-rejecting.json",
+        "synthetic:receipt-a": "evidence/receipt-a.json",
+        "synthetic:receipt-b": "evidence/receipt-b.json"
+      },
+      "prior": "negative/rejected-tampered.json",
+      "test_mode": true,
+      "expect": {
+        "error": "prior_mismatch"
+      }
+    },
+    {
+      "name": "reassessment-missing-prior",
+      "assessment": "reassessment-accepted.json",
+      "requirements": "requirements.json",
+      "dataset": {
+        "id": "synthetic:dataset",
+        "version": "1",
+        "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
+      },
+      "evidence": {
+        "synthetic:receipt-a-rejecting": "evidence/receipt-a-rejecting.json",
+        "synthetic:receipt-a": "evidence/receipt-a.json",
+        "synthetic:receipt-b": "evidence/receipt-b.json"
+      },
+      "prior": null,
+      "test_mode": true,
+      "expect": {
+        "error": "prior_unavailable"
+      }
+    },
+    {
+      "name": "reassessment-drops-prior-evidence",
+      "assessment": "negative/reassessment-drops-prior-evidence.json",
+      "requirements": "requirements.json",
+      "dataset": {
+        "id": "synthetic:dataset",
+        "version": "1",
+        "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
+      },
+      "evidence": {
+        "synthetic:receipt-a": "evidence/receipt-a.json",
+        "synthetic:receipt-b": "evidence/receipt-b.json"
+      },
+      "prior": "rejected.json",
+      "test_mode": true,
+      "expect": {
+        "error": "prior_evidence_dropped"
+      }
+    },
+    {
+      "name": "synthetic-outside-test-mode",
+      "assessment": "accepted.json",
+      "requirements": "requirements.json",
+      "dataset": {
+        "id": "synthetic:dataset",
+        "version": "1",
+        "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
+      },
+      "evidence": {
+        "synthetic:receipt-a": "evidence/receipt-a.json",
+        "synthetic:receipt-b": "evidence/receipt-b.json"
+      },
+      "prior": null,
+      "test_mode": false,
+      "expect": {
+        "error": "synthetic_not_trusted"
+      }
+    },
+    {
+      "name": "unmarked-synthetic-outside-test-mode",
+      "assessment": "negative/unmarked-synthetic-outside-test-mode.json",
+      "requirements": "requirements.json",
+      "dataset": {
+        "id": "synthetic:dataset",
+        "version": "1",
+        "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
+      },
+      "evidence": {
+        "synthetic:receipt-a": "evidence/receipt-a.json",
+        "synthetic:receipt-b": "evidence/receipt-b.json"
+      },
+      "prior": null,
+      "test_mode": false,
+      "expect": {
+        "error": "synthetic_not_trusted"
+      }
+    },
+    {
+      "name": "marked-synthetic-outside-test-mode",
+      "assessment": "negative/marked-synthetic-outside-test-mode.json",
+      "requirements": "negative/requirements-draft.json",
+      "dataset": {
+        "id": "synthetic:dataset",
+        "version": "1",
+        "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
+      },
+      "evidence": {},
+      "prior": null,
+      "test_mode": false,
+      "expect": {
+        "error": "synthetic_not_trusted"
+      }
+    }
+  ]
+}

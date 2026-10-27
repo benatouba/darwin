@@ -4,7 +4,8 @@ The public entry points are `darwin.operations.make_recipe`, `validate_recipe`,
 `source_identity`, `execute`, `inventory`, and `python -m darwin.operations`. They use the same
 implementation and the packaged producer-owned `operations-v1.schema.json`.
 `OperationError.code` is the structured error boundary. Comparison remains the
-separate supported `darwin.comparison` interface (`native-intervals-v1`).
+separate supported `darwin.comparison` interface (`native-intervals-v1`) and the
+policy-bound `darwin.comparison_policy` interface ([comparison-policy.md](comparison-policy.md)).
 
 ```python
 from darwin.operations import make_recipe, execute
@@ -107,6 +108,8 @@ be cleaned only after confirming no live writer owns it. Existing immutable
 artifacts/recipes are never rewritten; choose new versions for migrated outputs.
 Historical smoke handoffs and publisher lifecycle APIs retain their legacy
 meaning and are not evidence of scientific acceptance or dashboard publication.
+Product handoffs, assessment evidence and acceptance records are described in
+[`product-handoff.md`](product-handoff.md).
 
 ## Immutable artifact writes
 
@@ -124,7 +127,8 @@ with no-replace rename):
 | `station_series.build_station_series` (and the `comparison_series` wrapper) | model and observation `.zarr` | GAR file; observation CSV + metadata XML |
 | `storage.publish_analysis_product` | `analysis.zarr` | manifest sources; recipe = manifest revision |
 | `storage.write_download_netcdf` | `download.nc` | manifest sources; parameters pin the analysis-store sha256 |
-| `smoke.build_smoke_release` | handoff JSON | release manifest (revision) + manifest sources |
+| `smoke.build_smoke_release` | legacy handoff JSON | release manifest (revision) + manifest sources |
+| `handoff.prepare_handoff` | `darwin.product-handoff/2` JSON | release manifest (revision) + manifest sources + every cited artifact sha256 |
 | `operations.execute` | bundle directory | `result.json` binds `data.nc` and `recipe.json` (no sidecar) |
 
 Out of scope, not published products: matplotlib figures in research/plotting

@@ -1,0 +1,27 @@
+{
+  "artifact": {
+    "files": [
+      {
+        "path": ".",
+        "sha256": "a74ad0a1bf487d70b141463ae4f37aadc845188ca463efe58aa7beb63bba9c76",
+        "size_bytes": 21
+      }
+    ],
+    "kind": "file",
+    "name": "landmask.json",
+    "sha256": "60b4dca483e00c944ebc47bb4e6065282e2d2cdc2d986c83126b5574a67e3a6a",
+    "size_bytes": 21
+  },
+  "contract": "darwin.artifact-identity/1",
+  "provenance": {
+    "artifact_class": "derived",
+    "builder": "tests.build_handoff_fixtures",
+    "sources": [
+      {
+        "id": "synthetic:source",
+        "sha256": "c9e73d7c056ce843a739e08d7ff04e357b7eef67536467c5eb1ebf17f245b0d0"
+      }
+    ]
+  },
+  "scientific_status": "unassessed"
+}

@@ -1,0 +1,87 @@
+{
+  "cases": [
+    {
+      "artifact_root": "artifacts",
+      "expect": {
+        "execution_completeness": {
+          "synthetic:landmask": null,
+          "synthetic:prcp-slice": "complete"
+        },
+        "scientific_status": {
+          "synthetic:landmask": "unassessed",
+          "synthetic:prcp-slice": "unassessed"
+        }
+      },
+      "handoff": "handoff-unassessed.json",
+      "name": "unassessed",
+      "test_mode": true
+    },
+    {
+      "artifact_root": "artifacts",
+      "expect": {
+        "execution_completeness": {
+          "synthetic:landmask": null,
+          "synthetic:prcp-slice": "partial"
+        },
+        "scientific_status": {
+          "synthetic:landmask": "unassessed",
+          "synthetic:prcp-slice": "accepted"
+        }
+      },
+      "handoff": "handoff-assessed.json",
+      "name": "rejected-then-accepted",
+      "test_mode": true
+    },
+    {
+      "expect": {
+        "error": "synthetic_not_trusted"
+      },
+      "handoff": "handoff-assessed.json",
+      "name": "synthetic-outside-test-mode",
+      "test_mode": false
+    },
+    {
+      "expect": {
+        "error": "unsupported_contract"
+      },
+      "handoff": "negative/unknown-contract.json",
+      "name": "unknown-contract",
+      "test_mode": true
+    },
+    {
+      "expect": {
+        "error": "invalid_handoff"
+      },
+      "handoff": "negative/publication-claim.json",
+      "name": "publication-claim",
+      "test_mode": true
+    },
+    {
+      "expect": {
+        "error": "status_mismatch"
+      },
+      "handoff": "negative/unbacked-acceptance.json",
+      "name": "unbacked-acceptance",
+      "test_mode": true
+    },
+    {
+      "expect": {
+        "error": "dataset_mismatch"
+      },
+      "handoff": "negative/tampered-artifact.json",
+      "name": "tampered-artifact",
+      "test_mode": true
+    },
+    {
+      "expect": {
+        "error": "invalid_handoff"
+      },
+      "handoff": "negative/dynamic-version.json",
+      "name": "dynamic-version",
+      "test_mode": true
+    }
+  ],
+  "fixture_set": "darwin.product-handoff-fixtures/2",
+  "notice": "Synthetic interoperability fixtures for darwin.product-handoff/2 consumers. Not scientific acceptance, not reviewed requirements, not a real reviewer or policy, and not a publication: consumers refuse them outside explicit test mode.",
+  "synthetic": true
+}

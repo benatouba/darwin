@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "darwin.assessment-evidence/1",
+  "title": "One Darwin check outcome for one criterion of one exact requirements revision",
+  "description": "Evidence only: no status, no authority, never acceptance.",
+  "type": "object", "additionalProperties": false,
+  "required": ["contract", "id", "dataset", "requirements", "criterion", "evidence_type", "check", "parameters", "outcome", "details", "software", "synthetic"],
+  "properties": {
+    "contract": {"const": "darwin.assessment-evidence/1"},
+    "id": {"type": "string", "minLength": 1},
+    "dataset": {"$ref": "#/$defs/identity"},
+    "requirements": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "revision", "sha256"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "revision": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "criterion": {"type": "string", "minLength": 1},
+    "evidence_type": {"type": "string", "minLength": 1},
+    "check": {"type": "string", "minLength": 1},
+    "parameters": {"type": "object"},
+    "outcome": {"enum": ["pass", "fail"]},
+    "details": {"type": "object"},
+    "software": {
+      "type": "object", "additionalProperties": false,
+      "required": ["darwin", "check_implementation_sha256"],
+      "properties": {
+        "darwin": {"type": "string", "minLength": 1},
+        "check_implementation_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "synthetic": {"type": "boolean"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "identity": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "version", "sha256"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "minLength": 1, "not": {"enum": ["latest", "current", "HEAD"]}},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  }
+}

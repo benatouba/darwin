@@ -1,0 +1,37 @@
+{
+  "authority": {
+    "authorization": {
+      "id": "synthetic:reviewer-authorization",
+      "sha256": "44beb9be6083709be51762c04df8921acb1dad31dd947a99c6ec8db664cfe5ec",
+      "version": "1"
+    },
+    "id": "synthetic:reviewer",
+    "kind": "reviewer"
+  },
+  "contract": "darwin-wrf-setups.acceptance-assessment/1",
+  "dataset": {
+    "id": "synthetic:prcp-slice",
+    "sha256": "efebedd1b0fb36bdbd35d1a0f94b585b99e5b4c8fa0adf4d739183ccd372e90f",
+    "version": "synthetic1.1"
+  },
+  "evidence": [
+    {
+      "artifact": {
+        "id": "darwin-evidence:fa6b82ff176c4399ad81a75dc470d44204df071c904979ea2e59e57c58543630",
+        "sha256": "8f18022da5af4cc13007d91eef67db052cce8ee59cff0e7c5ee38c29df8091ec",
+        "version": "1"
+      },
+      "criterion": "synthetic:criterion-a",
+      "evidence_type": "synthetic:test-receipt"
+    }
+  ],
+  "id": "synthetic:prcp-slice-assessment-1",
+  "requirements": {
+    "id": "synthetic:requirements",
+    "revision": "1",
+    "sha256": "b5a7d3ea218154aacf3fb64ceafecc46ae171733038dd17d94becf39b47c1015"
+  },
+  "status": "rejected",
+  "supersedes": null,
+  "synthetic": true
+}

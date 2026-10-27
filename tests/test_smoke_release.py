@@ -1,8 +1,9 @@
-"""Smoke T1 (darwin#23): reviewed manifest in, published smoke release out.
+"""Smoke T1 (darwin#23): reviewed manifest in, legacy smoke handoff out.
 
-RED tests for the Jan-2020 precipitation smoke release: the
+Tests for the Jan-2020 precipitation smoke release: the
 version-controlled manifest pins every source by sha256, the builder
-registers and publishes one candidate per requested product, and every
+prepares one candidate per requested product without publishing it
+(darwin#18 migration: publication is the dashboard's decision), and every
 released product carries full provenance (manifest revision, creator,
 creation time, citation, plus normal period/method where applicable).
 The handoff JSON is what the dashboard catalogue ticket ingests.
@@ -48,7 +49,7 @@ def test_smoke_manifest_is_pinned_and_reviewed():
     assert {entry.path: entry.sha256 for entry in manifest.sources} == EXPECTED_SOURCE_HASHES
 
 
-def test_build_publishes_every_product_with_provenance(tmp_path):
+def test_build_prepares_every_product_with_provenance_without_publishing(tmp_path):
     handoff = build_smoke_release(
         MANIFEST_PATH,
         tmp_path / "handoff.json",
@@ -62,7 +63,9 @@ def test_build_publishes_every_product_with_provenance(tmp_path):
     by_id = {item["product_id"]: item for item in handoff["products"]}
     assert sorted(by_id) == sorted(EXPECTED_PRODUCTS)
     for product_id, item in by_id.items():
-        assert item["status"] == "published", product_id
+        # Darwin prepares; it never claims publication or acceptance.
+        assert item["status"] == "candidate", product_id
+        assert "scientific_status" not in item, product_id
         assert item["manifest_revision"] == manifest.revision, product_id
         assert item["creator"] == "reviewer: smoke", product_id
         assert item["created_at"] == "2026-09-22T00:00:00Z", product_id

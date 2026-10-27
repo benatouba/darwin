@@ -36,6 +36,7 @@ BEWARE: This project is a WIP.
 
 Installing a Darwin release wheel without extras provides only what the
 supported interface needs: `darwin.operations`, `darwin.comparison`,
+`darwin.comparison_policy`, `darwin.study_contracts`,
 `darwin.simulation_output`, `darwin.observation_qc` and the publisher. The
 historical research, mapping and plotting modules need extras
 (for example `uv add "darwin[research,visualization] @ <wheel>"`):
@@ -50,7 +51,9 @@ historical research, mapping and plotting modules need extras
 `tests/test_installed_release.py` builds the wheel and installs it, runtime
 dependencies only, into a fresh environment from an empty directory (offline,
 from the uv cache), then runs the Python interface and CLI there.
-See [`docs/operations.md`](docs/operations.md) for the supported operation inventory.
+See [`docs/operations.md`](docs/operations.md) for the supported operation inventory
+and [`docs/product-handoff.md`](docs/product-handoff.md) for the product handoff and
+portable acceptance contracts.
 
 ## Tests on a fresh checkout
 

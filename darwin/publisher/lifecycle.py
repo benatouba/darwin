@@ -1,4 +1,4 @@
-"""Lifecycle transitions, enforced in exactly one place."""
+"""Legacy in-memory lifecycle transitions (see ``catalogue``; not publication authority)."""
 
 from __future__ import annotations
 
