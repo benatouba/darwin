@@ -22,6 +22,7 @@ from pathlib import Path
 
 from darwin.publisher.candidate import run_manifest
 from darwin.publisher.catalogue import Catalogue
+from darwin.publisher.immutable import staged_artifact
 from darwin.publisher.manifest import load_manifest
 
 CREATOR = "darwin.publisher"
@@ -91,7 +92,17 @@ def build_smoke_release(
         "created_at": stamp,
         "products": products,
     }
-    Path(out_path).write_text(json.dumps(handoff, indent=2) + "\n")
+    provenance = {
+        "builder": "darwin.publisher.smoke.build_smoke_release",
+        "recipe": {"manifest_revision": manifest.revision},
+        "sources": [
+            {"id": f"release-manifest:{manifest.name}", "sha256": manifest.revision},
+            *({"id": entry.path, "sha256": entry.sha256} for entry in manifest.sources),
+        ],
+        "parameters": {"creator": creator, "created_at": stamp},
+    }
+    with staged_artifact(out_path, provenance=provenance) as staged:
+        staged.write_text(json.dumps(handoff, indent=2) + "\n")
     return handoff
 
 

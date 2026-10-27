@@ -10,13 +10,14 @@ from __future__ import annotations
 import csv
 import hashlib
 import math
+import os
 from calendar import monthrange
 from datetime import UTC, datetime, timedelta
 from itertools import pairwise
 from pathlib import Path
 from xml.etree import ElementTree
 
-from darwin.publisher.immutable import staged_artifact
+from darwin.publisher.immutable import identity_path, staged_artifact
 
 from darwin.publisher.comparison import (
     COARSER_COVERAGE_REQUIRED,
@@ -146,7 +147,9 @@ def build_station_series(
         raise ValueError("precipitation_kind must be 'cumulative' or 'increments'")
     repo_root, out_dir = Path(repo_root), Path(out_dir)
     gar_store_path, obs_store_path = out_dir / gar_store_name, out_dir / obs_store_name
-    if gar_store_path == obs_store_path or gar_store_path.exists() or obs_store_path.exists():
+    stores = (gar_store_path, obs_store_path)
+    occupied = (*stores, *map(identity_path, stores))
+    if gar_store_path == obs_store_path or any(os.path.lexists(path) for path in occupied):
         raise FileExistsError(
             "use distinct new versioned destinations; existing stores are immutable"
         )
@@ -156,6 +159,7 @@ def build_station_series(
     _verify_source(gar_path, gar_sha256, gar_source)
     _verify_source(obs_path, obs_sha256, obs_csv)
 
+    meta_sha256 = hashlib.sha256((repo_root / obs_meta).read_bytes()).hexdigest()
     station_lon, station_lat = _station_point(repo_root / obs_meta)
     source = nc.Dataset(str(gar_path))
     try:
@@ -296,8 +300,35 @@ def build_station_series(
                 daily_valid[day] = True
 
     station = {"id": station_id, "lon": station_lon, "lat": station_lat}
+    builder = "darwin.publisher.station_series.build_station_series"
+    model_provenance = {
+        "builder": builder,
+        "sources": [{"id": gar_source, "sha256": gar_sha256}],
+        "parameters": {
+            "variable": gar_variable,
+            "method": "nearest",
+            "cadence": "monthly",
+            "station_id": station_id,
+        },
+    }
+    obs_provenance = {
+        "builder": builder,
+        "sources": [
+            {"id": obs_csv, "sha256": obs_sha256},
+            {"id": obs_meta, "sha256": meta_sha256},
+        ],
+        "parameters": {
+            "field": obs_field,
+            "mode": mode,
+            "precipitation_kind": precipitation_kind if mode == "sum" else None,
+            "year": obs_year,
+            "month": obs_month,
+            "obs_timezone": obs_timezone,
+            "station_id": station_id,
+        },
+    }
     out_dir.mkdir(parents=True, exist_ok=True)
-    with staged_artifact(gar_store_path) as staged:
+    with staged_artifact(gar_store_path, provenance=model_provenance) as staged:
         _write_model_store(
             staged, monthly, store_units, epoch_hours, model_bounds,
             {
@@ -336,7 +367,7 @@ def build_station_series(
                 "source_gar_sha256": gar_sha256,
             },
         )
-    with staged_artifact(obs_store_path) as staged:
+    with staged_artifact(obs_store_path, provenance=obs_provenance) as staged:
         _write_observation_store(
             staged, hourly, hourly_valid, daily, daily_valid, obs_units,
             hourly_times, daily_times,

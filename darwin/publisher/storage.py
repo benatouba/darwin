@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any
 from darwin.publisher.candidate import Candidate
 from darwin.publisher.catalogue import Catalogue
 from darwin.publisher.manifest import Manifest
-from darwin.publisher.immutable import staged_artifact
+from darwin.publisher.immutable import staged_artifact, verify_artifact
 
 if TYPE_CHECKING:
     import xarray as xr
@@ -79,8 +79,21 @@ def publish_analysis_product(
     dataset.attrs["map_palette"] = style["palette"]
     dataset.attrs["map_transform"] = style["transform"]
     dataset.attrs["map_color_range"] = list(color_range)
-    with staged_artifact(layout.analysis_uri) as staged:
+    sources = [{"id": entry.path, "sha256": entry.sha256} for entry in manifest.sources]
+    provenance = {
+        "builder": "darwin.publisher.storage.publish_analysis_product",
+        "recipe": {"manifest_revision": manifest.revision},
+        "sources": sources,
+        "parameters": {
+            "product_id": layout.product_id,
+            "version": layout.version,
+            "variable": variable,
+            "format": ANALYSIS_FORMAT,
+        },
+    }
+    with staged_artifact(layout.analysis_uri, provenance=provenance) as staged:
         dataset.to_zarr(staged, zarr_format=3, consolidated=True, mode="w-")
+    analysis_sha256 = verify_artifact(layout.analysis_uri)["artifact"]["sha256"]
 
     candidate = Candidate(
         candidate_id=f"{layout.product_id}@{layout.version}",
@@ -101,7 +114,9 @@ def publish_analysis_product(
         "style": dict(style),
         "color_range": color_range,
         "analysis_uri": layout.analysis_uri,
+        "analysis_sha256": analysis_sha256,
         "download_uri": layout.download_uri,
+        "sources": sources,
     }
 
 
@@ -124,6 +139,17 @@ def write_download_netcdf(record: dict[str, Any], dataset: Any) -> str:
     dataset.attrs["manifest_revision"] = record["manifest_revision"]
     dataset.attrs["analysis_format"] = record["format"]
     path = record["download_uri"]
-    with staged_artifact(path) as staged:
+    provenance = {
+        "builder": "darwin.publisher.storage.write_download_netcdf",
+        "recipe": {"manifest_revision": record["manifest_revision"]},
+        "sources": list(record["sources"]),
+        "parameters": {
+            "product_id": record["product_id"],
+            "version": record["version"],
+            "analysis_uri": record["analysis_uri"],
+            "analysis_sha256": record["analysis_sha256"],
+        },
+    }
+    with staged_artifact(path, provenance=provenance) as staged:
         dataset.to_netcdf(staged)
     return path

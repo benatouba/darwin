@@ -11,6 +11,7 @@ long-term locations.
 
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 
 from darwin.publisher.immutable import staged_artifact
@@ -32,6 +33,16 @@ def build_smoke_analysis_stores(repo_root: str | Path, out_dir: str | Path) -> d
     repo_root, out_dir = Path(repo_root), Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    def provenance(name: str, parameters: dict) -> dict:
+        digest = hashlib.sha256((repo_root / name).read_bytes()).hexdigest()
+        return {
+            "builder": "darwin.publisher.analysis_stores.build_smoke_analysis_stores",
+            "sources": [{"id": name, "sha256": digest}],
+            "parameters": parameters,
+        }
+
+    slice_provenance = provenance(SLICE_SOURCE, {"variable": "prcp"})
+    mask_provenance = provenance(MASK_SOURCE, {"variable": "landmask", "time_index": 0})
     source = nc.Dataset(str(repo_root / SLICE_SOURCE))
     try:
         time_var = source.variables["time"]
@@ -46,7 +57,7 @@ def build_smoke_analysis_stores(repo_root: str | Path, out_dir: str | Path) -> d
     finally:
         source.close()
     slice_path = out_dir / SLICE_STORE
-    with staged_artifact(slice_path) as staged:
+    with staged_artifact(slice_path, provenance=slice_provenance) as staged:
         group = zarr.open_group(str(staged), mode="w-")
         group.create_array("prcp", data=np.asarray(prcp), chunks=(1,) + prcp.shape[1:])
         group.create_array("x", data=np.asarray(xs))
@@ -62,7 +73,7 @@ def build_smoke_analysis_stores(repo_root: str | Path, out_dir: str | Path) -> d
     finally:
         mask_source.close()
     mask_path = out_dir / MASK_STORE
-    with staged_artifact(mask_path) as staged:
+    with staged_artifact(mask_path, provenance=mask_provenance) as staged:
         mask_group = zarr.open_group(str(staged), mode="w-")
         mask_group.create_array("landmask", data=np.asarray(landmask), chunks=landmask.shape)
         mask_group.create_array("x", data=np.asarray(xs))
