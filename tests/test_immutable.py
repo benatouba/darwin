@@ -1,5 +1,6 @@
 """Publication is invisible until complete and cannot replace existing bytes."""
 
+import shutil
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
 
@@ -185,14 +186,32 @@ def test_conflicting_retry_never_changes_existing_bytes(tmp_path, payload, prove
     verify_artifact(destination)
 
 
-def test_identical_retry_completes_a_crash_before_identity_publication(tmp_path):
+def test_an_unbound_artifact_is_never_bound_afterwards(tmp_path):
+    # Equal bytes alone never prove provenance: whoever wrote them made no claim.
     destination = tmp_path / "product.zarr"
-    with staged_artifact(destination) as staged:  # artifact landed, identity did not
+    with staged_artifact(destination) as staged:
         _write_tree(staged)
-    with pytest.raises(ArtifactIntegrityError):
-        verify_artifact(destination)
+    with pytest.raises(ArtifactConflict), staged_artifact(
+        destination, provenance=PROVENANCE, retry="verify-identical"
+    ) as staged:
+        _write_tree(staged)
+    assert not identity_path(destination).exists()
+
+
+def test_only_the_same_provenance_completes_an_interrupted_publication(tmp_path):
+    destination = tmp_path / "product.zarr"
+    with staged_artifact(destination, provenance=PROVENANCE) as staged:
+        _write_tree(staged)
+    record = identity_path(destination).read_bytes()
+    shutil.rmtree(destination)  # the state a crash before the artifact rename leaves
+    with pytest.raises(ArtifactConflict), staged_artifact(
+        destination, provenance={**PROVENANCE, "builder": "other"}, retry="verify-identical"
+    ) as staged:
+        _write_tree(staged)
+    assert not destination.exists()
     with staged_artifact(destination, provenance=PROVENANCE, retry="verify-identical") as staged:
         _write_tree(staged)
+    assert identity_path(destination).read_bytes() == record
     assert verify_artifact(destination)["artifact"]["kind"] == "directory"
 
 
@@ -225,3 +244,17 @@ def test_historical_versions_remain_independently_verifiable(tmp_path):
     second = verify_artifact(tmp_path / "v2" / "product.zarr")
     assert first["artifact"]["sha256"] != second["artifact"]["sha256"]
     assert (tmp_path / "v1" / "product.zarr" / "c" / "0").read_bytes() == b"original"
+
+
+def test_source_overlap_is_detected_through_symlinked_parents(tmp_path):
+    real = tmp_path / "real"
+    real.mkdir()
+    source = real / "original.zarr"
+    source.mkdir()
+    (tmp_path / "alias").symlink_to(real)
+    provenance = {"builder": "x", "sources": [{"id": "o", "path": str(source), "sha256": "b" * 64}]}
+    with pytest.raises(ValueError, match="overlaps"), staged_artifact(
+        tmp_path / "alias" / "original.zarr" / "derived", provenance=provenance
+    ):
+        pytest.fail("a derived product must not be written inside its source")
+    assert list(source.iterdir()) == []

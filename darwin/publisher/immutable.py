@@ -129,10 +129,15 @@ def _validated_provenance(provenance: dict) -> dict:
 
 
 def _refuse_source_overlap(destination: Path, provenance: dict) -> None:
+    """Refuse a destination equal to, inside or containing a source (links resolved).
+
+    Sources named only by id and sha256 carry no path and cannot be checked here.
+    """
+    destination = destination.resolve()
     for source in provenance["sources"]:
         if "path" not in source:
             continue
-        original = Path(source["path"]).absolute()
+        original = Path(source["path"]).resolve()
         if destination == original or original in destination.parents or (
             destination in original.parents
         ):
@@ -176,6 +181,10 @@ def _publish_or_match(staged: Path, destination: Path, retry: str) -> None:
         ) from None
 
 
+def _unbound(destination: Path) -> bool:
+    return os.path.lexists(destination) and not os.path.lexists(identity_path(destination))
+
+
 @contextmanager
 def staged_artifact(
     destination: str | Path,
@@ -192,11 +201,17 @@ def staged_artifact(
     ``ArtifactConflict`` and leaves the existing bytes untouched. Concurrent
     writers have exactly one winner; identical losers succeed in that mode.
 
-    With ``provenance`` the artifact is published first, then its identity
-    record. A crash between the two leaves an unbound artifact, which
-    ``verify_artifact`` rejects and an identical ``verify-identical`` retry
-    completes. Cleanup touches only this invocation's staging directory; a
-    killed process can leave hidden staging, never a partial final artifact.
+    With ``provenance`` the identity record is published first, then the
+    artifact, so equal bytes are never attested to another provenance: an
+    existing artifact without an identity record is refused (its writer made
+    no provenance claim), and a crash between the two leaves an identity
+    record without an artifact. ``verify_artifact`` rejects that state; only a
+    ``verify-identical`` retry with the same bytes and provenance (the record
+    must match byte for byte) completes it. Anything else conflicts, and the
+    operator recovers by publishing under a new name or, because no artifact
+    bytes were ever published there, removing the orphan record. Cleanup
+    touches only this invocation's staging directory; a killed process can
+    leave hidden staging, never a partial final artifact.
     """
     destination = Path(destination).absolute()
     if retry not in ("refuse", "verify-identical"):
@@ -210,6 +225,10 @@ def staged_artifact(
         for target in targets:
             if os.path.lexists(target):
                 raise ArtifactConflict(errno.EEXIST, "artifact already exists", str(target))
+    elif record is not None and _unbound(destination):
+        raise ArtifactConflict(
+            errno.EEXIST, "an artifact without identity record exists", str(destination)
+        )
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary = Path(
         tempfile.mkdtemp(prefix=f".{destination.name}.staging-", dir=destination.parent)
@@ -222,9 +241,9 @@ def staged_artifact(
             staged_identity.write_bytes(
                 _identity_bytes(destination.name, artifact_digest(staged), record)
             )
-        _publish_or_match(staged, destination, retry)
         if record is not None:
             _publish_or_match(staged_identity, identity_path(destination), retry)
+        _publish_or_match(staged, destination, retry)
     finally:
         shutil.rmtree(temporary)
 

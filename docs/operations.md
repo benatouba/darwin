@@ -166,10 +166,18 @@ Each historical version verifies on its own.
   `ArtifactConflict` and leaves existing bytes and records untouched. Equal bytes
   with different provenance are a conflict, not a match.
 - Interruption before publication leaves only a hidden
-  `.<name>.staging-*` directory and never a partial final artifact. The artifact
-  is published before its identity record. A crash between the two leaves an
-  *unbound* artifact that `verify_artifact` rejects. A `verify-identical` retry
-  with the same inputs completes the record. A differing retry conflicts.
+  `.<name>.staging-*` directory and never a partial final artifact. The identity
+  record is published before the artifact, so equal bytes can never be attested
+  to a different provenance: a `verify-identical` writer with provenance refuses
+  an existing artifact that has no identity record. A crash between the two
+  leaves an *orphan record* without an artifact, which `verify_artifact`
+  rejects. Only a `verify-identical` retry with the same bytes and provenance
+  (its record must match byte for byte) completes it; a differing retry
+  conflicts. Builders whose provenance embeds a timestamp (smoke handoff,
+  `prepare_handoff` without `created_at`) can only complete it when the caller
+  passes the original stamp (`--created-at`). Otherwise publish under a new
+  name, or remove the orphan record: no artifact bytes were published under
+  it, so removing it rewrites nothing.
 - Concurrent writers: exactly one rename wins. Losers get `ArtifactConflict`, or
   succeed under `verify-identical` only when their bytes are identical.
 
