@@ -36,6 +36,7 @@ BEWARE: This project is a WIP.
 
 Installing a Darwin release wheel without extras provides only what the
 supported interface needs: `darwin.operations`, `darwin.comparison`,
+`darwin.comparison_policy`, `darwin.study_contracts`,
 `darwin.simulation_output`, `darwin.observation_qc` and the publisher. The
 historical research, mapping and plotting modules need extras
 (for example `uv add "darwin[research,visualization] @ <wheel>"`):
