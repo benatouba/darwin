@@ -49,6 +49,11 @@ does not establish the logger's timezone. Duplicate or unordered readings fail.
 The current builder rejects months crossing a daylight-saving offset transition;
 it does not silently impose 24-hour local days on such input.
 
+Both stores record `station` (`{id, lon, lat}`; `id` is the caller-supplied
+reviewed `station_id`, recorded as `null` rather than inferred). Model stores
+record `sampling` (method, CRS, grid cell indices and cell coordinates).
+Observation `source_coverage.window` states the half-open aggregation month in UTC.
+
 Stores carry `series_schema_version: 2`, `cadences`, `calendar`, UTC coordinate
 `timezone`, `aggregation_timezone`, `source_coverage`, `synthetic: false`, source
 identity/checksum metadata and `scientific_status: unassessed`.
@@ -159,7 +164,7 @@ implementation: it can pair hourly/daily arrays positionally and monthly values
 by month number without checking the year. This Darwin change does **not** repair
 or validate that path. Migration to the supported Darwin interface is tracked in
 [dashboard #36](https://github.com/benatouba/darwin-dashboard/issues/36).
-Policy-driven comparison unification is tracked in
-[Darwin #16](https://github.com/benatouba/darwin/issues/16); broader supported
+Policy-bound comparisons are implemented by `darwin.comparison_policy`
+([comparison-policy.md](comparison-policy.md), Darwin #16); broader supported
 Python/CLI packaging is tracked in
 [Darwin #12](https://github.com/benatouba/darwin/issues/12).

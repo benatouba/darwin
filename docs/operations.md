@@ -4,7 +4,8 @@ The public entry points are `darwin.operations.make_recipe`, `validate_recipe`,
 `source_identity`, `execute`, `inventory`, and `python -m darwin.operations`. They use the same
 implementation and the packaged producer-owned `operations-v1.schema.json`.
 `OperationError.code` is the structured error boundary. Comparison remains the
-separate supported `darwin.comparison` interface (`native-intervals-v1`).
+separate supported `darwin.comparison` interface (`native-intervals-v1`) and the
+policy-bound `darwin.comparison_policy` interface ([comparison-policy.md](comparison-policy.md)).
 
 ```python
 from darwin.operations import make_recipe, execute

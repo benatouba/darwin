@@ -124,6 +124,7 @@ def build_station_series(
     obs_sha256: str,
     obs_timezone: str | None = None,
     precipitation_kind: str = "cumulative",
+    station_id: str | None = None,
 ) -> dict[str, Path]:
     """Prepare monthly model + timestamped observation stores, never auto-publish.
 
@@ -132,6 +133,8 @@ def build_station_series(
     otherwise. ``precipitation_kind`` preserves the existing distinct cumulative
     versus increment policies; neither is newly scientifically approved here.
     Existing destinations are refused; historical stores are not upgraded in place.
+    ``station_id`` is the reviewed station identity; it is recorded as absent
+    (``None``) rather than inferred from file names when not supplied.
     """
     import netCDF4 as nc
     import numpy as np
@@ -292,6 +295,7 @@ def build_station_series(
                 daily[day] = sum(window) / len(window)
                 daily_valid[day] = True
 
+    station = {"id": station_id, "lon": station_lon, "lat": station_lat}
     out_dir.mkdir(parents=True, exist_ok=True)
     with staged_artifact(gar_store_path) as staged:
         _write_model_store(
@@ -319,6 +323,15 @@ def build_station_series(
                 "cell_lat": float(lat[grid_y, grid_x]),
                 "station_lon": station_lon,
                 "station_lat": station_lat,
+                "station": station,
+                "sampling": {
+                    "method": "nearest",
+                    "crs": crs,
+                    "grid_y": grid_y,
+                    "grid_x": grid_x,
+                    "cell_lon": float(lon[grid_y, grid_x]),
+                    "cell_lat": float(lat[grid_y, grid_x]),
+                },
                 "source_gar": gar_source,
                 "source_gar_sha256": gar_sha256,
             },
@@ -344,7 +357,12 @@ def build_station_series(
                     "last_timestamp": readings[-1][0].astimezone(UTC).isoformat(),
                     "reading_count": len(readings),
                     "selected_reading_count": len(selected),
+                    "window": {
+                        "start": start.astimezone(UTC).isoformat(),
+                        "end": end.astimezone(UTC).isoformat(),
+                    },
                 },
+                "station": station,
                 "synthetic": False,
                 "scientific_status": "unassessed",
                 "aggregation": "positive-difference-tip-sum"

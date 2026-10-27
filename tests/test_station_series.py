@@ -504,3 +504,32 @@ def test_store_reader_never_substitutes_a_finer_native_cadence(station_inputs):
     paths = station_inputs()
     with pytest.raises(TimeValidationError, match="native hourly series is unavailable"):
         load_series(paths["gar_sampled"], "hourly")
+
+
+def test_stores_record_station_sampling_identity_and_aggregation_window(station_inputs):
+    result = station_inputs(station_id="station:test-1", obs_timezone="Pacific/Galapagos")
+    model = zarr.open_group(str(result["gar_sampled"]), mode="r").attrs
+    obs = zarr.open_group(str(result["obs"]), mode="r").attrs
+    station = {"id": "station:test-1", "lon": STATION_LON, "lat": STATION_LAT}
+    assert model["station"] == station
+    assert obs["station"] == station
+    assert model["sampling"] == {
+        "method": "nearest",
+        "crs": NATIVE_CRS,
+        "grid_y": 20,
+        "grid_x": 10,
+        "cell_lon": STATION_LON,
+        "cell_lat": STATION_LAT,
+    }
+    # April 2025 in Galapagos local time (UTC-6), half-open, stated in UTC.
+    assert obs["source_coverage"]["window"] == {
+        "start": "2025-04-01T06:00:00+00:00",
+        "end": "2025-05-01T06:00:00+00:00",
+    }
+    assert model["source_coverage"]["start"] == "2025-01-01T00:00:00+00:00"
+    assert model["source_coverage"]["end"] == "2026-01-01T00:00:00+00:00"
+
+
+def test_station_identity_is_absent_rather_than_guessed(station_inputs):
+    result = station_inputs()
+    assert zarr.open_group(str(result["obs"]), mode="r").attrs["station"]["id"] is None
