@@ -1,0 +1,12 @@
+{
+  "artifacts": {
+    "partial-d02-0101": "partial/wrfout_d02_2001-01-01_000000.nc",
+    "run-a-d02-0101": "run-a/wrfout_d02_2001-01-01_000000.nc",
+    "run-a-d02-0102": "run-a/wrfout_d02_2001-01-02_000000.nc",
+    "run-b-d02-0102": "run-b/wrfout_d02_2001-01-02_180000.nc"
+  },
+  "completions": {
+    "s1": "run-a/s1-complete.json",
+    "s3": "run-b/s3-complete.json"
+  }
+}

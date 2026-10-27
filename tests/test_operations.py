@@ -225,6 +225,7 @@ def test_inventory_is_identical_through_python_and_cli():
     assert listed["contract"] == "darwin.operations/1"
     assert sorted(item["operation"] for item in listed["supported"]) == [
         "assemble",
+        "assemble_simulation_output",
         "crop",
         "cut",
         "integrate",

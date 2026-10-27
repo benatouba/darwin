@@ -42,6 +42,7 @@ version/destination is required. Inputs are checked before and after execution.
 | `crop` | `dimension`, numeric `start`, numeric `end`; 1-D increasing coordinates only |
 | `integrate` | `dimension`, `variables`, `method: sum-discrete-amounts`; sum amounts, retain units, propagate missing values, record `cell_methods`; NOT rate/time integration |
 | `assemble` | `dimension`, positive `cadence_seconds`; ordered source files, exact inventories, static fields/grids, metadata, units, calendars and cadence |
+| `assemble_simulation_output` | `views` (full `cjc.simulation-output/2` manifests), `variables`; first step only; exact native WRF records with identical simulation, calendar, cadence, grid and variable definitions; partial coverage is reported in `result.json` `source_coverage`, never filled (see [simulation-output-interface.md](simulation-output-interface.md)) |
 
 ## Refused operations
 
@@ -65,7 +66,10 @@ Scope violations of supported operations fail with their own codes: `calendar`
 (cut on a non-datetime64 axis), `coordinate` (missing, multi-dimensional,
 non-unique or decreasing coordinates, including curvilinear grids), `selection`,
 `empty_selection`, `variable`, `assembly_required`, `incompatible_assembly`,
-`time_gap`. Recipe/environment failures use `unsupported_contract`,
+`time_gap`. `assemble_simulation_output` adds the view-set codes listed in
+[simulation-output-interface.md](simulation-output-interface.md):
+`incompatible_calendar`, `incompatible_grid`, `incompatible_units`,
+`time_overlap` and others. Recipe/environment failures use `unsupported_contract`,
 `invalid_recipe`, `software_mismatch`, `missing_source`, `source_mismatch`,
 `destination_exists` and `invalid_input`.
 
@@ -76,12 +80,16 @@ must be assembled before selections. Assembly never sorts, fills, deduplicates,
 interpolates, averages or converts units. Incompatible global attributes and
 encoded time units fail too: reconciliation requires a separately supported,
 explicit transformation. Existing files must provide actual native coordinates.
-The recipe pins bytes and software; relocating unchanged bytes is allowed.
+The recipe pins bytes and software (`implementation_sha256` covers `operations.py`,
+`simulation_output.py` and `wrf_history.py`); relocating unchanged bytes is allowed.
 
 ## Explicit implementation gaps
 
-This interface currently reads CF-style NetCDF through xarray/netCDF4. It is not
-a native WRF `Times` decoder or a CJC manifest-to-native-data adapter (#13).
+Source files are CF-style NetCDF read through xarray/netCDF4. The exception is
+`assemble_simulation_output`, which decodes native WRF `Times` itself, verifies
+the views against the files and reads only the selected records. Its native
+reading is tested against synthetic WRF-like fixtures, not retained real
+`wrfout` output.
 Curvilinear geographic crops, time-bound/accumulation-aware rate integrals,
 resampling and nonstandard-calendar cuts are not implemented. Comparison and
 specialized existing publisher builders are not silently redirected here.

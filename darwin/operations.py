@@ -18,7 +18,9 @@ from pathlib import Path
 from darwin.publisher.immutable import staged_artifact
 
 CONTRACT = "darwin.operations/1"
-OPERATIONS = ("select", "cut", "crop", "integrate", "assemble")
+OPERATIONS = ("select", "cut", "crop", "integrate", "assemble", "assemble_simulation_output")
+# Modules whose bytes define the replayed algorithms (see ``software``).
+IMPLEMENTATION = ("operations.py", "simulation_output.py", "wrf_history.py")
 INTEGRATION_METHODS = ("sum-discrete-amounts",)
 
 # Requested transformations that version 1 refuses instead of approximating.
@@ -49,7 +51,9 @@ def software() -> dict:
     """Exact algorithm and dependency identities needed for recipe replay."""
     return {
         "darwin": version("darwin"),
-        "implementation_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        "implementation_sha256": hashlib.sha256(
+            b"".join((Path(__file__).parent / name).read_bytes() for name in IMPLEMENTATION)
+        ).hexdigest(),
         "xarray": version("xarray"),
         "numpy": version("numpy"),
         "netCDF4": version("netCDF4"),
@@ -104,6 +108,41 @@ def validate_recipe(recipe: dict) -> None:
     ids = [source["id"] for source in recipe["sources"]]
     if len(ids) != len(set(ids)):
         raise OperationError("invalid_recipe", "duplicate source identities")
+    _check_simulation_output(recipe)
+
+
+def _check_simulation_output(recipe: dict) -> dict | None:
+    """Bind an ``assemble_simulation_output`` step to exactly its views' native bytes.
+
+    It must be the first operation, and the recipe sources must be exactly the
+    artifacts the embedded views declare, with the declared sizes and digests.
+    Returns the source coverage, or None for recipes without the step.
+    """
+    from darwin.simulation_output import OPERATION, SimulationOutputError, check_views
+
+    steps = [i for i, op in enumerate(recipe["operations"]) if op["operation"] == OPERATION]
+    if not steps:
+        return None
+    if steps != [0]:
+        raise OperationError("invalid_recipe", f"{OPERATION} must be the only first operation")
+    parameters = recipe["operations"][0]["parameters"]
+    try:
+        views, coverage = check_views(parameters["views"], parameters["variables"])
+    except SimulationOutputError as error:
+        raise OperationError(error.code, str(error)) from error
+    declared = {
+        artifact["id"]: {"sha256": artifact["sha256"], "size_bytes": artifact["bytes"]}
+        for view in views
+        for artifact in view["artifacts"]
+    }
+    bound = {
+        s["id"]: {"sha256": s["sha256"], "size_bytes": s["size_bytes"]} for s in recipe["sources"]
+    }
+    if bound != declared:
+        raise OperationError(
+            "invalid_recipe", "sources must be exactly the views' artifacts and byte identities"
+        )
+    return coverage
 
 
 def _refuse_unsupported(operations) -> None:
@@ -240,6 +279,16 @@ def _apply(datasets, operation):
     raise OperationError("unsupported_operation", name)
 
 
+def _read_simulation_output(recipe: dict, locations: dict):
+    from darwin.simulation_output import SimulationOutputError, assemble_views
+
+    parameters = recipe["operations"][0]["parameters"]
+    try:
+        return assemble_views(parameters["views"], parameters["variables"], locations)[0]
+    except SimulationOutputError as error:
+        raise OperationError(error.code, str(error)) from error
+
+
 def execute(recipe: dict, locations: dict, destination: str | Path) -> dict:
     """Replay a recipe into a new atomic bundle (data.nc + recipe + result).
 
@@ -256,6 +305,8 @@ def execute(recipe: dict, locations: dict, destination: str | Path) -> dict:
     sources = recipe["sources"]
     if set(locations) != {item["id"] for item in sources}:
         raise OperationError("missing_source", "provide exactly the recipe's source ID mappings")
+    coverage = _check_simulation_output(recipe)
+    operations = recipe["operations"][1:] if coverage is not None else recipe["operations"]
     try:
         with ExitStack() as stack:
             datasets = []
@@ -263,8 +314,11 @@ def execute(recipe: dict, locations: dict, destination: str | Path) -> dict:
                 path = locations[source["id"]]
                 if source_identity(path) != {k: source[k] for k in ("sha256", "size_bytes")}:
                     raise OperationError("source_mismatch", f"source bytes changed: {source['id']}")
-                datasets.append(stack.enter_context(xr.open_dataset(path, engine="netcdf4")))
-            for operation in recipe["operations"]:
+                if coverage is None:
+                    datasets.append(stack.enter_context(xr.open_dataset(path, engine="netcdf4")))
+            if coverage is not None:
+                datasets = [_read_simulation_output(recipe, locations)]
+            for operation in operations:
                 datasets = _apply(datasets, operation)
             if len(datasets) != 1:
                 raise OperationError(
@@ -290,6 +344,8 @@ def execute(recipe: dict, locations: dict, destination: str | Path) -> dict:
                     "execution_completeness": "complete",
                     "scientific_status": "unassessed",
                 }
+                if coverage is not None:
+                    report["source_coverage"] = coverage
                 (staged / "result.json").write_text(
                     json.dumps(report, sort_keys=True, indent=2) + "\n"
                 )
@@ -333,6 +389,16 @@ def inventory() -> dict:
                 "operation": "assemble",
                 "parameters": ["dimension", "cadence_seconds"],
                 "scope": "ordered concatenation with identical inventories and strict cadence",
+            },
+            {
+                "operation": "assemble_simulation_output",
+                "parameters": ["views", "variables"],
+                "scope": (
+                    "first step only: exact native WRF records selected by chronological, "
+                    "adjacent cjc.simulation-output/2 views with identical simulation, "
+                    "calendar, cadence, grid and variable definitions; partial coverage "
+                    "is reported, never filled"
+                ),
             },
         ],
         "unsupported": dict(UNSUPPORTED),

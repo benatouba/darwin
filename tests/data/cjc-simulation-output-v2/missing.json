@@ -1,0 +1,56 @@
+{
+  "artifacts": [],
+  "calendar": "standard",
+  "contract": "cjc.simulation-output/2",
+  "domain": "d02",
+  "end": "2001-01-04T00:00:00Z",
+  "execution_evidence": null,
+  "grid": null,
+  "history_seconds": 21600,
+  "id": "synthetic-interrupted-d02-2001-01-03",
+  "missing_times": [
+    "2001-01-03T06:00:00Z",
+    "2001-01-03T12:00:00Z",
+    "2001-01-03T18:00:00Z",
+    "2001-01-04T00:00:00Z"
+  ],
+  "reason": "not executed: no segment was submitted for this day",
+  "run_roots": [],
+  "segments": [],
+  "selections": [],
+  "simulation": {
+    "configuration": {
+      "id": "synthetic-configuration",
+      "sha256": "f7465b05cdfc1219e1614f620e9f51b0d5dea3f867cd0bc23c51b70b78fdd000"
+    },
+    "controller": {
+      "id": "synthetic-controller",
+      "sha256": "4f3459f08890069b47db08a00bda8aa9519433b66e752637337d9141dbaf5601"
+    },
+    "id": "synthetic-interrupted",
+    "initial_state": {
+      "id": "synthetic-initial_state",
+      "sha256": "6c4dad80a1ab19e52621cbb9893943edf6f819736a9788d5a3baed998a4ad398"
+    },
+    "mode": "continuous",
+    "output_policy": {
+      "id": "synthetic-output_policy",
+      "sha256": "7e11c3945923bd58c76c76c9edb0471179b83c74e37b95cb2dd67ca07437dd92"
+    },
+    "scientific_policy": {
+      "id": "synthetic-scientific_policy",
+      "sha256": "42a7d0b2d957e77030f413603f8a0d4bd1db8fafff0f77fb7c48ed8c94f3c3b8"
+    },
+    "wps_build": {
+      "id": "synthetic-wps_build",
+      "sha256": "2c4c554a4457ad5c1936a2f853ee7cd4763c9479fe96cea8f91ec3abe4632b60"
+    },
+    "wrf_build": {
+      "id": "synthetic-wrf_build",
+      "sha256": "16dc3f707aefdcb8790d86047480451b070a02836f0fa341bf3c09dc94f47d7c"
+    }
+  },
+  "start": "2001-01-03T00:00:00Z",
+  "status": "missing",
+  "variables": []
+}

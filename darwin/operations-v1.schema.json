@@ -81,6 +81,21 @@
             "type": "object", "additionalProperties": false,
             "required": ["operation", "parameters"],
             "properties": {
+              "operation": {"const": "assemble_simulation_output"},
+              "parameters": {
+                "type": "object", "additionalProperties": false,
+                "required": ["views", "variables"],
+                "properties": {
+                  "views": {"type": "array", "minItems": 1, "items": {"type": "object"}},
+                  "variables": {"$ref": "#/$defs/variables"}
+                }
+              }
+            }
+          },
+          {
+            "type": "object", "additionalProperties": false,
+            "required": ["operation", "parameters"],
+            "properties": {
               "operation": {"const": "assemble"},
               "parameters": {
                 "type": "object", "additionalProperties": false,

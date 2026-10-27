@@ -17,6 +17,7 @@ import pytest
 from packaging.requirements import Requirement
 
 ROOT = Path(__file__).resolve().parents[1]
+CJC_FIXTURES = ROOT / "tests" / "data" / "cjc-simulation-output-v2"
 RUNTIME = {"jsonschema", "netcdf4", "numpy", "pyyaml", "xarray", "zarr"}
 EXTRAS = {"research", "native", "visualization", "all"}
 # Representative packages that must never be runtime prerequisites.
@@ -29,6 +30,7 @@ SUPPORTED_MODULES = (
     "darwin.operations",
     "darwin.comparison",
     "darwin.simulation_output",
+    "darwin.wrf_history",
     "darwin.observation_qc",
     "darwin.publisher.manifest",
     "darwin.publisher.smoke",
@@ -119,6 +121,14 @@ listed = subprocess.run(
     check=True, capture_output=True, text=True,
 )
 assert json.loads(listed.stdout) == inventory()
+from darwin.simulation_output import artifact_ids, assemble_operation, inspect_manifest
+fixtures = Path({str(CJC_FIXTURES)!r})
+view = json.loads((fixtures / "complete.json").read_text())
+mapping = json.loads((fixtures / "locations.json").read_text())["artifacts"]
+wrf = {{key: str(fixtures / mapping[key]) for key in artifact_ids([view])}}
+assert inspect_manifest(view, locations=wrf)["native_record_metadata"] == "checked"
+assembled = execute(make_recipe(wrf, [assemble_operation([view], ["T2"])]), wrf, "wrf-product")
+assert assembled["source_coverage"]["status"] == "complete", assembled
 print(json.dumps(report))
 """
     env = {

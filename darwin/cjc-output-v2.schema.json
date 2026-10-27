@@ -1,0 +1,526 @@
+{
+ "$defs": {
+  "Identity": {
+   "additionalProperties": false,
+   "properties": {
+    "id": {
+     "minLength": 1,
+     "type": "string"
+    },
+    "sha256": {
+     "maxLength": 64,
+     "minLength": 64,
+     "pattern": "^[0-9a-f]{64}$",
+     "type": "string"
+    }
+   },
+   "required": [
+    "id",
+    "sha256"
+   ],
+   "type": "object"
+  },
+  "NativeArtifact": {
+   "additionalProperties": false,
+   "properties": {
+    "bytes": {
+     "exclusiveMinimum": 0,
+     "type": "integer"
+    },
+    "id": {
+     "minLength": 1,
+     "type": "string"
+    },
+    "records": {
+     "items": {
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+      "type": "string"
+     },
+     "minItems": 1,
+     "type": "array"
+    },
+    "run_root_id": {
+     "minLength": 1,
+     "type": "string"
+    },
+    "sha256": {
+     "maxLength": 64,
+     "minLength": 64,
+     "pattern": "^[0-9a-f]{64}$",
+     "type": "string"
+    }
+   },
+   "required": [
+    "id",
+    "sha256",
+    "bytes",
+    "run_root_id",
+    "records"
+   ],
+   "type": "object"
+  },
+  "NativeGrid": {
+   "additionalProperties": false,
+   "description": "Grid/projection identity read from WRF global attributes and dimensions.",
+   "properties": {
+    "bottom_top": {
+     "exclusiveMinimum": 0,
+     "type": "integer"
+    },
+    "cen_lat": {
+     "type": "number"
+    },
+    "cen_lon": {
+     "type": "number"
+    },
+    "dx": {
+     "type": "number"
+    },
+    "dy": {
+     "type": "number"
+    },
+    "grid_id": {
+     "minimum": 1,
+     "type": "integer"
+    },
+    "i_parent_start": {
+     "type": "integer"
+    },
+    "id": {
+     "minLength": 1,
+     "type": "string"
+    },
+    "j_parent_start": {
+     "type": "integer"
+    },
+    "map_proj": {
+     "type": "integer"
+    },
+    "moad_cen_lat": {
+     "type": "number"
+    },
+    "parent_grid_ratio": {
+     "minimum": 1,
+     "type": "integer"
+    },
+    "parent_id": {
+     "type": "integer"
+    },
+    "pole_lat": {
+     "type": "number"
+    },
+    "pole_lon": {
+     "type": "number"
+    },
+    "projection": {
+     "enum": [
+      "lambert_conformal",
+      "polar_stereographic",
+      "mercator",
+      "lat_lon"
+     ],
+     "type": "string"
+    },
+    "sha256": {
+     "maxLength": 64,
+     "minLength": 64,
+     "pattern": "^[0-9a-f]{64}$",
+     "type": "string"
+    },
+    "south_north": {
+     "exclusiveMinimum": 0,
+     "type": "integer"
+    },
+    "stand_lon": {
+     "type": "number"
+    },
+    "truelat1": {
+     "type": "number"
+    },
+    "truelat2": {
+     "type": "number"
+    },
+    "west_east": {
+     "exclusiveMinimum": 0,
+     "type": "integer"
+    }
+   },
+   "required": [
+    "id",
+    "sha256",
+    "projection",
+    "map_proj",
+    "grid_id",
+    "parent_id",
+    "parent_grid_ratio",
+    "i_parent_start",
+    "j_parent_start",
+    "dx",
+    "dy",
+    "truelat1",
+    "truelat2",
+    "stand_lon",
+    "cen_lat",
+    "cen_lon",
+    "moad_cen_lat",
+    "pole_lat",
+    "pole_lon",
+    "west_east",
+    "south_north",
+    "bottom_top"
+   ],
+   "type": "object"
+  },
+  "NativeVariable": {
+   "additionalProperties": false,
+   "properties": {
+    "dimensions": {
+     "items": {
+      "minLength": 1,
+      "type": "string"
+     },
+     "minItems": 1,
+     "type": "array"
+    },
+    "name": {
+     "minLength": 1,
+     "type": "string"
+    },
+    "stagger": {
+     "enum": [
+      "",
+      "X",
+      "Y",
+      "Z"
+     ],
+     "type": "string"
+    },
+    "units": {
+     "minLength": 1,
+     "type": "string"
+    }
+   },
+   "required": [
+    "name",
+    "units",
+    "dimensions",
+    "stagger"
+   ],
+   "type": "object"
+  },
+  "RunRoot": {
+   "additionalProperties": false,
+   "description": "An opaque execution root; recovery roots reference, never copy, the original.",
+   "properties": {
+    "bundle_fingerprint": {
+     "minLength": 1,
+     "type": "string"
+    },
+    "id": {
+     "minLength": 1,
+     "type": "string"
+    },
+    "recovers": {
+     "anyOf": [
+      {
+       "minLength": 1,
+       "type": "string"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    },
+    "role": {
+     "enum": [
+      "original",
+      "recovery"
+     ],
+     "type": "string"
+    }
+   },
+   "required": [
+    "id",
+    "role",
+    "recovers",
+    "bundle_fingerprint"
+   ],
+   "type": "object"
+  },
+  "SegmentV2": {
+   "additionalProperties": false,
+   "properties": {
+    "attempt_id": {
+     "minLength": 1,
+     "type": "string"
+    },
+    "completion": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/Identity"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    },
+    "evidence": {
+     "$ref": "#/$defs/Identity"
+    },
+    "id": {
+     "minLength": 1,
+     "type": "string"
+    },
+    "outcome": {
+     "enum": [
+      "completed",
+      "failed"
+     ],
+     "type": "string"
+    },
+    "restart_parent": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/Identity"
+      },
+      {
+       "type": "null"
+      }
+     ]
+    },
+    "run_root_id": {
+     "minLength": 1,
+     "type": "string"
+    }
+   },
+   "required": [
+    "id",
+    "attempt_id",
+    "run_root_id",
+    "restart_parent",
+    "outcome",
+    "evidence",
+    "completion"
+   ],
+   "type": "object"
+  },
+  "Selection": {
+   "additionalProperties": false,
+   "properties": {
+    "artifact_id": {
+     "minLength": 1,
+     "type": "string"
+    },
+    "record_index": {
+     "minimum": 0,
+     "type": "integer"
+    },
+    "segment_id": {
+     "minLength": 1,
+     "type": "string"
+    },
+    "time": {
+     "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+     "type": "string"
+    }
+   },
+   "required": [
+    "time",
+    "artifact_id",
+    "record_index",
+    "segment_id"
+   ],
+   "type": "object"
+  },
+  "Simulation": {
+   "additionalProperties": false,
+   "properties": {
+    "configuration": {
+     "$ref": "#/$defs/Identity"
+    },
+    "controller": {
+     "$ref": "#/$defs/Identity"
+    },
+    "id": {
+     "minLength": 1,
+     "type": "string"
+    },
+    "initial_state": {
+     "$ref": "#/$defs/Identity"
+    },
+    "mode": {
+     "enum": [
+      "continuous",
+      "daily_reinit"
+     ],
+     "type": "string"
+    },
+    "output_policy": {
+     "$ref": "#/$defs/Identity"
+    },
+    "scientific_policy": {
+     "$ref": "#/$defs/Identity"
+    },
+    "wps_build": {
+     "$ref": "#/$defs/Identity"
+    },
+    "wrf_build": {
+     "$ref": "#/$defs/Identity"
+    }
+   },
+   "required": [
+    "id",
+    "mode",
+    "configuration",
+    "controller",
+    "wrf_build",
+    "wps_build",
+    "scientific_policy",
+    "output_policy",
+    "initial_state"
+   ],
+   "type": "object"
+  }
+ },
+ "$id": "cjc.simulation-output/2",
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "additionalProperties": false,
+ "properties": {
+  "artifacts": {
+   "items": {
+    "$ref": "#/$defs/NativeArtifact"
+   },
+   "type": "array"
+  },
+  "calendar": {
+   "enum": [
+    "standard",
+    "noleap"
+   ],
+   "type": "string"
+  },
+  "contract": {
+   "const": "cjc.simulation-output/2",
+   "type": "string"
+  },
+  "domain": {
+   "enum": [
+    "d01",
+    "d02"
+   ],
+   "type": "string"
+  },
+  "end": {
+   "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+   "type": "string"
+  },
+  "execution_evidence": {
+   "anyOf": [
+    {
+     "$ref": "#/$defs/Identity"
+    },
+    {
+     "type": "null"
+    }
+   ]
+  },
+  "grid": {
+   "anyOf": [
+    {
+     "$ref": "#/$defs/NativeGrid"
+    },
+    {
+     "type": "null"
+    }
+   ]
+  },
+  "history_seconds": {
+   "exclusiveMinimum": 0,
+   "maximum": 86400,
+   "type": "integer"
+  },
+  "id": {
+   "minLength": 1,
+   "type": "string"
+  },
+  "missing_times": {
+   "items": {
+    "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+    "type": "string"
+   },
+   "type": "array"
+  },
+  "reason": {
+   "anyOf": [
+    {
+     "minLength": 1,
+     "type": "string"
+    },
+    {
+     "type": "null"
+    }
+   ]
+  },
+  "run_roots": {
+   "items": {
+    "$ref": "#/$defs/RunRoot"
+   },
+   "type": "array"
+  },
+  "segments": {
+   "items": {
+    "$ref": "#/$defs/SegmentV2"
+   },
+   "type": "array"
+  },
+  "selections": {
+   "items": {
+    "$ref": "#/$defs/Selection"
+   },
+   "type": "array"
+  },
+  "simulation": {
+   "$ref": "#/$defs/Simulation"
+  },
+  "start": {
+   "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+   "type": "string"
+  },
+  "status": {
+   "enum": [
+    "complete",
+    "partial",
+    "failed",
+    "missing"
+   ],
+   "type": "string"
+  },
+  "variables": {
+   "items": {
+    "$ref": "#/$defs/NativeVariable"
+   },
+   "type": "array"
+  }
+ },
+ "required": [
+  "contract",
+  "id",
+  "simulation",
+  "domain",
+  "calendar",
+  "grid",
+  "variables",
+  "start",
+  "end",
+  "history_seconds",
+  "status",
+  "missing_times",
+  "reason",
+  "run_roots",
+  "segments",
+  "artifacts",
+  "selections",
+  "execution_evidence"
+ ],
+ "type": "object"
+}

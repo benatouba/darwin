@@ -1,0 +1,172 @@
+{
+  "artifacts": [
+    {
+      "bytes": 2472,
+      "id": "partial-d02-0101",
+      "records": [
+        "2001-01-01T00:00:00Z",
+        "2001-01-01T06:00:00Z",
+        "2001-01-01T12:00:00Z"
+      ],
+      "run_root_id": "partial-run",
+      "sha256": "14a66498bba7c59fa68f699f8f249182b19a299ebb7627fcba2ebf63a169b220"
+    }
+  ],
+  "calendar": "standard",
+  "contract": "cjc.simulation-output/2",
+  "domain": "d02",
+  "end": "2001-01-02T00:00:00Z",
+  "execution_evidence": {
+    "id": "synthetic-interrupted-execution-2001-01-01",
+    "sha256": "d8ae3e8bc61faf64ce4422054cc64da5a391765c834324dac4ae29a59305b010"
+  },
+  "grid": {
+    "bottom_top": 2,
+    "cen_lat": 30.0,
+    "cen_lon": 90.0,
+    "dx": 2000.0,
+    "dy": 2000.0,
+    "grid_id": 2,
+    "i_parent_start": 10,
+    "id": "wrf-grid-043b6602c59a7bfb",
+    "j_parent_start": 12,
+    "map_proj": 3,
+    "moad_cen_lat": 30.0,
+    "parent_grid_ratio": 3,
+    "parent_id": 1,
+    "pole_lat": 90.0,
+    "pole_lon": 0.0,
+    "projection": "mercator",
+    "sha256": "043b6602c59a7bfb99315f5ffba2ebb37d9b312e9c67e07e0c66ca655150f499",
+    "south_north": 3,
+    "stand_lon": 90.0,
+    "truelat1": 30.0,
+    "truelat2": 0.0,
+    "west_east": 4
+  },
+  "history_seconds": 21600,
+  "id": "synthetic-interrupted-d02-2001-01-01",
+  "missing_times": [
+    "2001-01-01T18:00:00Z",
+    "2001-01-02T00:00:00Z"
+  ],
+  "reason": "segment p2 failed after restarting from the 12:00 checkpoint",
+  "run_roots": [
+    {
+      "bundle_fingerprint": "synthetic-bundle-p",
+      "id": "partial-run",
+      "recovers": null,
+      "role": "original"
+    }
+  ],
+  "segments": [
+    {
+      "attempt_id": "attempt-1",
+      "completion": null,
+      "evidence": {
+        "id": "synthetic-s1-evidence",
+        "sha256": "32d45595db2aa96c64ef984fa41bfaa519a0a0b10d5f8f4ff402149213ff8f62"
+      },
+      "id": "p1",
+      "outcome": "completed",
+      "restart_parent": null,
+      "run_root_id": "partial-run"
+    },
+    {
+      "attempt_id": "attempt-2",
+      "completion": null,
+      "evidence": {
+        "id": "synthetic-s2-failure",
+        "sha256": "e7cb6025ffb1d74726a1c0142858d553d66bd90cc0ceddc7fc18d4d8c20325b2"
+      },
+      "id": "p2",
+      "outcome": "failed",
+      "restart_parent": {
+        "id": "synthetic-checkpoint-2001-01-01T12",
+        "sha256": "ece414466c4418bfef55a6212eb9d90af2237ba505fe60499e0d899d96efd602"
+      },
+      "run_root_id": "partial-run"
+    }
+  ],
+  "selections": [
+    {
+      "artifact_id": "partial-d02-0101",
+      "record_index": 1,
+      "segment_id": "p1",
+      "time": "2001-01-01T06:00:00Z"
+    },
+    {
+      "artifact_id": "partial-d02-0101",
+      "record_index": 2,
+      "segment_id": "p1",
+      "time": "2001-01-01T12:00:00Z"
+    }
+  ],
+  "simulation": {
+    "configuration": {
+      "id": "synthetic-configuration",
+      "sha256": "f7465b05cdfc1219e1614f620e9f51b0d5dea3f867cd0bc23c51b70b78fdd000"
+    },
+    "controller": {
+      "id": "synthetic-controller",
+      "sha256": "4f3459f08890069b47db08a00bda8aa9519433b66e752637337d9141dbaf5601"
+    },
+    "id": "synthetic-interrupted",
+    "initial_state": {
+      "id": "synthetic-initial_state",
+      "sha256": "6c4dad80a1ab19e52621cbb9893943edf6f819736a9788d5a3baed998a4ad398"
+    },
+    "mode": "continuous",
+    "output_policy": {
+      "id": "synthetic-output_policy",
+      "sha256": "7e11c3945923bd58c76c76c9edb0471179b83c74e37b95cb2dd67ca07437dd92"
+    },
+    "scientific_policy": {
+      "id": "synthetic-scientific_policy",
+      "sha256": "42a7d0b2d957e77030f413603f8a0d4bd1db8fafff0f77fb7c48ed8c94f3c3b8"
+    },
+    "wps_build": {
+      "id": "synthetic-wps_build",
+      "sha256": "2c4c554a4457ad5c1936a2f853ee7cd4763c9479fe96cea8f91ec3abe4632b60"
+    },
+    "wrf_build": {
+      "id": "synthetic-wrf_build",
+      "sha256": "16dc3f707aefdcb8790d86047480451b070a02836f0fa341bf3c09dc94f47d7c"
+    }
+  },
+  "start": "2001-01-01T00:00:00Z",
+  "status": "partial",
+  "variables": [
+    {
+      "dimensions": [
+        "Time",
+        "south_north",
+        "west_east"
+      ],
+      "name": "T2",
+      "stagger": "",
+      "units": "K"
+    },
+    {
+      "dimensions": [
+        "Time",
+        "south_north",
+        "west_east"
+      ],
+      "name": "PSFC",
+      "stagger": "",
+      "units": "Pa"
+    },
+    {
+      "dimensions": [
+        "Time",
+        "bottom_top",
+        "south_north",
+        "west_east_stag"
+      ],
+      "name": "U",
+      "stagger": "X",
+      "units": "m s-1"
+    }
+  ]
+}
