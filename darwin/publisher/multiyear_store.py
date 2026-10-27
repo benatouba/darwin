@@ -129,7 +129,12 @@ def build_year_store(
     path = out_dir / f"{product_id}.zarr"
     from darwin.publisher.immutable import staged_artifact
 
-    with staged_artifact(path) as staged:
+    provenance = {
+        "builder": "darwin.publisher.multiyear_store.build_year_store",
+        "sources": [{"id": source.name, "sha256": expected_sha256}],
+        "parameters": {"variable": variable, "year": year},
+    }
+    with staged_artifact(path, provenance=provenance) as staged:
         group = zarr.open_group(str(staged), mode="w-")
         group.create_array(variable, data=values, chunks=values.shape)
         group.create_array("x", data=xs)

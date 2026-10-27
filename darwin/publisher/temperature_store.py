@@ -44,7 +44,12 @@ def build_temperature_store(source: str | Path, out_dir: str | Path) -> Path:
     path = out_dir / STORE_NAME
     from darwin.publisher.immutable import staged_artifact
 
-    with staged_artifact(path) as staged:
+    provenance = {
+        "builder": "darwin.publisher.temperature_store.build_temperature_store",
+        "sources": [{"id": source.name, "sha256": SOURCE_SHA256}],
+        "parameters": {"variable": "t2", "time_index": 0},
+    }
+    with staged_artifact(path, provenance=provenance) as staged:
         group = zarr.open_group(str(staged), mode="w-")
         group.create_array("t2", data=values, chunks=values.shape)
         group.create_array("x", data=xs)

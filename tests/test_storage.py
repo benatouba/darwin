@@ -28,7 +28,7 @@ def _manifest() -> Manifest:
     return Manifest(
         name="analysis-release",
         release="v1",
-        sources=(SourceEntry(path="/archive/GAR_d02km_h_2d_t2_2020.nc", sha256="abc"),),
+        sources=(SourceEntry(path="/archive/GAR_d02km_h_2d_t2_2020.nc", sha256="ab" * 32),),
         products=(ProductSpec(product_id="GAR_d02km_h_2d_t2", kind="analysis"),),
         revision="rev-1",
     )

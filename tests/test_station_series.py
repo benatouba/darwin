@@ -504,3 +504,20 @@ def test_store_reader_never_substitutes_a_finer_native_cadence(station_inputs):
     paths = station_inputs()
     with pytest.raises(TimeValidationError, match="native hourly series is unavailable"):
         load_series(paths["gar_sampled"], "hourly")
+
+
+def test_station_stores_are_identity_bound_to_their_own_sources(station_inputs, tmp_path):
+    from darwin.publisher.immutable import verify_artifact
+
+    result = station_inputs()
+    model = verify_artifact(result["gar_sampled"])["provenance"]
+    obs = verify_artifact(result["obs"])["provenance"]
+    digest = lambda name: hashlib.sha256((tmp_path / name).read_bytes()).hexdigest()  # noqa: E731
+    assert {s["id"]: s["sha256"] for s in model["sources"]} == {"monthly.nc": digest("monthly.nc")}
+    assert {s["id"]: s["sha256"] for s in obs["sources"]} == {
+        "station.csv": digest("station.csv"),
+        "station.xml": digest("station.xml"),
+    }
+    assert model["parameters"]["variable"] == "t2"
+    assert obs["parameters"]["mode"] == "mean"
+    assert obs["parameters"]["obs_timezone"] == "UTC"
