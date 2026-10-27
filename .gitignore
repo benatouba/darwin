@@ -33,4 +33,3 @@ tests/.cache/
 !tests/data/
 tests/data/*
 !tests/data/cjc-output-v1.fixture.json
-!tests/data/setups/

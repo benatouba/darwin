@@ -43,6 +43,7 @@ from darwin.publisher.immutable import (
 )
 from darwin.publisher.manifest import load_manifest
 from darwin.publisher.smoke import CREATOR, legacy_product_entry
+from darwin.study_contracts import SYNTHETIC_PREFIX
 
 CONTRACT = "darwin.product-handoff/2"
 SCHEMA = "product-handoff-v2.schema.json"
@@ -169,7 +170,7 @@ def prepare_handoff(  # noqa: PLR0913
             dataset, assessments.get(candidate.product_id, ()), allow_synthetic=allow_synthetic
         )
         synthetic = synthetic or any(
-            identifier.startswith(acceptance.SYNTHETIC_PREFIX)
+            identifier.startswith(SYNTHETIC_PREFIX)
             for identifier in [candidate.product_id, *(ref["id"] for ref in references)]
         )
         run = execution.get(candidate.product_id)
@@ -242,11 +243,11 @@ def validate_handoff(
     if not isinstance(document, dict) or document.get("contract") != CONTRACT:
         raise HandoffError("unsupported_contract", f"expected {CONTRACT}")
     try:
-        acceptance._validate_schema(document, SCHEMA, "invalid_handoff")  # noqa: SLF001
+        acceptance.validate_schema(document, SCHEMA, "invalid_handoff")
     except acceptance.AcceptanceError as error:
         raise HandoffError(error.code, str(error)) from error
     synthetic = document["synthetic"] or any(
-        identifier.startswith(acceptance.SYNTHETIC_PREFIX)
+        identifier.startswith(SYNTHETIC_PREFIX)
         for product in document["products"]
         for identifier in [product["product_id"], *(ref["id"] for ref in product["acceptance"])]
     )

@@ -16,7 +16,7 @@ from darwin import acceptance, handoff
 from darwin.publisher.immutable import staged_artifact
 from darwin.publisher.smoke import build_smoke_release
 
-SETUPS = Path(__file__).parent / "data" / "setups" / "fixtures" / "acceptance-assessment-v1"
+SETUPS = Path(__file__).parent / "fixtures" / "setups-contracts" / "fixtures" / "acceptance-assessment-v1"
 STAMP = "2026-10-27T00:00:00Z"
 CREATOR = "synthetic:darwin-fixture-builder"
 SOURCE_SHA = "c9e73d7c056ce843a739e08d7ff04e357b7eef67536467c5eb1ebf17f245b0d0"

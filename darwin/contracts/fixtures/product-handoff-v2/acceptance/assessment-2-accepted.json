@@ -17,8 +17,8 @@
   "evidence": [
     {
       "artifact": {
-        "id": "darwin-evidence:bc24290ac5ed8414ea1b10c1006be9949508df08c343e1b9c455b0d44fd58e36",
-        "sha256": "eea7ad23a4ce91a30030ba57fdd1d582734835b07b773f0be240ac8b292ec684",
+        "id": "darwin-evidence:fa6b82ff176c4399ad81a75dc470d44204df071c904979ea2e59e57c58543630",
+        "sha256": "8f18022da5af4cc13007d91eef67db052cce8ee59cff0e7c5ee38c29df8091ec",
         "version": "1"
       },
       "criterion": "synthetic:criterion-a",
@@ -26,8 +26,8 @@
     },
     {
       "artifact": {
-        "id": "darwin-evidence:926b9df880b5318a1ea87de928381a4ed07d1e15431a2fef407e45c37ac7c8fb",
-        "sha256": "6b9558b6f5e57287aa143f55c8522409b621999eb112b26b78cff9e1a4add443",
+        "id": "darwin-evidence:2c5a1baf2bee12671428376553776947b6bf6c18087cf896026dbe7fcf704e87",
+        "sha256": "87b92bd6cab7cbde96b331c918f4074c26c1b52901ccf0ce725f5f5bfa9d477c",
         "version": "1"
       },
       "criterion": "synthetic:criterion-a",
@@ -35,8 +35,8 @@
     },
     {
       "artifact": {
-        "id": "darwin-evidence:18b7e7eef593991719ff09a39d965bf7f7a5fffc1bfca4b18a8d38701e7fa2c7",
-        "sha256": "a824f9b5626db93f6f6a8ef3401435be5bc8eb5616f724f4659ce789a788f9e4",
+        "id": "darwin-evidence:55f8857f71ab7ec1f947832ef5e7cbbc2c522734af72087c2a60647b5040dbfa",
+        "sha256": "3a837659e5985113a7586c538bc4208f481c7054296ab7cfb8c2d24825b4971a",
         "version": "1"
       },
       "criterion": "synthetic:criterion-b",
@@ -52,7 +52,7 @@
   "status": "accepted",
   "supersedes": {
     "id": "synthetic:prcp-slice-assessment-1",
-    "sha256": "559d9d3be71dac8446f5996a95f71f6bbe376aec292e1f0fa299c0b712ab82d9"
+    "sha256": "682665f9c126a1d6651aa675008f3b7167141d14ad88bef8349280f972bb6a2b"
   },
   "synthetic": true
 }

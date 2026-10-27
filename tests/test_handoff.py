@@ -16,7 +16,7 @@ from darwin.publisher.immutable import staged_artifact
 from darwin.publisher.manifest import load_manifest
 from darwin.publisher.smoke import build_smoke_release
 
-SETUPS = Path(__file__).parent / "data" / "setups" / "fixtures" / "acceptance-assessment-v1"
+SETUPS = Path(__file__).parent / "fixtures" / "setups-contracts" / "fixtures" / "acceptance-assessment-v1"
 REQUIREMENTS = (SETUPS / "requirements.json").read_bytes()
 REVIEWER = json.loads(REQUIREMENTS)["acceptance"]["authorized_authorities"][0]
 SMOKE = Path(__file__).resolve().parents[1] / "darwin/publisher/manifests/smoke-jan2020-prcp.yaml"

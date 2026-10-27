@@ -1,10 +1,10 @@
 """Portable scientific acceptance (darwin#18).
 
-Darwin consumes the setups-owned ``darwin-wrf-setups.acceptance-assessment/1``
-and ``study-requirements/1`` contracts through copied producer fixtures
-(tests/data/setups), runs checks into ``darwin.assessment-evidence/1``
-receipts and records decisions only from an authority the exact
-requirements authorize.
+Darwin runs checks named by exact setups requirements into
+``darwin.assessment-evidence/1`` receipts and records
+``darwin-wrf-setups.acceptance-assessment/1`` decisions only from an
+authority those requirements authorize. Conformance of the record validator
+with the copied setups producer fixtures is tested in test_study_contracts.
 """
 
 import json
@@ -14,38 +14,13 @@ import pytest
 
 from darwin import acceptance
 
-SETUPS = Path(__file__).parent / "data" / "setups" / "fixtures" / "acceptance-assessment-v1"
-CASES = json.loads((SETUPS / "manifest.json").read_text())["cases"]
-
-
-def _inputs(case):
-    return {
-        "assessment": (SETUPS / case["assessment"]).read_bytes(),
-        "requirements": (SETUPS / case["requirements"]).read_bytes(),
-        "dataset": case["dataset"],
-        "evidence": {k: (SETUPS / p).read_bytes() for k, p in case["evidence"].items()},
-        "prior": (SETUPS / case["prior"]).read_bytes() if case["prior"] else None,
-        "allow_synthetic": case["test_mode"],
-    }
-
-
-@pytest.mark.parametrize("case", CASES, ids=[c["name"] for c in CASES])
-def test_darwin_agrees_with_every_setups_producer_case(case):
-    expect = case["expect"]
-    if "error" in expect:
-        with pytest.raises(acceptance.AcceptanceError) as caught:
-            acceptance.validate_assessment(**_inputs(case))
-        assert caught.value.code == expect["error"]
-        return
-    result = acceptance.validate_assessment(**_inputs(case))
-    assert result["status"] == expect["status"]
-    assert result["assessment"]["sha256"] == expect["assessment_sha256"]
-    assert result["requirements"]["sha256"] == expect["requirements_sha256"]
-    assert result["authority"] == expect["authority"]
-    assert result["evidence"] == expect["evidence"]
-    assert result["supersedes"] == expect["supersedes"]
-
-
+SETUPS = (
+    Path(__file__).parent
+    / "fixtures"
+    / "setups-contracts"
+    / "fixtures"
+    / "acceptance-assessment-v1"
+)
 REQUIREMENTS = (SETUPS / "requirements.json").read_bytes()
 DATASET = {
     "id": "synthetic:dataset",

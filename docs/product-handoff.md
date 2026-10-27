@@ -14,13 +14,13 @@ Darwin prepares products. It doesn't publish them. Three things stay separate:
 | --- | --- | --- | --- | --- |
 | `darwin.product-handoff/2` | Darwin | `darwin/contracts/product-handoff-v2.schema.json` | `darwin.handoff.prepare_handoff`, `validate_handoff` | `python -m darwin.handoff prepare/validate` |
 | `darwin.assessment-evidence/1` | Darwin | `darwin/contracts/assessment-evidence-v1.schema.json` | `darwin.acceptance.run_checks` | none |
-| `darwin-wrf-setups.acceptance-assessment/1` | setups | vendored: `darwin/contracts/setups/` | `darwin.acceptance.record_assessment`, `validate_assessment` | none |
-| `darwin-wrf-setups.study-requirements/1` | setups | vendored: `darwin/contracts/setups/` | `darwin.acceptance.inspect_requirements` | none |
+| `darwin-wrf-setups.acceptance-assessment/1` | setups | vendored: `darwin/setups-acceptance-assessment-v1.schema.json` | `darwin.acceptance.record_assessment`; validation in `darwin.study_contracts.validate_assessment` | none |
+| `darwin-wrf-setups.study-requirements/1` | setups | vendored: `darwin/setups-study-requirements-v1.schema.json` | `darwin.study_contracts.inspect_requirements` | none |
 
-The setups schemas are copied verbatim from darwin-wrf-setups `981ba71`. The
-setups producer fixtures are copied under `tests/data/setups`. Darwin never
-imports setups code. `tests/test_acceptance.py` checks that Darwin's validator
-returns the producer's expected outcome for every setups fixture case.
+`darwin.study_contracts` is the single consumer-side validator for the setups
+contracts. Its copied producer fixtures and conformance tests live in
+`tests/fixtures/setups-contracts` and `tests/test_study_contracts.py`. Darwin
+never imports setups code.
 
 ## Handoff v2
 

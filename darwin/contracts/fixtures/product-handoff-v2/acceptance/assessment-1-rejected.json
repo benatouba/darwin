@@ -17,8 +17,8 @@
   "evidence": [
     {
       "artifact": {
-        "id": "darwin-evidence:bc24290ac5ed8414ea1b10c1006be9949508df08c343e1b9c455b0d44fd58e36",
-        "sha256": "eea7ad23a4ce91a30030ba57fdd1d582734835b07b773f0be240ac8b292ec684",
+        "id": "darwin-evidence:fa6b82ff176c4399ad81a75dc470d44204df071c904979ea2e59e57c58543630",
+        "sha256": "8f18022da5af4cc13007d91eef67db052cce8ee59cff0e7c5ee38c29df8091ec",
         "version": "1"
       },
       "criterion": "synthetic:criterion-a",
