@@ -1,0 +1,28 @@
+{
+  "contract": "darwin-wrf-setups.study-requirements/1",
+  "id": "interop-fixture:requirements",
+  "revision": "1",
+  "review_status": "draft",
+  "sources": [
+    {
+      "id": "interop-fixture:source",
+      "version": "1",
+      "sha256": "33ea3f31b2d2ad531b89d30136e08c87cc370d349cb0ab22b7bfcff26cf8e3f5"
+    }
+  ],
+  "stations": [
+    "interop-fixture:station"
+  ],
+  "variables": [
+    "interop-fixture:variable"
+  ],
+  "operation_recipe": {
+    "id": "interop-fixture:operation-recipe",
+    "version": "1",
+    "sha256": "d49e08f0b1bcf272448b3ade0885247192b431a78b60433418f7776ce79fcc12"
+  },
+  "acceptance": {
+    "criteria": [],
+    "authorized_authorities": []
+  }
+}

@@ -43,7 +43,7 @@ from darwin.publisher.immutable import (
 )
 from darwin.publisher.manifest import load_manifest
 from darwin.publisher.smoke import CREATOR, legacy_product_entry
-from darwin.study_contracts import SYNTHETIC_PREFIX
+from darwin.study_contracts import SYNTHETIC_PREFIX, load_assessment_bundle
 
 CONTRACT = "darwin.product-handoff/2"
 SCHEMA = "product-handoff-v2.schema.json"
@@ -95,6 +95,7 @@ def _acceptance_references(
             requirements=record["requirements"],
             dataset=dataset,
             evidence=record.get("evidence", {}),
+            authorizations=record.get("authorizations", {}),
             prior=record.get("prior"),
             allow_synthetic=allow_synthetic,
         )
@@ -138,7 +139,8 @@ def prepare_handoff(  # noqa: PLR0913
     ``execution`` optionally maps a product to ``{"completeness":
     "complete"|"partial", "evidence": identity}``. ``assessments`` maps a
     product to its acceptance-assessment history, oldest first, each item
-    ``{"assessment", "requirements", "evidence", "prior"}`` as exact bytes;
+    ``{"assessment", "requirements", "evidence", "authorizations", "prior"}``
+    as exact bytes (``evidence``/``authorizations`` keyed by ``(id, version)``);
     every record is validated against the product's exact dataset identity.
     Nothing is published, no current pointer moves and no access is granted.
     """
@@ -205,7 +207,7 @@ def prepare_handoff(  # noqa: PLR0913
         "products": products,
     }
     data = acceptance.canonical_bytes(document)
-    validate_handoff(data, allow_synthetic=allow_synthetic)
+    validate_handoff(data, assessments=assessments, allow_synthetic=allow_synthetic)
     provenance = {
         "builder": "darwin.handoff.prepare_handoff",
         "recipe": {"manifest_revision": manifest.revision},
@@ -225,16 +227,71 @@ def prepare_handoff(  # noqa: PLR0913
     return document
 
 
+def _check_acceptance_claims(
+    product: Mapping, records: Sequence[Mapping] | None, *, verify: bool, allow_synthetic: bool
+) -> None:
+    """Check a product's acceptance references and the status they back.
+
+    The references must form one supersedes chain, oldest first. With
+    ``verify`` they are re-derived from the exact record bytes and must match.
+    """
+    name = product["product_id"]
+    references = product["acceptance"]
+    previous = None
+    for reference in references:
+        expected = None if previous is None else {k: previous[k] for k in ("id", "sha256")}
+        if reference["supersedes"] != expected:
+            raise HandoffError(
+                "broken_acceptance_chain",
+                f"{name}: {reference['id']} must supersede the previous record",
+            )
+        previous = reference
+    if references and verify:
+        if not records:
+            raise HandoffError(
+                "acceptance_unverified", f"{name}: acceptance is claimed without its record bytes"
+            )
+        try:
+            derived = _acceptance_references(
+                product["dataset"], records, allow_synthetic=allow_synthetic
+            )
+        except acceptance.AcceptanceError as error:
+            raise HandoffError(error.code, f"{name}: {error}") from error
+        if derived != references:
+            raise HandoffError(
+                "acceptance_mismatch", f"{name}: acceptance references differ from the records"
+            )
+    status = references[-1]["status"] if references else "unassessed"
+    if product["scientific_status"] != status:
+        raise HandoffError(
+            "status_mismatch", f"{name}: scientific_status is not backed by its latest record"
+        )
+
+
 def validate_handoff(
-    data: bytes, *, artifact_root: str | Path | None = None, allow_synthetic: bool = False
+    data: bytes,
+    *,
+    artifact_root: str | Path | None = None,
+    assessments: Mapping[str, Sequence[Mapping]] | None = None,
+    verify_acceptance: bool = True,
+    allow_synthetic: bool = False,
 ) -> dict:
     """Validate a v2 handoff; with ``artifact_root`` also re-verify artifact bytes.
 
-    Checks the schema, that each ``dataset`` identity matches its artifacts and
-    that ``scientific_status`` is backed by the latest acceptance reference.
-    Synthetic fixture handoffs are refused unless ``allow_synthetic``.
-    Acceptance record bytes are validated separately with
-    :func:`darwin.acceptance.validate_assessment`.
+    Checks the schema, that each ``dataset`` identity matches its artifacts,
+    that each product's acceptance references form one supersedes chain and
+    that ``scientific_status`` is backed by the latest reference.
+
+    A reference is only a claim. By default every product that cites
+    acceptance needs its exact record bytes in ``assessments`` (the same
+    ``{"assessment", "requirements", "evidence", "authorizations", "prior"}``
+    bundles :func:`prepare_handoff` takes); the references are re-derived from
+    them and must match exactly, so a forged or altered reference is refused
+    (``acceptance_mismatch``) and an unbacked one is ``acceptance_unverified``.
+    ``verify_acceptance=False`` is only for a consumer that validates every
+    cited record itself before relying on it (the dashboard's acceptance
+    import does). Synthetic fixture handoffs are refused unless
+    ``allow_synthetic``.
     """
     try:
         document = json.loads(data)
@@ -261,13 +318,12 @@ def validate_handoff(
             raise HandoffError(
                 "dataset_mismatch", f"{product['product_id']}: dataset does not match artifacts"
             )
-        references = product["acceptance"]
-        status = references[-1]["status"] if references else "unassessed"
-        if product["scientific_status"] != status:
-            raise HandoffError(
-                "status_mismatch",
-                f"{product['product_id']}: scientific_status is not backed by its latest record",
-            )
+        _check_acceptance_claims(
+            product,
+            (assessments or {}).get(product["product_id"]),
+            verify=verify_acceptance,
+            allow_synthetic=allow_synthetic,
+        )
         if artifact_root is not None:
             for artifact in product["artifacts"]:
                 if artifact_entry(Path(artifact_root) / artifact["name"]) != artifact:
@@ -275,6 +331,29 @@ def validate_handoff(
                         "artifact_mismatch", f"{artifact['name']} differs from the handoff"
                     )
     return document
+
+
+def _cli_assessments(items: Sequence[str]) -> dict[str, list[dict]]:
+    """``PRODUCT=BUNDLE`` options, oldest first per product, as exact record bytes."""
+    assessments: dict[str, list[dict]] = {}
+    for item in items:
+        product, separator, bundle = item.partition("=")
+        if not separator or not product or not bundle:
+            raise HandoffError("invalid_arguments", f"--assessment needs PRODUCT=BUNDLE: {item!r}")
+        record = load_assessment_bundle(bundle)
+        if "requirements" not in record:
+            raise HandoffError("invalid_bundle", f"{bundle} names no requirements")
+        assessments.setdefault(product, []).append(record)
+    return assessments
+
+
+def _json_file(path: Path | None) -> dict | None:
+    if path is None:
+        return None
+    try:
+        return json.loads(path.read_text())
+    except (OSError, ValueError) as error:
+        raise HandoffError("invalid_arguments", f"{path}: {error}") from error
 
 
 def main(argv: Sequence[str] | None = None) -> None:
@@ -287,30 +366,57 @@ def main(argv: Sequence[str] | None = None) -> None:
     prepare.add_argument(
         "--artifacts", type=Path, required=True, help="JSON {product_id: [artifact paths]}"
     )
+    prepare.add_argument(
+        "--execution", type=Path, help="JSON {product_id: {completeness, evidence}}"
+    )
     prepare.add_argument("--creator", default=CREATOR)
+    prepare.add_argument("--created-at", help="UTC stamp; default now")
     check = commands.add_parser("validate", help="validate a handoff")
     check.add_argument("handoff", type=Path)
     check.add_argument("--artifact-root", type=Path)
-    check.add_argument("--test-mode", action="store_true", help="accept synthetic fixtures")
+    check.add_argument(
+        "--no-verify-acceptance",
+        action="store_true",
+        help="only for consumers that validate every cited record themselves",
+    )
+    for command in (prepare, check):
+        command.add_argument(
+            "--assessment",
+            action="append",
+            default=[],
+            metavar="PRODUCT=BUNDLE",
+            help="assessment bundle (darwin.study_contracts.load_assessment_bundle), oldest first",
+        )
+        command.add_argument("--test-mode", action="store_true", help="accept synthetic fixtures")
     args = parser.parse_args(argv)
     try:
+        assessments = _cli_assessments(args.assessment)
         if args.command == "prepare":
             document = prepare_handoff(
                 args.manifest,
                 args.output,
-                artifacts=json.loads(args.artifacts.read_text()),
+                artifacts=_json_file(args.artifacts),
+                execution=_json_file(args.execution),
+                assessments=assessments,
                 creator=args.creator,
+                created_at=args.created_at,
+                allow_synthetic=args.test_mode,
             )
         else:
             document = validate_handoff(
                 args.handoff.read_bytes(),
                 artifact_root=args.artifact_root,
+                assessments=assessments,
+                verify_acceptance=not args.no_verify_acceptance,
                 allow_synthetic=args.test_mode,
             )
     except (HandoffError, acceptance.AcceptanceError) as error:
         sys.stderr.write(json.dumps({"code": error.code, "message": str(error)}) + "\n")
         raise SystemExit(2) from error
-    print(json.dumps({"contract": document["contract"], "products": len(document["products"])}))
+    except OSError as error:
+        sys.stderr.write(json.dumps({"code": "io_error", "message": str(error)}) + "\n")
+        raise SystemExit(2) from error
+    print(json.dumps({"contract": document["contract"], "products": len(document["products"])}))  # noqa: T201
 
 
 if __name__ == "__main__":

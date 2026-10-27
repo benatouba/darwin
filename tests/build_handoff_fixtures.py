@@ -18,6 +18,7 @@ from darwin.publisher.smoke import build_smoke_release
 
 SETUPS = Path(__file__).parent / "fixtures" / "setups-contracts" / "fixtures" / "acceptance-assessment-v1"
 STAMP = "2026-10-27T00:00:00Z"
+AUTHORIZATION_ID = ("synthetic:reviewer-authorization", "1")
 CREATOR = "synthetic:darwin-fixture-builder"
 SOURCE_SHA = "c9e73d7c056ce843a739e08d7ff04e357b7eef67536467c5eb1ebf17f245b0d0"
 MANIFEST = f"""\
@@ -80,10 +81,29 @@ def _write(path: Path, data: bytes) -> None:
     path.write_bytes(data)
 
 
+def _bundle(root: Path, name: str, record: str, prior: str | None, evidence: dict) -> None:
+    """A load_assessment_bundle file citing exact bytes by relative path."""
+    bundle = {
+        "assessment": record,
+        "requirements": "requirements.json",
+        "evidence": [
+            {"id": key[0], "version": key[1], "path": f"evidence/{acceptance.sha256_bytes(data)}.json"}
+            for key, data in evidence.items()
+        ],
+        "authorizations": [{"id": AUTHORIZATION_ID[0], "version": AUTHORIZATION_ID[1],
+                            "path": "authorizations/reviewer.json"}],
+        "prior": prior,
+    }
+    _write(root / "acceptance" / name, acceptance.canonical_bytes(bundle))
+
+
 def _assessments(root: Path, dataset: dict) -> list[dict]:
     requirements = (SETUPS / "requirements.json").read_bytes()
     _write(root / "acceptance/requirements.json", requirements)
+    authorization = (SETUPS / "authorizations/reviewer.json").read_bytes()
+    _write(root / "acceptance/authorizations/reviewer.json", authorization)
     reviewer = json.loads(requirements)["acceptance"]["authorized_authorities"][0]
+    assert (reviewer["authorization"]["id"], reviewer["authorization"]["version"]) == AUTHORIZATION_ID
     failing = acceptance.run_checks(
         dataset,
         requirements,
@@ -94,7 +114,7 @@ def _assessments(root: Path, dataset: dict) -> list[dict]:
     evidence = {}
     for receipt in failing + passing:
         data = acceptance.canonical_bytes(receipt)
-        evidence[receipt["id"]] = data
+        evidence[(receipt["id"], acceptance.RECEIPT_VERSION)] = data
         _write(root / "acceptance/evidence" / f"{acceptance.sha256_bytes(data)}.json", data)
     rejected = acceptance.record_assessment(
         assessment_id="synthetic:prcp-slice-assessment-1",
@@ -103,6 +123,7 @@ def _assessments(root: Path, dataset: dict) -> list[dict]:
         status="rejected",
         evidence=[acceptance.canonical_bytes(r) for r in failing],
         authority=reviewer,
+        authorization=authorization,
         allow_synthetic=True,
     )
     accepted = acceptance.record_assessment(
@@ -112,13 +133,19 @@ def _assessments(root: Path, dataset: dict) -> list[dict]:
         status="accepted",
         evidence=[acceptance.canonical_bytes(r) for r in passing],
         authority=reviewer,
+        authorization=authorization,
         prior=rejected,
         prior_evidence=evidence,
         allow_synthetic=True,
     )
     _write(root / "acceptance/assessment-1-rejected.json", rejected)
     _write(root / "acceptance/assessment-2-accepted.json", accepted)
-    base = {"requirements": requirements, "evidence": evidence}
+    _bundle(root, "bundle-1-rejected.json", "assessment-1-rejected.json", None,
+            dict(list(evidence.items())[:1]))
+    _bundle(root, "bundle-2-accepted.json", "assessment-2-accepted.json",
+            "assessment-1-rejected.json", evidence)
+    base = {"requirements": requirements, "evidence": evidence,
+            "authorizations": {AUTHORIZATION_ID: authorization}}
     return [{**base, "assessment": rejected}, {**base, "assessment": accepted, "prior": rejected}]
 
 
@@ -172,6 +199,16 @@ def build(root: Path) -> None:
               lambda d: d["products"][0]["artifacts"][0].update(sha256="f" * 64))
     _negative(root, "dynamic-version.json", unassessed,
               lambda d: d["products"][0]["dataset"].update(version="latest"))
+    assessed = json.loads((root / "handoff-assessed.json").read_bytes())
+
+    def forge(document):
+        product = next(p for p in document["products"] if p["acceptance"])
+        product["acceptance"] = [{**product["acceptance"][-1], "id": "synthetic:forged-assessment",
+                                  "sha256": "0" * 64, "supersedes": None}]
+
+    _negative(root, "forged-reference.json", assessed, forge)
+    bundle = {"synthetic:prcp-slice": ["acceptance/bundle-1-rejected.json",
+                                       "acceptance/bundle-2-accepted.json"]}
     both = {"synthetic:prcp-slice": None, "synthetic:landmask": None}
     ok = lambda status, completeness: {  # noqa: E731
         "scientific_status": {**dict.fromkeys(both, "unassessed"), **status},
@@ -182,8 +219,12 @@ def build(root: Path) -> None:
          "test_mode": True,
          "expect": ok({}, {"synthetic:prcp-slice": "complete"})},
         {"name": "rejected-then-accepted", "handoff": "handoff-assessed.json",
-         "artifact_root": "artifacts", "test_mode": True,
+         "artifact_root": "artifacts", "acceptance": bundle, "test_mode": True,
          "expect": ok({"synthetic:prcp-slice": "accepted"}, {"synthetic:prcp-slice": "partial"})},
+        {"name": "acceptance-without-record-bytes", "handoff": "handoff-assessed.json",
+         "test_mode": True, "expect": {"error": "acceptance_unverified"}},
+        {"name": "forged-reference", "handoff": "negative/forged-reference.json",
+         "acceptance": bundle, "test_mode": True, "expect": {"error": "acceptance_mismatch"}},
         {"name": "synthetic-outside-test-mode", "handoff": "handoff-assessed.json",
          "test_mode": False, "expect": {"error": "synthetic_not_trusted"}},
         *(

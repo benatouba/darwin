@@ -10,7 +10,7 @@
   "requirements": {
     "id": "synthetic:requirements",
     "revision": "1",
-    "sha256": "b5a7d3ea218154aacf3fb64ceafecc46ae171733038dd17d94becf39b47c1015"
+    "sha256": "ebd74747847471fa3997aad65621299194c9b8c2092c35adb96a4c8aae0dab50"
   },
   "status": "rejected",
   "evidence": [],
@@ -20,7 +20,7 @@
     "authorization": {
       "id": "synthetic:policy-authorization",
       "version": "1",
-      "sha256": "25c980cad6173e11696dc964ead37e23624b44d8d25c0641caf5b618a271b5bd"
+      "sha256": "aa05f9866fbce479c0d8cc859854b4e25f74e45cfc95d672600175be6416dc78"
     }
   },
   "supersedes": null

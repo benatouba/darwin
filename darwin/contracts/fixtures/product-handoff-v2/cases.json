@@ -17,6 +17,12 @@
       "test_mode": true
     },
     {
+      "acceptance": {
+        "synthetic:prcp-slice": [
+          "acceptance/bundle-1-rejected.json",
+          "acceptance/bundle-2-accepted.json"
+        ]
+      },
       "artifact_root": "artifacts",
       "expect": {
         "execution_completeness": {
@@ -30,6 +36,28 @@
       },
       "handoff": "handoff-assessed.json",
       "name": "rejected-then-accepted",
+      "test_mode": true
+    },
+    {
+      "expect": {
+        "error": "acceptance_unverified"
+      },
+      "handoff": "handoff-assessed.json",
+      "name": "acceptance-without-record-bytes",
+      "test_mode": true
+    },
+    {
+      "acceptance": {
+        "synthetic:prcp-slice": [
+          "acceptance/bundle-1-rejected.json",
+          "acceptance/bundle-2-accepted.json"
+        ]
+      },
+      "expect": {
+        "error": "acceptance_mismatch"
+      },
+      "handoff": "negative/forged-reference.json",
+      "name": "forged-reference",
       "test_mode": true
     },
     {

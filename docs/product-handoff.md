@@ -13,8 +13,8 @@ Darwin prepares products. It doesn't publish them. Three things stay separate:
 | Contract | Owner | Schema | Python | CLI |
 | --- | --- | --- | --- | --- |
 | `darwin.product-handoff/2` | Darwin | `darwin/contracts/product-handoff-v2.schema.json` | `darwin.handoff.prepare_handoff`, `validate_handoff` | `python -m darwin.handoff prepare/validate` |
-| `darwin.assessment-evidence/1` | Darwin | `darwin/contracts/assessment-evidence-v1.schema.json` | `darwin.acceptance.run_checks` | none |
-| `darwin-wrf-setups.acceptance-assessment/1` | setups | vendored: `darwin/setups-acceptance-assessment-v1.schema.json` | `darwin.acceptance.record_assessment`; validation in `darwin.study_contracts.validate_assessment` | none |
+| `darwin.assessment-evidence/1` | Darwin | `darwin/contracts/assessment-evidence-v1.schema.json` | `darwin.acceptance.run_checks` | `python -m darwin.acceptance run-checks` |
+| `darwin-wrf-setups.acceptance-assessment/1` | setups | vendored: `darwin/setups-acceptance-assessment-v1.schema.json` | `darwin.acceptance.record_assessment`; validation in `darwin.study_contracts.validate_assessment` | `python -m darwin.acceptance record`; validated within `python -m darwin.handoff validate --assessment` |
 | `darwin-wrf-setups.study-requirements/1` | setups | vendored: `darwin/setups-study-requirements-v1.schema.json` | `darwin.study_contracts.inspect_requirements` | none |
 
 `darwin.study_contracts` is the single consumer-side validator for the setups
@@ -39,6 +39,12 @@ Each product in a handoff:
 - **`scientific_status` and `acceptance`.** The full validated assessment
   history, oldest first. Each record supersedes the one before it. The status
   is the status of the latest record, or `unassessed` when there is none.
+  A reference is a claim: `validate_handoff` re-derives every reference from
+  the exact record bytes (`assessments=`, CLI `--assessment PRODUCT=BUNDLE`)
+  and refuses a forged or altered one (`acceptance_mismatch`) or one without
+  record bytes (`acceptance_unverified`). `verify_acceptance=False`
+  (`--no-verify-acceptance`) only checks the chain's internal consistency and
+  is for consumers that validate every cited record themselves.
 - **Legacy fields.** Every field of the unversioned legacy format except
   `status`: `candidate_id`, presentation, aggregations, provenance and the rest.
 
@@ -50,7 +56,9 @@ so it still imports a v2 handoff. A v2-aware consumer must:
 1. Dispatch on `contract`. A document without one is legacy. Refuse any other
    unknown value.
 2. Run the same checks as `validate_handoff`.
-3. Validate each cited acceptance record's bytes against the product's `dataset`.
+3. Validate each cited acceptance record's bytes against the product's `dataset`
+   (`validate_handoff(..., assessments=...)` does this; with
+   `verify_acceptance=False` the consumer must do it itself).
 
 It must not treat `lifecycle` or `scientific_status` as a publication decision.
 
@@ -67,11 +75,15 @@ and the expected outcome or error code:
   execution.
 - `handoff-assessed.json`: `synthetic:prcp-slice` was rejected, then accepted
   on reassessment. Its execution is `partial`, which shows that status and
-  completeness are independent. The cited records, evidence receipts and
-  requirements are under `acceptance/`.
+  completeness are independent. The cited records, evidence receipts,
+  authorization artifact and requirements are under `acceptance/`, with one
+  `load_assessment_bundle` file per record (`bundle-*.json`) that cases name
+  under `acceptance`.
 - `legacy-v1.json`: the same manifest in the legacy format.
 - `negative/`: an unknown contract, a publication claim, a status no record
-  backs, a tampered artifact digest and a dynamic version.
+  backs, a tampered artifact digest, a dynamic version and a forged acceptance
+  reference (`forged-reference.json`). The `acceptance-without-record-bytes`
+  case shows that an assessed handoff alone is `acceptance_unverified`.
 
 Regenerate the fixtures with `python tests/build_handoff_fixtures.py <new dir>`
 and review the diff. The fixtures are synthetic. They are not scientific
@@ -92,8 +104,15 @@ threshold.
 `record_assessment(...)` writes a setups acceptance-assessment record:
 
 - `accepted` and `rejected` require an `authority` that the exact requirements
-  list as authorized. Darwin never infers one. Check outcomes and execution
-  success never set a status.
+  list as authorized, plus the exact bytes of the authorization artifact whose
+  sha256 the requirements pin for it (`authorization=`, CLI
+  `--authorization`). Copying the authority entry out of the requirements is
+  therefore not enough. Darwin never infers an authority. Check outcomes and
+  execution success never set a status.
+- Cited Darwin receipts must report the record's dataset, requirements and
+  criterion. `accepted` needs a passing receipt for every criterion whose
+  cited evidence is all Darwin receipts; a failed attempt may stay cited next
+  to a passing rerun. Evidence of other types is checked by exact bytes only.
 - Only `reviewed` requirements can carry a decision.
 - `accepted` needs evidence for every criterion.
 - A reassessment passes the exact prior record bytes. The new record
@@ -119,7 +138,13 @@ Still open:
 
 - Real reviewed requirements, checks and authorities (setups#39, darwin#15 and
   darwin#16).
-- Authenticating an authority beyond binding its authorization identity.
+- Authenticating an authority beyond binding its authorization bytes. Darwin
+  checks that a decision cites the exact authorization artifact the reviewed
+  requirements pin, but holding those bytes does not prove that the reviewer
+  or policy issued the decision. Signing or otherwise attesting who records a
+  decision is a human/deployment gate (reviewed requirements, controlled
+  storage of authorization artifacts and of records); Darwin does not provide
+  a PKI. Consumers must not present `accepted` as authenticated beyond that.
 - Dashboard consumption of v2 and of the setups assessment records, replacing
   its provisional acceptance reference (dashboard#18). The dashboard keys
   imports by `manifest_revision`, so a new handoff that adds assessments for the

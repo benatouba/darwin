@@ -46,7 +46,7 @@
         "authorization": {
           "id": "synthetic:reviewer-authorization",
           "version": "1",
-          "sha256": "44beb9be6083709be51762c04df8921acb1dad31dd947a99c6ec8db664cfe5ec"
+          "sha256": "cee0320102a85f413142449bf86620f372c0ecb31d71bcb5251f5c5116d910b7"
         }
       },
       {
@@ -55,7 +55,7 @@
         "authorization": {
           "id": "synthetic:policy-authorization",
           "version": "1",
-          "sha256": "25c980cad6173e11696dc964ead37e23624b44d8d25c0641caf5b618a271b5bd"
+          "sha256": "aa05f9866fbce479c0d8cc859854b4e25f74e45cfc95d672600175be6416dc78"
         }
       }
     ]

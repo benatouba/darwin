@@ -39,7 +39,7 @@
     "authorization": {
       "id": "synthetic:reviewer-authorization",
       "version": "1",
-      "sha256": "44beb9be6083709be51762c04df8921acb1dad31dd947a99c6ec8db664cfe5ec"
+      "sha256": "cee0320102a85f413142449bf86620f372c0ecb31d71bcb5251f5c5116d910b7"
     }
   },
   "supersedes": null

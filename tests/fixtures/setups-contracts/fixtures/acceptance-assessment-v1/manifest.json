@@ -1,7 +1,7 @@
 {
   "fixture_set": "darwin-wrf-setups.acceptance-assessment-fixtures/1",
   "synthetic": true,
-  "notice": "Synthetic interoperability fixtures only: not scientific acceptance, not reviewed requirements and not a real reviewer, policy or authorization. All identities use the synthetic: namespace, which validators refuse outside explicit test mode.",
+  "notice": "Synthetic interoperability fixtures only: not scientific acceptance, not reviewed requirements and not a real reviewer, policy or authorization. All identities use the synthetic: namespace, which validators refuse outside explicit test mode, except the interop-fixture: cases: unassessed records under draft requirements that bind no criterion, authority or acceptance and exist to show that a non-synthetic record passes outside test mode.",
   "cases": [
     {
       "name": "unassessed",
@@ -12,13 +12,26 @@
         "version": "1",
         "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
       },
-      "evidence": {},
+      "evidence": [],
+      "authorizations": [
+        {
+          "id": "synthetic:reviewer-authorization",
+          "version": "1",
+          "path": "authorizations/reviewer.json"
+        },
+        {
+          "id": "synthetic:policy-authorization",
+          "version": "1",
+          "path": "authorizations/policy.json"
+        }
+      ],
       "prior": null,
       "test_mode": true,
       "expect": {
         "status": "unassessed",
-        "assessment_sha256": "06d1b0dbd176190bb41dbd5a9f83ce0972c3a096c9e2f219376ac05f04350a03",
-        "requirements_sha256": "b5a7d3ea218154aacf3fb64ceafecc46ae171733038dd17d94becf39b47c1015",
+        "synthetic": true,
+        "assessment_sha256": "e5d7889902fc149c71b7a2017d0c21adf6c535e67ddd72bb4d89b49039f1e37a",
+        "requirements_sha256": "ebd74747847471fa3997aad65621299194c9b8c2092c35adb96a4c8aae0dab50",
         "authority": null,
         "evidence": [],
         "supersedes": null
@@ -33,23 +46,44 @@
         "version": "1",
         "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
       },
-      "evidence": {
-        "synthetic:receipt-a": "evidence/receipt-a.json",
-        "synthetic:receipt-b": "evidence/receipt-b.json"
-      },
+      "evidence": [
+        {
+          "id": "synthetic:receipt-a",
+          "version": "1",
+          "path": "evidence/receipt-a.json"
+        },
+        {
+          "id": "synthetic:receipt-b",
+          "version": "1",
+          "path": "evidence/receipt-b.json"
+        }
+      ],
+      "authorizations": [
+        {
+          "id": "synthetic:reviewer-authorization",
+          "version": "1",
+          "path": "authorizations/reviewer.json"
+        },
+        {
+          "id": "synthetic:policy-authorization",
+          "version": "1",
+          "path": "authorizations/policy.json"
+        }
+      ],
       "prior": null,
       "test_mode": true,
       "expect": {
         "status": "accepted",
-        "assessment_sha256": "75c5372593e91f0a3acad6d8a95bb529b98b2bc8d98593ccf8b5c134d9c31d8e",
-        "requirements_sha256": "b5a7d3ea218154aacf3fb64ceafecc46ae171733038dd17d94becf39b47c1015",
+        "synthetic": true,
+        "assessment_sha256": "a23012d85a02e85ae10b1bab005e5ac562342d135cc41d58eb1ff3da3ee33e82",
+        "requirements_sha256": "ebd74747847471fa3997aad65621299194c9b8c2092c35adb96a4c8aae0dab50",
         "authority": {
           "kind": "reviewer",
           "id": "synthetic:reviewer",
           "authorization": {
             "id": "synthetic:reviewer-authorization",
             "version": "1",
-            "sha256": "44beb9be6083709be51762c04df8921acb1dad31dd947a99c6ec8db664cfe5ec"
+            "sha256": "cee0320102a85f413142449bf86620f372c0ecb31d71bcb5251f5c5116d910b7"
           }
         },
         "evidence": [
@@ -84,22 +118,39 @@
         "version": "1",
         "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
       },
-      "evidence": {
-        "synthetic:receipt-a-rejecting": "evidence/receipt-a-rejecting.json"
-      },
+      "evidence": [
+        {
+          "id": "synthetic:receipt-a-rerun",
+          "version": "1",
+          "path": "evidence/receipt-a-rerun-v1.json"
+        }
+      ],
+      "authorizations": [
+        {
+          "id": "synthetic:reviewer-authorization",
+          "version": "1",
+          "path": "authorizations/reviewer.json"
+        },
+        {
+          "id": "synthetic:policy-authorization",
+          "version": "1",
+          "path": "authorizations/policy.json"
+        }
+      ],
       "prior": null,
       "test_mode": true,
       "expect": {
         "status": "rejected",
-        "assessment_sha256": "35862c7b3e8e2c5e5cdc10dbe958fa0f4c056cceb33f635dfa079ec5193ef83e",
-        "requirements_sha256": "b5a7d3ea218154aacf3fb64ceafecc46ae171733038dd17d94becf39b47c1015",
+        "synthetic": true,
+        "assessment_sha256": "ff0df3e9ccad6698760640053091bc62f5970b2adda3d11911106905dffa6297",
+        "requirements_sha256": "ebd74747847471fa3997aad65621299194c9b8c2092c35adb96a4c8aae0dab50",
         "authority": {
           "kind": "policy",
           "id": "synthetic:policy",
           "authorization": {
             "id": "synthetic:policy-authorization",
             "version": "1",
-            "sha256": "25c980cad6173e11696dc964ead37e23624b44d8d25c0641caf5b618a271b5bd"
+            "sha256": "aa05f9866fbce479c0d8cc859854b4e25f74e45cfc95d672600175be6416dc78"
           }
         },
         "evidence": [
@@ -107,9 +158,9 @@
             "criterion": "synthetic:criterion-a",
             "evidence_type": "synthetic:test-receipt",
             "artifact": {
-              "id": "synthetic:receipt-a-rejecting",
+              "id": "synthetic:receipt-a-rerun",
               "version": "1",
-              "sha256": "32a903c2d5f4cdb24ab365eaf8b124b143468698eed35b50e2964c4dca7f6e9e"
+              "sha256": "f3be9b2063efd3f1f67087d4e5439006ab6bea999282988e90268690ab45523c"
             }
           }
         ],
@@ -125,24 +176,49 @@
         "version": "1",
         "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
       },
-      "evidence": {
-        "synthetic:receipt-a-rejecting": "evidence/receipt-a-rejecting.json",
-        "synthetic:receipt-a": "evidence/receipt-a.json",
-        "synthetic:receipt-b": "evidence/receipt-b.json"
-      },
+      "evidence": [
+        {
+          "id": "synthetic:receipt-a-rerun",
+          "version": "1",
+          "path": "evidence/receipt-a-rerun-v1.json"
+        },
+        {
+          "id": "synthetic:receipt-a-rerun",
+          "version": "2",
+          "path": "evidence/receipt-a-rerun-v2.json"
+        },
+        {
+          "id": "synthetic:receipt-b",
+          "version": "1",
+          "path": "evidence/receipt-b.json"
+        }
+      ],
+      "authorizations": [
+        {
+          "id": "synthetic:reviewer-authorization",
+          "version": "1",
+          "path": "authorizations/reviewer.json"
+        },
+        {
+          "id": "synthetic:policy-authorization",
+          "version": "1",
+          "path": "authorizations/policy.json"
+        }
+      ],
       "prior": "rejected.json",
       "test_mode": true,
       "expect": {
         "status": "accepted",
-        "assessment_sha256": "d0b745cce2a37382610c205cad035801982880b25d982ebb2acffb7e22de07e8",
-        "requirements_sha256": "b5a7d3ea218154aacf3fb64ceafecc46ae171733038dd17d94becf39b47c1015",
+        "synthetic": true,
+        "assessment_sha256": "dd8f79a9f548ca5a607aaf79c552d3b88cfe1a65391e07030ed95bfbb5dd4518",
+        "requirements_sha256": "ebd74747847471fa3997aad65621299194c9b8c2092c35adb96a4c8aae0dab50",
         "authority": {
           "kind": "reviewer",
           "id": "synthetic:reviewer",
           "authorization": {
             "id": "synthetic:reviewer-authorization",
             "version": "1",
-            "sha256": "44beb9be6083709be51762c04df8921acb1dad31dd947a99c6ec8db664cfe5ec"
+            "sha256": "cee0320102a85f413142449bf86620f372c0ecb31d71bcb5251f5c5116d910b7"
           }
         },
         "evidence": [
@@ -150,18 +226,18 @@
             "criterion": "synthetic:criterion-a",
             "evidence_type": "synthetic:test-receipt",
             "artifact": {
-              "id": "synthetic:receipt-a-rejecting",
+              "id": "synthetic:receipt-a-rerun",
               "version": "1",
-              "sha256": "32a903c2d5f4cdb24ab365eaf8b124b143468698eed35b50e2964c4dca7f6e9e"
+              "sha256": "f3be9b2063efd3f1f67087d4e5439006ab6bea999282988e90268690ab45523c"
             }
           },
           {
             "criterion": "synthetic:criterion-a",
             "evidence_type": "synthetic:test-receipt",
             "artifact": {
-              "id": "synthetic:receipt-a",
-              "version": "1",
-              "sha256": "32a903c2d5f4cdb24ab365eaf8b124b143468698eed35b50e2964c4dca7f6e9e"
+              "id": "synthetic:receipt-a-rerun",
+              "version": "2",
+              "sha256": "d7705eba2e3d11d913cd46046d3a28cac047967f64923eaffd0f08cb8e717e56"
             }
           },
           {
@@ -176,7 +252,7 @@
         ],
         "supersedes": {
           "id": "synthetic:rejected",
-          "sha256": "35862c7b3e8e2c5e5cdc10dbe958fa0f4c056cceb33f635dfa079ec5193ef83e"
+          "sha256": "ff0df3e9ccad6698760640053091bc62f5970b2adda3d11911106905dffa6297"
         }
       }
     },
@@ -189,10 +265,30 @@
         "version": "1",
         "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
       },
-      "evidence": {
-        "synthetic:receipt-a": "evidence/receipt-a.json",
-        "synthetic:receipt-b": "evidence/receipt-b.json"
-      },
+      "evidence": [
+        {
+          "id": "synthetic:receipt-a",
+          "version": "1",
+          "path": "evidence/receipt-a.json"
+        },
+        {
+          "id": "synthetic:receipt-b",
+          "version": "1",
+          "path": "evidence/receipt-b.json"
+        }
+      ],
+      "authorizations": [
+        {
+          "id": "synthetic:reviewer-authorization",
+          "version": "1",
+          "path": "authorizations/reviewer.json"
+        },
+        {
+          "id": "synthetic:policy-authorization",
+          "version": "1",
+          "path": "authorizations/policy.json"
+        }
+      ],
       "prior": null,
       "test_mode": true,
       "expect": {
@@ -208,10 +304,30 @@
         "version": "1",
         "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
       },
-      "evidence": {
-        "synthetic:receipt-a": "evidence/receipt-a.json",
-        "synthetic:receipt-b": "evidence/receipt-b.json"
-      },
+      "evidence": [
+        {
+          "id": "synthetic:receipt-a",
+          "version": "1",
+          "path": "evidence/receipt-a.json"
+        },
+        {
+          "id": "synthetic:receipt-b",
+          "version": "1",
+          "path": "evidence/receipt-b.json"
+        }
+      ],
+      "authorizations": [
+        {
+          "id": "synthetic:reviewer-authorization",
+          "version": "1",
+          "path": "authorizations/reviewer.json"
+        },
+        {
+          "id": "synthetic:policy-authorization",
+          "version": "1",
+          "path": "authorizations/policy.json"
+        }
+      ],
       "prior": null,
       "test_mode": true,
       "expect": {
@@ -227,10 +343,30 @@
         "version": "2",
         "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
       },
-      "evidence": {
-        "synthetic:receipt-a": "evidence/receipt-a.json",
-        "synthetic:receipt-b": "evidence/receipt-b.json"
-      },
+      "evidence": [
+        {
+          "id": "synthetic:receipt-a",
+          "version": "1",
+          "path": "evidence/receipt-a.json"
+        },
+        {
+          "id": "synthetic:receipt-b",
+          "version": "1",
+          "path": "evidence/receipt-b.json"
+        }
+      ],
+      "authorizations": [
+        {
+          "id": "synthetic:reviewer-authorization",
+          "version": "1",
+          "path": "authorizations/reviewer.json"
+        },
+        {
+          "id": "synthetic:policy-authorization",
+          "version": "1",
+          "path": "authorizations/policy.json"
+        }
+      ],
       "prior": null,
       "test_mode": true,
       "expect": {
@@ -246,10 +382,30 @@
         "version": "1",
         "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
       },
-      "evidence": {
-        "synthetic:receipt-a": "negative/receipt-a-tampered.json",
-        "synthetic:receipt-b": "evidence/receipt-b.json"
-      },
+      "evidence": [
+        {
+          "id": "synthetic:receipt-a",
+          "version": "1",
+          "path": "negative/receipt-a-tampered.json"
+        },
+        {
+          "id": "synthetic:receipt-b",
+          "version": "1",
+          "path": "evidence/receipt-b.json"
+        }
+      ],
+      "authorizations": [
+        {
+          "id": "synthetic:reviewer-authorization",
+          "version": "1",
+          "path": "authorizations/reviewer.json"
+        },
+        {
+          "id": "synthetic:policy-authorization",
+          "version": "1",
+          "path": "authorizations/policy.json"
+        }
+      ],
       "prior": null,
       "test_mode": true,
       "expect": {
@@ -265,9 +421,25 @@
         "version": "1",
         "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
       },
-      "evidence": {
-        "synthetic:receipt-a": "evidence/receipt-a.json"
-      },
+      "evidence": [
+        {
+          "id": "synthetic:receipt-a",
+          "version": "1",
+          "path": "evidence/receipt-a.json"
+        }
+      ],
+      "authorizations": [
+        {
+          "id": "synthetic:reviewer-authorization",
+          "version": "1",
+          "path": "authorizations/reviewer.json"
+        },
+        {
+          "id": "synthetic:policy-authorization",
+          "version": "1",
+          "path": "authorizations/policy.json"
+        }
+      ],
       "prior": null,
       "test_mode": true,
       "expect": {
@@ -283,10 +455,30 @@
         "version": "1",
         "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
       },
-      "evidence": {
-        "synthetic:receipt-a": "evidence/receipt-a.json",
-        "synthetic:receipt-b": "evidence/receipt-b.json"
-      },
+      "evidence": [
+        {
+          "id": "synthetic:receipt-a",
+          "version": "1",
+          "path": "evidence/receipt-a.json"
+        },
+        {
+          "id": "synthetic:receipt-b",
+          "version": "1",
+          "path": "evidence/receipt-b.json"
+        }
+      ],
+      "authorizations": [
+        {
+          "id": "synthetic:reviewer-authorization",
+          "version": "1",
+          "path": "authorizations/reviewer.json"
+        },
+        {
+          "id": "synthetic:policy-authorization",
+          "version": "1",
+          "path": "authorizations/policy.json"
+        }
+      ],
       "prior": null,
       "test_mode": true,
       "expect": {
@@ -302,14 +494,102 @@
         "version": "1",
         "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
       },
-      "evidence": {
-        "synthetic:receipt-a": "evidence/receipt-a.json",
-        "synthetic:receipt-b": "evidence/receipt-b.json"
-      },
+      "evidence": [
+        {
+          "id": "synthetic:receipt-a",
+          "version": "1",
+          "path": "evidence/receipt-a.json"
+        },
+        {
+          "id": "synthetic:receipt-b",
+          "version": "1",
+          "path": "evidence/receipt-b.json"
+        }
+      ],
+      "authorizations": [
+        {
+          "id": "synthetic:reviewer-authorization",
+          "version": "1",
+          "path": "authorizations/reviewer.json"
+        },
+        {
+          "id": "synthetic:policy-authorization",
+          "version": "1",
+          "path": "authorizations/policy.json"
+        }
+      ],
       "prior": null,
       "test_mode": true,
       "expect": {
         "error": "unauthorized_authority"
+      }
+    },
+    {
+      "name": "tampered-authorization",
+      "assessment": "accepted.json",
+      "requirements": "requirements.json",
+      "dataset": {
+        "id": "synthetic:dataset",
+        "version": "1",
+        "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
+      },
+      "evidence": [
+        {
+          "id": "synthetic:receipt-a",
+          "version": "1",
+          "path": "evidence/receipt-a.json"
+        },
+        {
+          "id": "synthetic:receipt-b",
+          "version": "1",
+          "path": "evidence/receipt-b.json"
+        }
+      ],
+      "authorizations": [
+        {
+          "id": "synthetic:reviewer-authorization",
+          "version": "1",
+          "path": "negative/reviewer-authorization-tampered.json"
+        }
+      ],
+      "prior": null,
+      "test_mode": true,
+      "expect": {
+        "error": "authorization_mismatch"
+      }
+    },
+    {
+      "name": "missing-authorization",
+      "assessment": "accepted.json",
+      "requirements": "requirements.json",
+      "dataset": {
+        "id": "synthetic:dataset",
+        "version": "1",
+        "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
+      },
+      "evidence": [
+        {
+          "id": "synthetic:receipt-a",
+          "version": "1",
+          "path": "evidence/receipt-a.json"
+        },
+        {
+          "id": "synthetic:receipt-b",
+          "version": "1",
+          "path": "evidence/receipt-b.json"
+        }
+      ],
+      "authorizations": [
+        {
+          "id": "synthetic:policy-authorization",
+          "version": "1",
+          "path": "authorizations/policy.json"
+        }
+      ],
+      "prior": null,
+      "test_mode": true,
+      "expect": {
+        "error": "authorization_unavailable"
       }
     },
     {
@@ -321,9 +601,25 @@
         "version": "1",
         "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
       },
-      "evidence": {
-        "synthetic:receipt-a": "evidence/receipt-a.json"
-      },
+      "evidence": [
+        {
+          "id": "synthetic:receipt-a",
+          "version": "1",
+          "path": "evidence/receipt-a.json"
+        }
+      ],
+      "authorizations": [
+        {
+          "id": "synthetic:reviewer-authorization",
+          "version": "1",
+          "path": "authorizations/reviewer.json"
+        },
+        {
+          "id": "synthetic:policy-authorization",
+          "version": "1",
+          "path": "authorizations/policy.json"
+        }
+      ],
       "prior": null,
       "test_mode": true,
       "expect": {
@@ -339,14 +635,73 @@
         "version": "1",
         "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
       },
-      "evidence": {
-        "synthetic:receipt-a": "evidence/receipt-a.json",
-        "synthetic:receipt-b": "evidence/receipt-b.json"
-      },
+      "evidence": [
+        {
+          "id": "synthetic:receipt-a",
+          "version": "1",
+          "path": "evidence/receipt-a.json"
+        },
+        {
+          "id": "synthetic:receipt-b",
+          "version": "1",
+          "path": "evidence/receipt-b.json"
+        }
+      ],
+      "authorizations": [
+        {
+          "id": "synthetic:reviewer-authorization",
+          "version": "1",
+          "path": "authorizations/reviewer.json"
+        },
+        {
+          "id": "synthetic:policy-authorization",
+          "version": "1",
+          "path": "authorizations/policy.json"
+        }
+      ],
       "prior": null,
       "test_mode": true,
       "expect": {
         "error": "unknown_criterion"
+      }
+    },
+    {
+      "name": "mismatched-evidence-type",
+      "assessment": "negative/mismatched-evidence-type.json",
+      "requirements": "requirements.json",
+      "dataset": {
+        "id": "synthetic:dataset",
+        "version": "1",
+        "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
+      },
+      "evidence": [
+        {
+          "id": "synthetic:receipt-a",
+          "version": "1",
+          "path": "evidence/receipt-a.json"
+        },
+        {
+          "id": "synthetic:receipt-b",
+          "version": "1",
+          "path": "evidence/receipt-b.json"
+        }
+      ],
+      "authorizations": [
+        {
+          "id": "synthetic:reviewer-authorization",
+          "version": "1",
+          "path": "authorizations/reviewer.json"
+        },
+        {
+          "id": "synthetic:policy-authorization",
+          "version": "1",
+          "path": "authorizations/policy.json"
+        }
+      ],
+      "prior": null,
+      "test_mode": true,
+      "expect": {
+        "error": "evidence_type_mismatch"
       }
     },
     {
@@ -358,7 +713,19 @@
         "version": "1",
         "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
       },
-      "evidence": {},
+      "evidence": [],
+      "authorizations": [
+        {
+          "id": "synthetic:reviewer-authorization",
+          "version": "1",
+          "path": "authorizations/reviewer.json"
+        },
+        {
+          "id": "synthetic:policy-authorization",
+          "version": "1",
+          "path": "authorizations/policy.json"
+        }
+      ],
       "prior": null,
       "test_mode": true,
       "expect": {
@@ -374,7 +741,19 @@
         "version": "1",
         "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
       },
-      "evidence": {},
+      "evidence": [],
+      "authorizations": [
+        {
+          "id": "synthetic:reviewer-authorization",
+          "version": "1",
+          "path": "authorizations/reviewer.json"
+        },
+        {
+          "id": "synthetic:policy-authorization",
+          "version": "1",
+          "path": "authorizations/policy.json"
+        }
+      ],
       "prior": null,
       "test_mode": true,
       "expect": {
@@ -390,10 +769,30 @@
         "version": "1",
         "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
       },
-      "evidence": {
-        "synthetic:receipt-a": "evidence/receipt-a.json",
-        "synthetic:receipt-b": "evidence/receipt-b.json"
-      },
+      "evidence": [
+        {
+          "id": "synthetic:receipt-a",
+          "version": "1",
+          "path": "evidence/receipt-a.json"
+        },
+        {
+          "id": "synthetic:receipt-b",
+          "version": "1",
+          "path": "evidence/receipt-b.json"
+        }
+      ],
+      "authorizations": [
+        {
+          "id": "synthetic:reviewer-authorization",
+          "version": "1",
+          "path": "authorizations/reviewer.json"
+        },
+        {
+          "id": "synthetic:policy-authorization",
+          "version": "1",
+          "path": "authorizations/policy.json"
+        }
+      ],
       "prior": null,
       "test_mode": true,
       "expect": {
@@ -409,10 +808,69 @@
         "version": "1",
         "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
       },
-      "evidence": {
-        "synthetic:receipt-a": "evidence/receipt-a.json",
-        "synthetic:receipt-b": "evidence/receipt-b.json"
+      "evidence": [
+        {
+          "id": "synthetic:receipt-a",
+          "version": "1",
+          "path": "evidence/receipt-a.json"
+        },
+        {
+          "id": "synthetic:receipt-b",
+          "version": "1",
+          "path": "evidence/receipt-b.json"
+        }
+      ],
+      "authorizations": [
+        {
+          "id": "synthetic:reviewer-authorization",
+          "version": "1",
+          "path": "authorizations/reviewer.json"
+        },
+        {
+          "id": "synthetic:policy-authorization",
+          "version": "1",
+          "path": "authorizations/policy.json"
+        }
+      ],
+      "prior": null,
+      "test_mode": true,
+      "expect": {
+        "error": "invalid_assessment"
+      }
+    },
+    {
+      "name": "dynamic-dataset-version-mixed-case",
+      "assessment": "negative/dynamic-dataset-version-mixed-case.json",
+      "requirements": "requirements.json",
+      "dataset": {
+        "id": "synthetic:dataset",
+        "version": "1",
+        "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
       },
+      "evidence": [
+        {
+          "id": "synthetic:receipt-a",
+          "version": "1",
+          "path": "evidence/receipt-a.json"
+        },
+        {
+          "id": "synthetic:receipt-b",
+          "version": "1",
+          "path": "evidence/receipt-b.json"
+        }
+      ],
+      "authorizations": [
+        {
+          "id": "synthetic:reviewer-authorization",
+          "version": "1",
+          "path": "authorizations/reviewer.json"
+        },
+        {
+          "id": "synthetic:policy-authorization",
+          "version": "1",
+          "path": "authorizations/policy.json"
+        }
+      ],
       "prior": null,
       "test_mode": true,
       "expect": {
@@ -428,10 +886,69 @@
         "version": "1",
         "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
       },
-      "evidence": {
-        "synthetic:receipt-a": "evidence/receipt-a.json",
-        "synthetic:receipt-b": "evidence/receipt-b.json"
+      "evidence": [
+        {
+          "id": "synthetic:receipt-a",
+          "version": "1",
+          "path": "evidence/receipt-a.json"
+        },
+        {
+          "id": "synthetic:receipt-b",
+          "version": "1",
+          "path": "evidence/receipt-b.json"
+        }
+      ],
+      "authorizations": [
+        {
+          "id": "synthetic:reviewer-authorization",
+          "version": "1",
+          "path": "authorizations/reviewer.json"
+        },
+        {
+          "id": "synthetic:policy-authorization",
+          "version": "1",
+          "path": "authorizations/policy.json"
+        }
+      ],
+      "prior": null,
+      "test_mode": true,
+      "expect": {
+        "error": "unsupported_contract"
+      }
+    },
+    {
+      "name": "requirements-unsupported-contract",
+      "assessment": "accepted.json",
+      "requirements": "negative/requirements-unsupported-contract.json",
+      "dataset": {
+        "id": "synthetic:dataset",
+        "version": "1",
+        "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
       },
+      "evidence": [
+        {
+          "id": "synthetic:receipt-a",
+          "version": "1",
+          "path": "evidence/receipt-a.json"
+        },
+        {
+          "id": "synthetic:receipt-b",
+          "version": "1",
+          "path": "evidence/receipt-b.json"
+        }
+      ],
+      "authorizations": [
+        {
+          "id": "synthetic:reviewer-authorization",
+          "version": "1",
+          "path": "authorizations/reviewer.json"
+        },
+        {
+          "id": "synthetic:policy-authorization",
+          "version": "1",
+          "path": "authorizations/policy.json"
+        }
+      ],
       "prior": null,
       "test_mode": true,
       "expect": {
@@ -447,11 +964,35 @@
         "version": "1",
         "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
       },
-      "evidence": {
-        "synthetic:receipt-a-rejecting": "evidence/receipt-a-rejecting.json",
-        "synthetic:receipt-a": "evidence/receipt-a.json",
-        "synthetic:receipt-b": "evidence/receipt-b.json"
-      },
+      "evidence": [
+        {
+          "id": "synthetic:receipt-a-rerun",
+          "version": "1",
+          "path": "evidence/receipt-a-rerun-v1.json"
+        },
+        {
+          "id": "synthetic:receipt-a-rerun",
+          "version": "2",
+          "path": "evidence/receipt-a-rerun-v2.json"
+        },
+        {
+          "id": "synthetic:receipt-b",
+          "version": "1",
+          "path": "evidence/receipt-b.json"
+        }
+      ],
+      "authorizations": [
+        {
+          "id": "synthetic:reviewer-authorization",
+          "version": "1",
+          "path": "authorizations/reviewer.json"
+        },
+        {
+          "id": "synthetic:policy-authorization",
+          "version": "1",
+          "path": "authorizations/policy.json"
+        }
+      ],
       "prior": "negative/rejected-tampered.json",
       "test_mode": true,
       "expect": {
@@ -467,11 +1008,35 @@
         "version": "1",
         "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
       },
-      "evidence": {
-        "synthetic:receipt-a-rejecting": "evidence/receipt-a-rejecting.json",
-        "synthetic:receipt-a": "evidence/receipt-a.json",
-        "synthetic:receipt-b": "evidence/receipt-b.json"
-      },
+      "evidence": [
+        {
+          "id": "synthetic:receipt-a-rerun",
+          "version": "1",
+          "path": "evidence/receipt-a-rerun-v1.json"
+        },
+        {
+          "id": "synthetic:receipt-a-rerun",
+          "version": "2",
+          "path": "evidence/receipt-a-rerun-v2.json"
+        },
+        {
+          "id": "synthetic:receipt-b",
+          "version": "1",
+          "path": "evidence/receipt-b.json"
+        }
+      ],
+      "authorizations": [
+        {
+          "id": "synthetic:reviewer-authorization",
+          "version": "1",
+          "path": "authorizations/reviewer.json"
+        },
+        {
+          "id": "synthetic:policy-authorization",
+          "version": "1",
+          "path": "authorizations/policy.json"
+        }
+      ],
       "prior": null,
       "test_mode": true,
       "expect": {
@@ -487,10 +1052,30 @@
         "version": "1",
         "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
       },
-      "evidence": {
-        "synthetic:receipt-a": "evidence/receipt-a.json",
-        "synthetic:receipt-b": "evidence/receipt-b.json"
-      },
+      "evidence": [
+        {
+          "id": "synthetic:receipt-a",
+          "version": "1",
+          "path": "evidence/receipt-a.json"
+        },
+        {
+          "id": "synthetic:receipt-b",
+          "version": "1",
+          "path": "evidence/receipt-b.json"
+        }
+      ],
+      "authorizations": [
+        {
+          "id": "synthetic:reviewer-authorization",
+          "version": "1",
+          "path": "authorizations/reviewer.json"
+        },
+        {
+          "id": "synthetic:policy-authorization",
+          "version": "1",
+          "path": "authorizations/policy.json"
+        }
+      ],
       "prior": "rejected.json",
       "test_mode": true,
       "expect": {
@@ -506,10 +1091,30 @@
         "version": "1",
         "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
       },
-      "evidence": {
-        "synthetic:receipt-a": "evidence/receipt-a.json",
-        "synthetic:receipt-b": "evidence/receipt-b.json"
-      },
+      "evidence": [
+        {
+          "id": "synthetic:receipt-a",
+          "version": "1",
+          "path": "evidence/receipt-a.json"
+        },
+        {
+          "id": "synthetic:receipt-b",
+          "version": "1",
+          "path": "evidence/receipt-b.json"
+        }
+      ],
+      "authorizations": [
+        {
+          "id": "synthetic:reviewer-authorization",
+          "version": "1",
+          "path": "authorizations/reviewer.json"
+        },
+        {
+          "id": "synthetic:policy-authorization",
+          "version": "1",
+          "path": "authorizations/policy.json"
+        }
+      ],
       "prior": null,
       "test_mode": false,
       "expect": {
@@ -525,10 +1130,30 @@
         "version": "1",
         "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
       },
-      "evidence": {
-        "synthetic:receipt-a": "evidence/receipt-a.json",
-        "synthetic:receipt-b": "evidence/receipt-b.json"
-      },
+      "evidence": [
+        {
+          "id": "synthetic:receipt-a",
+          "version": "1",
+          "path": "evidence/receipt-a.json"
+        },
+        {
+          "id": "synthetic:receipt-b",
+          "version": "1",
+          "path": "evidence/receipt-b.json"
+        }
+      ],
+      "authorizations": [
+        {
+          "id": "synthetic:reviewer-authorization",
+          "version": "1",
+          "path": "authorizations/reviewer.json"
+        },
+        {
+          "id": "synthetic:policy-authorization",
+          "version": "1",
+          "path": "authorizations/policy.json"
+        }
+      ],
       "prior": null,
       "test_mode": false,
       "expect": {
@@ -544,8 +1169,82 @@
         "version": "1",
         "sha256": "7136b2416b4f8b59171a7aaa5cb6f799bb81f84c9f03a1fc3fd56e4e66bf3774"
       },
-      "evidence": {},
+      "evidence": [],
+      "authorizations": [
+        {
+          "id": "synthetic:reviewer-authorization",
+          "version": "1",
+          "path": "authorizations/reviewer.json"
+        },
+        {
+          "id": "synthetic:policy-authorization",
+          "version": "1",
+          "path": "authorizations/policy.json"
+        }
+      ],
       "prior": null,
+      "test_mode": false,
+      "expect": {
+        "error": "synthetic_not_trusted"
+      }
+    },
+    {
+      "name": "unassessed-outside-test-mode",
+      "assessment": "interop/unassessed.json",
+      "requirements": "interop/requirements-draft.json",
+      "dataset": {
+        "id": "interop-fixture:dataset",
+        "version": "1",
+        "sha256": "e1ba94c0cd1c9bf0ffd4d6d99838ccb3d22cfceb18f6e935562fcbb1c6d62131"
+      },
+      "evidence": [],
+      "authorizations": [
+        {
+          "id": "synthetic:reviewer-authorization",
+          "version": "1",
+          "path": "authorizations/reviewer.json"
+        },
+        {
+          "id": "synthetic:policy-authorization",
+          "version": "1",
+          "path": "authorizations/policy.json"
+        }
+      ],
+      "prior": null,
+      "test_mode": false,
+      "expect": {
+        "status": "unassessed",
+        "synthetic": false,
+        "assessment_sha256": "2c3251db149453016a4dca327a99d3e26615defcb394f1323584391a29a653c1",
+        "requirements_sha256": "2d1d44ce1ba34379b54d1023a8b80befa9ccb1611cf7bda4210d4b4084b1b113",
+        "authority": null,
+        "evidence": [],
+        "supersedes": null
+      }
+    },
+    {
+      "name": "reassessment-of-synthetic-prior-outside-test-mode",
+      "assessment": "negative/reassessment-of-synthetic-prior-outside-test-mode.json",
+      "requirements": "interop/requirements-draft.json",
+      "dataset": {
+        "id": "interop-fixture:dataset",
+        "version": "1",
+        "sha256": "e1ba94c0cd1c9bf0ffd4d6d99838ccb3d22cfceb18f6e935562fcbb1c6d62131"
+      },
+      "evidence": [],
+      "authorizations": [
+        {
+          "id": "synthetic:reviewer-authorization",
+          "version": "1",
+          "path": "authorizations/reviewer.json"
+        },
+        {
+          "id": "synthetic:policy-authorization",
+          "version": "1",
+          "path": "authorizations/policy.json"
+        }
+      ],
+      "prior": "interop/marked-synthetic-prior.json",
       "test_mode": false,
       "expect": {
         "error": "synthetic_not_trusted"

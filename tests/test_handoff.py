@@ -19,6 +19,10 @@ from darwin.publisher.smoke import build_smoke_release
 SETUPS = Path(__file__).parent / "fixtures" / "setups-contracts" / "fixtures" / "acceptance-assessment-v1"
 REQUIREMENTS = (SETUPS / "requirements.json").read_bytes()
 REVIEWER = json.loads(REQUIREMENTS)["acceptance"]["authorized_authorities"][0]
+AUTHORIZATION = (SETUPS / "authorizations" / "reviewer.json").read_bytes()
+AUTHORIZATIONS = {
+    (REVIEWER["authorization"]["id"], REVIEWER["authorization"]["version"]): AUTHORIZATION
+}
 SMOKE = Path(__file__).resolve().parents[1] / "darwin/publisher/manifests/smoke-jan2020-prcp.yaml"
 STAMP = "2026-10-27T00:00:00Z"
 
@@ -132,7 +136,7 @@ def _assessments_for(dataset):
         inputs={"synthetic:outcomes": {"synthetic:criterion-a": "fail"}},
         allow_synthetic=True,
     )
-    failing = {r["id"]: acceptance.canonical_bytes(r) for r in receipts}
+    failing = {(r["id"], "1"): acceptance.canonical_bytes(r) for r in receipts}
     rejected = acceptance.record_assessment(
         assessment_id="synthetic:first",
         dataset=dataset,
@@ -140,10 +144,11 @@ def _assessments_for(dataset):
         status="rejected",
         evidence=list(failing.values()),
         authority=REVIEWER,
+        authorization=AUTHORIZATION,
         allow_synthetic=True,
     )
     rerun = acceptance.run_checks(dataset, REQUIREMENTS, inputs={}, allow_synthetic=True)
-    passing = {r["id"]: acceptance.canonical_bytes(r) for r in rerun}
+    passing = {(r["id"], "1"): acceptance.canonical_bytes(r) for r in rerun}
     accepted = acceptance.record_assessment(
         assessment_id="synthetic:second",
         dataset=dataset,
@@ -151,20 +156,17 @@ def _assessments_for(dataset):
         status="accepted",
         evidence=list(passing.values()),
         authority=REVIEWER,
+        authorization=AUTHORIZATION,
         prior=rejected,
         prior_evidence=failing,
         allow_synthetic=True,
     )
-    evidence = {**failing, **passing}
-    return [
-        {"assessment": rejected, "requirements": REQUIREMENTS, "evidence": evidence},
-        {
-            "assessment": accepted,
-            "requirements": REQUIREMENTS,
-            "evidence": evidence,
-            "prior": rejected,
-        },
-    ]
+    base = {
+        "requirements": REQUIREMENTS,
+        "evidence": {**failing, **passing},
+        "authorizations": AUTHORIZATIONS,
+    }
+    return [{**base, "assessment": rejected}, {**base, "assessment": accepted, "prior": rejected}]
 
 
 def test_status_and_completeness_are_independent_and_history_is_kept(tmp_path, smoke_artifacts):
@@ -268,3 +270,63 @@ def test_preparation_never_overwrites_a_handoff(tmp_path, smoke_artifacts):
     _prepare(tmp_path, smoke_artifacts)
     with pytest.raises(FileExistsError):
         _prepare(tmp_path, smoke_artifacts)
+
+
+def _assessed(tmp_path, smoke_artifacts):
+    first = _prepare(tmp_path, smoke_artifacts, name="first.json")
+    landmask = next(p for p in first["products"] if p["product_id"] == "GAR_d02km_static_landmask")
+    chain = _assessments_for(landmask["dataset"])
+    _prepare(
+        tmp_path,
+        smoke_artifacts,
+        assessments={"GAR_d02km_static_landmask": chain},
+        allow_synthetic=True,
+    )
+    return json.loads((tmp_path / "handoff.json").read_bytes()), chain
+
+
+def _forge(document):
+    forged = json.loads(json.dumps(document))
+    product = next(
+        p for p in forged["products"] if p["product_id"] == "GAR_d02km_static_landmask"
+    )
+    product["acceptance"] = [
+        {
+            **product["acceptance"][-1],
+            "id": "forged-assessment",
+            "sha256": "0" * 64,
+            "supersedes": None,
+        }
+    ]
+    return json.dumps(forged).encode()
+
+
+def test_acceptance_claims_are_verified_against_the_exact_record_bytes(tmp_path, smoke_artifacts):
+    document, chain = _assessed(tmp_path, smoke_artifacts)
+    bundles = {"GAR_d02km_static_landmask": chain}
+    data = json.dumps(document).encode()
+    checked = handoff.validate_handoff(data, assessments=bundles, allow_synthetic=True)
+    assert checked["products"] == document["products"]
+    with pytest.raises(handoff.HandoffError) as forged:
+        handoff.validate_handoff(_forge(document), assessments=bundles, allow_synthetic=True)
+    assert forged.value.code == "acceptance_mismatch"
+
+
+def test_acceptance_claims_without_record_bytes_are_refused_by_default(tmp_path, smoke_artifacts):
+    document, _ = _assessed(tmp_path, smoke_artifacts)
+    with pytest.raises(handoff.HandoffError) as caught:
+        handoff.validate_handoff(json.dumps(document).encode(), allow_synthetic=True)
+    assert caught.value.code == "acceptance_unverified"
+
+
+def test_unverified_reading_still_refuses_an_inconsistent_chain(tmp_path, smoke_artifacts):
+    document, _ = _assessed(tmp_path, smoke_artifacts)
+    product = next(
+        p for p in document["products"] if p["product_id"] == "GAR_d02km_static_landmask"
+    )
+    product["acceptance"][1]["supersedes"] = None
+    with pytest.raises(handoff.HandoffError) as caught:
+        handoff.validate_handoff(
+            json.dumps(document).encode(), verify_acceptance=False, allow_synthetic=True
+        )
+    assert caught.value.code == "broken_acceptance_chain"

@@ -2,7 +2,7 @@
   "authority": {
     "authorization": {
       "id": "synthetic:reviewer-authorization",
-      "sha256": "44beb9be6083709be51762c04df8921acb1dad31dd947a99c6ec8db664cfe5ec",
+      "sha256": "cee0320102a85f413142449bf86620f372c0ecb31d71bcb5251f5c5116d910b7",
       "version": "1"
     },
     "id": "synthetic:reviewer",
@@ -17,8 +17,8 @@
   "evidence": [
     {
       "artifact": {
-        "id": "darwin-evidence:fa6b82ff176c4399ad81a75dc470d44204df071c904979ea2e59e57c58543630",
-        "sha256": "8f18022da5af4cc13007d91eef67db052cce8ee59cff0e7c5ee38c29df8091ec",
+        "id": "darwin-evidence:c4b639c9405124cdcebc170780410806b09769a7a1cd6ca8cb90810716ba17fe",
+        "sha256": "a53869e74a09b4b67bc973a9033791009ffbaa4ed2ab58ab06108406e9f74ea8",
         "version": "1"
       },
       "criterion": "synthetic:criterion-a",
@@ -26,8 +26,8 @@
     },
     {
       "artifact": {
-        "id": "darwin-evidence:2c5a1baf2bee12671428376553776947b6bf6c18087cf896026dbe7fcf704e87",
-        "sha256": "87b92bd6cab7cbde96b331c918f4074c26c1b52901ccf0ce725f5f5bfa9d477c",
+        "id": "darwin-evidence:feb9a8a17fde8fac40b98885f93fe18595578158beb049188c2374e70f345881",
+        "sha256": "6cf6705faa41d58a251b03480d402026af9f75b2f7f98698726972a4a93e0045",
         "version": "1"
       },
       "criterion": "synthetic:criterion-a",
@@ -35,8 +35,8 @@
     },
     {
       "artifact": {
-        "id": "darwin-evidence:55f8857f71ab7ec1f947832ef5e7cbbc2c522734af72087c2a60647b5040dbfa",
-        "sha256": "3a837659e5985113a7586c538bc4208f481c7054296ab7cfb8c2d24825b4971a",
+        "id": "darwin-evidence:243c8253b42887191cf1c103b7a75ac6bc55e718492d7dfb97d4a6ea74d76c03",
+        "sha256": "65f551e44274a904e7c54df6f165e226e219cef057bdbbecdf4eca7c1a82d7a8",
         "version": "1"
       },
       "criterion": "synthetic:criterion-b",
@@ -47,12 +47,12 @@
   "requirements": {
     "id": "synthetic:requirements",
     "revision": "1",
-    "sha256": "b5a7d3ea218154aacf3fb64ceafecc46ae171733038dd17d94becf39b47c1015"
+    "sha256": "ebd74747847471fa3997aad65621299194c9b8c2092c35adb96a4c8aae0dab50"
   },
   "status": "accepted",
   "supersedes": {
     "id": "synthetic:prcp-slice-assessment-1",
-    "sha256": "682665f9c126a1d6651aa675008f3b7167141d14ad88bef8349280f972bb6a2b"
+    "sha256": "74c7b6ec82b4ecb832b3bd69f6b1dff8c263f1734f8f91bde771171b12b82a73"
   },
   "synthetic": true
 }

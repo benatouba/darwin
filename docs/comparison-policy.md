@@ -37,8 +37,10 @@ python -m darwin.comparison_policy ... --recipe recipe.json   # exact replay
 ```
 
 `--allow-draft`, `--test-mode` (accept `synthetic:` fixtures) and repeated
-`--assessment model=bundle.json` (bundle: `{"assessment": path, "evidence":
-{id: path}, "prior": path|null}`, relative to the bundle) mirror the keywords.
+`--assessment model=bundle.json` (bundle, read by
+`darwin.study_contracts.load_assessment_bundle`: `{"assessment": path,
+"evidence": [{id, version, path}], "authorizations": [{id, version, path}],
+"prior": path|null}`, paths relative to the bundle) mirror the keywords.
 
 ### Request
 

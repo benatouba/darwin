@@ -1,0 +1,18 @@
+{
+  "contract": "darwin-wrf-setups.acceptance-assessment/1",
+  "id": "interop-fixture:unassessed",
+  "dataset": {
+    "id": "interop-fixture:dataset",
+    "version": "1",
+    "sha256": "e1ba94c0cd1c9bf0ffd4d6d99838ccb3d22cfceb18f6e935562fcbb1c6d62131"
+  },
+  "requirements": {
+    "id": "interop-fixture:requirements",
+    "revision": "1",
+    "sha256": "2d1d44ce1ba34379b54d1023a8b80befa9ccb1611cf7bda4210d4b4084b1b113"
+  },
+  "status": "unassessed",
+  "evidence": [],
+  "authority": null,
+  "supersedes": null
+}

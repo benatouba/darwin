@@ -576,6 +576,7 @@ def compare_with_policy(
                 requirements=requirements,
                 dataset=request[name],
                 evidence=record.get("evidence", {}),
+                authorizations=record.get("authorizations", {}),
                 prior=record.get("prior"),
                 allow_synthetic=allow_synthetic,
             )
@@ -645,19 +646,6 @@ def replay_with_policy(
     return result
 
 
-def _assessment_bundle(path: Path) -> dict:
-    """Read ``{"assessment", "evidence": {id: file}, "prior"}`` paths relative to the bundle."""
-    bundle = json.loads(path.read_text())
-    root = path.parent
-    return {
-        "assessment": (root / bundle["assessment"]).read_bytes(),
-        "evidence": {
-            key: (root / value).read_bytes() for key, value in bundle.get("evidence", {}).items()
-        },
-        "prior": (root / bundle["prior"]).read_bytes() if bundle.get("prior") else None,
-    }
-
-
 def main(argv: list[str] | None = None) -> int:
     """Run or replay through the same interface; JSON result or structured error."""
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
@@ -676,7 +664,7 @@ def main(argv: list[str] | None = None) -> int:
         assessments = {}
         for item in args.assessment:
             name, _, bundle = item.partition("=")
-            assessments[name] = _assessment_bundle(Path(bundle))
+            assessments[name] = study_contracts.load_assessment_bundle(bundle)
         common = {
             "model_path": args.model,
             "observations_path": args.observations,
@@ -695,6 +683,11 @@ def main(argv: list[str] | None = None) -> int:
             )
     except ComparisonError as error:
         print(json.dumps(error.as_dict()), file=sys.stderr)
+        return 2
+    except StudyContractError as error:
+        print(
+            json.dumps({"code": error.code, "message": str(error), "details": {}}), file=sys.stderr
+        )
         return 2
     except TimeValidationError as error:
         print(

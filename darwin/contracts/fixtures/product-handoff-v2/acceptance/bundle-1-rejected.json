@@ -1,0 +1,19 @@
+{
+  "assessment": "assessment-1-rejected.json",
+  "authorizations": [
+    {
+      "id": "synthetic:reviewer-authorization",
+      "path": "authorizations/reviewer.json",
+      "version": "1"
+    }
+  ],
+  "evidence": [
+    {
+      "id": "darwin-evidence:c4b639c9405124cdcebc170780410806b09769a7a1cd6ca8cb90810716ba17fe",
+      "path": "evidence/a53869e74a09b4b67bc973a9033791009ffbaa4ed2ab58ab06108406e9f74ea8.json",
+      "version": "1"
+    }
+  ],
+  "prior": null,
+  "requirements": "requirements.json"
+}

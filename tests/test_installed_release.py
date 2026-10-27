@@ -106,10 +106,15 @@ for name in {FORBIDDEN_IMPORTS!r}:
     assert name not in sys.modules, name
 from importlib.resources import files
 from darwin.handoff import validate_handoff
-fixtures = files("darwin").joinpath("contracts", "fixtures", "product-handoff-v2")
+from darwin.study_contracts import load_assessment_bundle
+fixtures = Path(str(files("darwin").joinpath("contracts", "fixtures", "product-handoff-v2")))
 validate_handoff(
-    fixtures.joinpath("handoff-assessed.json").read_bytes(),
-    artifact_root=Path(str(fixtures.joinpath("artifacts"))),
+    (fixtures / "handoff-assessed.json").read_bytes(),
+    artifact_root=fixtures / "artifacts",
+    assessments={{"synthetic:prcp-slice": [
+        load_assessment_bundle(fixtures / "acceptance" / name)
+        for name in ("bundle-1-rejected.json", "bundle-2-accepted.json")
+    ]}},
     allow_synthetic=True,
 )
 from darwin.operations import execute, inventory, make_recipe

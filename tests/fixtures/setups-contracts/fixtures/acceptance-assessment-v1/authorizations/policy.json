@@ -1,0 +1,8 @@
+{
+  "synthetic": true,
+  "authority": {
+    "kind": "policy",
+    "id": "synthetic:policy"
+  },
+  "note": "Synthetic authorization artifact; not a real reviewer or policy decision"
+}

@@ -27,9 +27,16 @@ def _kwargs(case):
     return {
         "requirements": (CASES / case["requirements"]).read_bytes(),
         "dataset": case["dataset"],
-        "evidence": {key: (CASES / path).read_bytes() for key, path in case["evidence"].items()},
-        "prior": (CASES / case["prior"]).read_bytes() if case["prior"] else None,
-        "allow_synthetic": case["test_mode"],
+        "evidence": {
+            (entry["id"], entry["version"]): (CASES / entry["path"]).read_bytes()
+            for entry in case["evidence"]
+        },
+        "authorizations": {
+            (entry["id"], entry["version"]): (CASES / entry["path"]).read_bytes()
+            for entry in case.get("authorizations", [])
+        },
+        "prior": (CASES / case["prior"]).read_bytes() if case.get("prior") else None,
+        "allow_synthetic": case.get("test_mode", False),
     }
 
 
