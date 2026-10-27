@@ -1,7 +1,7 @@
 {
   "check": "synthetic.test-only",
   "contract": "darwin.assessment-evidence/1",
-  "criterion": "synthetic:criterion-b",
+  "criterion": "synthetic:criterion-a",
   "dataset": {
     "id": "synthetic:prcp-slice",
     "sha256": "efebedd1b0fb36bdbd35d1a0f94b585b99e5b4c8fa0adf4d739183ccd372e90f",
@@ -11,7 +11,7 @@
     "synthetic": true
   },
   "evidence_type": "synthetic:test-receipt",
-  "id": "darwin-evidence:243c8253b42887191cf1c103b7a75ac6bc55e718492d7dfb97d4a6ea74d76c03",
+  "id": "darwin-evidence:caa1c2dc338e5e4f5d7da273f765e689ed7d58518b69b1d8ecdb921ce266676f",
   "outcome": "pass",
   "parameters": {},
   "requirements": {
@@ -20,7 +20,7 @@
     "sha256": "ebd74747847471fa3997aad65621299194c9b8c2092c35adb96a4c8aae0dab50"
   },
   "software": {
-    "check_implementation_sha256": "3528b8f310bf25aeaa4940296e2aa3200a63c7988b40634601de2744490ba97d",
+    "check_implementation_sha256": "be6bb9ebf6a75ba2a8afa5ac0f05fa3decb4b577f724920480f82dbb33772b15",
     "darwin": "1.2.0"
   },
   "synthetic": true

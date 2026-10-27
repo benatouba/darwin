@@ -24,7 +24,7 @@
             "revision": "1",
             "sha256": "ebd74747847471fa3997aad65621299194c9b8c2092c35adb96a4c8aae0dab50"
           },
-          "sha256": "74c7b6ec82b4ecb832b3bd69f6b1dff8c263f1734f8f91bde771171b12b82a73",
+          "sha256": "63d95c9ef861748916928fffdcabf46e3502b41847c697371c8f931a6954214f",
           "status": "rejected",
           "supersedes": null
         },
@@ -45,11 +45,11 @@
             "revision": "1",
             "sha256": "ebd74747847471fa3997aad65621299194c9b8c2092c35adb96a4c8aae0dab50"
           },
-          "sha256": "75cfa634e6e7f06f22d50327afe29ce7f98b0e73df2c036a35446a3118562ec9",
+          "sha256": "3e044f0b87b9728462b58af5ad86dac89cb19b557689b2bf71db58618bc95655",
           "status": "accepted",
           "supersedes": {
             "id": "synthetic:prcp-slice-assessment-1",
-            "sha256": "74c7b6ec82b4ecb832b3bd69f6b1dff8c263f1734f8f91bde771171b12b82a73"
+            "sha256": "63d95c9ef861748916928fffdcabf46e3502b41847c697371c8f931a6954214f"
           }
         }
       ],
@@ -104,7 +104,7 @@
       "recipe": {
         "id": "release-manifest:synthetic-handoff-v2",
         "sha256": "ddfcebe4971f3b2f2295e0101e8995259a4e786252e4a06f944f6115a914710b",
-        "version": "ddfcebe4971f3b2f2295e0101e8995259a4e786252e4a06f944f6115a914710b"
+        "version": "synthetic1"
       },
       "scientific_status": "accepted",
       "sources": [
@@ -165,7 +165,7 @@
       "recipe": {
         "id": "release-manifest:synthetic-handoff-v2",
         "sha256": "ddfcebe4971f3b2f2295e0101e8995259a4e786252e4a06f944f6115a914710b",
-        "version": "ddfcebe4971f3b2f2295e0101e8995259a4e786252e4a06f944f6115a914710b"
+        "version": "synthetic1"
       },
       "scientific_status": "unassessed",
       "sources": [

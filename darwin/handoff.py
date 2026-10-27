@@ -11,7 +11,8 @@ product binds:
   sha256 of the canonical JSON of ``artifacts``. Acceptance records bind this
   identity, so they never transfer to another version or artifact set;
 * ``sources`` and ``recipe``: the reviewed release manifest's pinned sources
-  and its exact revision;
+  and the manifest itself (release label, sha256 of its exact bytes); every
+  artifact's identity record may only name sources the manifest pins;
 * ``execution_completeness`` (``complete``/``partial``, or ``null`` when not
   reported) and its ``execution_evidence`` identity;
 * ``scientific_status`` (``accepted``/``rejected``/``unassessed``) and every
@@ -57,16 +58,36 @@ class HandoffError(ValueError):
         self.code = code
 
 
-def artifact_entry(path: str | Path) -> dict:
-    """Re-verify one published artifact and return its handoff entry."""
-    path = Path(path)
+def _verified_record(path: Path) -> dict:
     if not identity_path(path).exists():
         raise HandoffError("unbound_artifact", f"{path.name} has no identity record")
     try:
-        record = verify_artifact(path)
+        return verify_artifact(path)
     except ArtifactIntegrityError as error:
         raise HandoffError("artifact_mismatch", str(error)) from error
-    artifact = record["artifact"]
+
+
+def _bound_entry(path: str | Path, sources: Sequence[Mapping]) -> dict:
+    """Artifact entry whose identity record names only these pinned sources."""
+    path = Path(path)
+    pinned = {source["sha256"] for source in sources}
+    foreign = [
+        source["id"]
+        for source in _verified_record(path)["provenance"]["sources"]
+        if source["sha256"] not in pinned
+    ]
+    if foreign:
+        raise HandoffError(
+            "source_mismatch",
+            f"{path.name} was built from sources the manifest does not pin: {foreign}",
+        )
+    return artifact_entry(path)
+
+
+def artifact_entry(path: str | Path) -> dict:
+    """Re-verify one published artifact and return its handoff entry."""
+    path = Path(path)
+    artifact = _verified_record(path)["artifact"]
     return {
         "name": artifact["name"],
         "kind": artifact["kind"],
@@ -153,9 +174,11 @@ def prepare_handoff(  # noqa: PLR0913
     if unknown:
         raise HandoffError("unknown_product", f"not in the manifest: {sorted(unknown)}")
     sources = [{"id": entry.path, "sha256": entry.sha256} for entry in manifest.sources]
+    # The reviewed release manifest is the products' recipe: its release label
+    # and the sha256 of its exact bytes.
     recipe = {
         "id": f"release-manifest:{manifest.name}",
-        "version": manifest.revision,
+        "version": manifest.release,
         "sha256": manifest.revision,
     }
     products = []
@@ -166,7 +189,7 @@ def prepare_handoff(  # noqa: PLR0913
             raise HandoffError(
                 "missing_artifacts", f"{candidate.product_id} names no exact artifacts"
             )
-        entries = [artifact_entry(path) for path in paths]
+        entries = [_bound_entry(path, sources) for path in paths]
         dataset = dataset_identity(candidate.product_id, candidate.version, entries)
         references = _acceptance_references(
             dataset, assessments.get(candidate.product_id, ()), allow_synthetic=allow_synthetic

@@ -58,7 +58,7 @@
       "recipe": {
         "id": "release-manifest:synthetic-handoff-v2",
         "sha256": "ddfcebe4971f3b2f2295e0101e8995259a4e786252e4a06f944f6115a914710b",
-        "version": "ddfcebe4971f3b2f2295e0101e8995259a4e786252e4a06f944f6115a914710b"
+        "version": "synthetic1"
       },
       "scientific_status": "unassessed",
       "sources": [
@@ -119,7 +119,7 @@
       "recipe": {
         "id": "release-manifest:synthetic-handoff-v2",
         "sha256": "ddfcebe4971f3b2f2295e0101e8995259a4e786252e4a06f944f6115a914710b",
-        "version": "ddfcebe4971f3b2f2295e0101e8995259a4e786252e4a06f944f6115a914710b"
+        "version": "synthetic1"
       },
       "scientific_status": "unassessed",
       "sources": [

@@ -6,6 +6,7 @@ scientific status and acceptance references. Preparation runs without any
 catalogue: it never publishes, moves a current pointer or grants access.
 """
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -27,11 +28,16 @@ SMOKE = Path(__file__).resolve().parents[1] / "darwin/publisher/manifests/smoke-
 STAMP = "2026-10-27T00:00:00Z"
 
 
-def _artifact(root: Path, name: str, text: str) -> Path:
+SMOKE_SOURCES = [
+    {"id": entry.path, "sha256": entry.sha256} for entry in load_manifest(SMOKE).sources
+]
+
+
+def _artifact(root: Path, name: str, text: str, sources=None) -> Path:
     path = root / name
     provenance = {
         "builder": "tests.test_handoff",
-        "sources": [{"id": "fixture", "sha256": "0" * 64}],
+        "sources": SMOKE_SOURCES[:1] if sources is None else sources,
     }
     with staged_artifact(path, provenance=provenance) as staged:
         staged.write_text(text)
@@ -75,11 +81,7 @@ def test_preparation_binds_exact_artifacts_sources_and_recipe(tmp_path, smoke_ar
     assert landmask["sources"] == [
         {"id": entry.path, "sha256": entry.sha256} for entry in manifest.sources
     ]
-    assert landmask["recipe"] == {
-        "id": "release-manifest:smoke-jan2020-prcp",
-        "version": manifest.revision,
-        "sha256": manifest.revision,
-    }
+    assert landmask["recipe"]["sha256"] == manifest.revision
     assert landmask["dataset"]["id"] == "GAR_d02km_static_landmask"
     assert landmask["dataset"]["version"] == landmask["version"]
     handoff.validate_handoff(
@@ -330,3 +332,26 @@ def test_unverified_reading_still_refuses_an_inconsistent_chain(tmp_path, smoke_
             json.dumps(document).encode(), verify_acceptance=False, allow_synthetic=True
         )
     assert caught.value.code == "broken_acceptance_chain"
+
+
+def test_artifacts_built_from_sources_outside_the_manifest_are_refused(tmp_path, smoke_artifacts):
+    foreign = _artifact(
+        tmp_path / "foreign", "GAR_d02km_static_landmask.bin", "other",
+        sources=[{"id": "other-release", "sha256": "e" * 64}],
+    )
+    smoke_artifacts["GAR_d02km_static_landmask"] = [foreign]
+    with pytest.raises(handoff.HandoffError) as caught:
+        _prepare(tmp_path, smoke_artifacts)
+    assert caught.value.code == "source_mismatch"
+
+
+def test_the_recipe_is_the_exact_release_manifest(tmp_path, smoke_artifacts):
+    manifest = load_manifest(SMOKE)
+    document = _prepare(tmp_path, smoke_artifacts)
+    assert {json.dumps(p["recipe"]) for p in document["products"]} == {
+        json.dumps({
+            "id": "release-manifest:smoke-jan2020-prcp",
+            "version": manifest.release,
+            "sha256": hashlib.sha256(SMOKE.read_bytes()).hexdigest(),
+        })
+    }

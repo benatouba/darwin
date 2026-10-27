@@ -34,8 +34,11 @@ Each product in a handoff:
 - **`dataset`.** `{id: product_id, version, sha256}`. The `sha256` is the sha256
   of the compact, key-sorted JSON of `artifacts`. Acceptance records bind this
   exact identity, so they can't transfer to another version or to changed bytes.
-- **`sources` and `recipe`.** The manifest's pinned sources and the exact
-  release-manifest revision.
+- **`sources` and `recipe`.** The manifest's pinned sources and the release
+  manifest as the recipe (`version` is its release label, `sha256` the sha256
+  of its exact bytes). Every artifact's identity record may only name sources
+  whose sha256 the manifest pins, otherwise preparation fails with
+  `source_mismatch`.
 - **`scientific_status` and `acceptance`.** The full validated assessment
   history, oldest first. Each record supersedes the one before it. The status
   is the status of the latest record, or `unassessed` when there is none.
