@@ -42,14 +42,18 @@ def build_temperature_store(source: str | Path, out_dir: str | Path) -> Path:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     path = out_dir / STORE_NAME
-    group = zarr.open_group(str(path), mode="w")
-    group.create_array("t2", data=values, chunks=values.shape)
-    group.create_array("x", data=xs)
-    group.create_array("y", data=ys)
-    group.create_array("time", data=time)
-    group.attrs["time_units"] = time_units
-    group.attrs["crs"] = crs
-    group["t2"].attrs["units"] = "K"
+    from darwin.publisher.immutable import staged_artifact
+
+    with staged_artifact(path) as staged:
+        group = zarr.open_group(str(staged), mode="w-")
+        group.create_array("t2", data=values, chunks=values.shape)
+        group.create_array("x", data=xs)
+        group.create_array("y", data=ys)
+        group.create_array("time", data=time)
+        group.attrs["time_units"] = time_units
+        group.attrs["crs"] = crs
+        group.attrs["source_sha256"] = SOURCE_SHA256
+        group["t2"].attrs["units"] = "K"
     return path
 
 

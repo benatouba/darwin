@@ -301,7 +301,7 @@ wheels = [
 
 [[package]]
 name = "darwin"
-version = "1.1.0"
+version = "1.2.0"
 source = { editable = "." }
 default-groups = ["dev", "test"]
 dependencies = [
@@ -329,6 +329,7 @@ dependencies = [
     { name = "prettyprint" },
     { name = "pyproj" },
     { name = "pyqt6" },
+    { name = "pyyaml" },
     { name = "rasterio" },
     { name = "rioxarray" },
     { name = "salem" },
@@ -379,6 +380,7 @@ requires-dist = [
     { name = "prettyprint", specifier = ">=0.1.5" },
     { name = "pyproj", specifier = ">=3.8.0" },
     { name = "pyqt6", specifier = ">=6.11.0" },
+    { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "rasterio", specifier = ">=1.5.2" },
     { name = "rioxarray", specifier = ">=0.23.0" },
     { name = "salem", specifier = ">=0.3.11" },

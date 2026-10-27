@@ -13,6 +13,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from darwin.publisher.immutable import staged_artifact
+
 SLICE_SOURCE = "GAR_d02km_m_2d_prcp_2020.nc"
 MASK_SOURCE = "GAR_d02km_static_landmask.nc"
 SLICE_STORE = "GAR_d02km_m_2d_prcp_2020-01.zarr"
@@ -44,13 +46,14 @@ def build_smoke_analysis_stores(repo_root: str | Path, out_dir: str | Path) -> d
     finally:
         source.close()
     slice_path = out_dir / SLICE_STORE
-    group = zarr.open_group(str(slice_path), mode="w")
-    group.create_array("prcp", data=np.asarray(prcp), chunks=(1,) + prcp.shape[1:])
-    group.create_array("x", data=np.asarray(xs))
-    group.create_array("y", data=np.asarray(ys))
-    group.create_array("time", data=np.asarray(time_values, dtype=np.int64))
-    group.attrs["time_units"] = time_units
-    group.attrs["crs"] = crs
+    with staged_artifact(slice_path) as staged:
+        group = zarr.open_group(str(staged), mode="w-")
+        group.create_array("prcp", data=np.asarray(prcp), chunks=(1,) + prcp.shape[1:])
+        group.create_array("x", data=np.asarray(xs))
+        group.create_array("y", data=np.asarray(ys))
+        group.create_array("time", data=np.asarray(time_values, dtype=np.int64))
+        group.attrs["time_units"] = time_units
+        group.attrs["crs"] = crs
 
     mask_source = nc.Dataset(str(repo_root / MASK_SOURCE))
     try:
@@ -59,10 +62,11 @@ def build_smoke_analysis_stores(repo_root: str | Path, out_dir: str | Path) -> d
     finally:
         mask_source.close()
     mask_path = out_dir / MASK_STORE
-    mask_group = zarr.open_group(str(mask_path), mode="w")
-    mask_group.create_array("landmask", data=np.asarray(landmask), chunks=landmask.shape)
-    mask_group.create_array("x", data=np.asarray(xs))
-    mask_group.create_array("y", data=np.asarray(ys))
-    mask_group.attrs["crs"] = mask_crs
+    with staged_artifact(mask_path) as staged:
+        mask_group = zarr.open_group(str(staged), mode="w-")
+        mask_group.create_array("landmask", data=np.asarray(landmask), chunks=landmask.shape)
+        mask_group.create_array("x", data=np.asarray(xs))
+        mask_group.create_array("y", data=np.asarray(ys))
+        mask_group.attrs["crs"] = mask_crs
 
     return {"slice": slice_path, "mask": mask_path}

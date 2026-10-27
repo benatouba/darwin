@@ -16,6 +16,8 @@ from itertools import pairwise
 from pathlib import Path
 from xml.etree import ElementTree
 
+from darwin.publisher.immutable import staged_artifact
+
 from darwin.publisher.comparison import (
     COARSER_COVERAGE_REQUIRED,
     HOURLY_READINGS_REQUIRED,
@@ -291,7 +293,75 @@ def build_station_series(
                 daily_valid[day] = True
 
     out_dir.mkdir(parents=True, exist_ok=True)
-    gar_group = zarr.open_group(str(gar_store_path), mode="w-")
+    with staged_artifact(gar_store_path) as staged:
+        _write_model_store(
+            staged, monthly, store_units, epoch_hours, model_bounds,
+            {
+                "series_schema_version": SCHEMA_VERSION,
+                "cadences": ["monthly"],
+                "cadence": "monthly",
+                "calendar": calendar,
+                "timezone": "UTC",
+                "aggregation_timezone": "UTC",
+                "source_coverage": {
+                    "start": model_times[0].isoformat(),
+                    "end": model_bounds[-1][1].isoformat(),
+                },
+                "bounds_origin": "source" if source_bounds else "validated-calendar-month-cadence",
+                "synthetic": False,
+                "scientific_status": "unassessed",
+                "method": "nearest",
+                "variable": gar_variable,
+                "crs": crs,
+                "grid_y": grid_y,
+                "grid_x": grid_x,
+                "cell_lon": float(lon[grid_y, grid_x]),
+                "cell_lat": float(lat[grid_y, grid_x]),
+                "station_lon": station_lon,
+                "station_lat": station_lat,
+                "source_gar": gar_source,
+                "source_gar_sha256": gar_sha256,
+            },
+        )
+    with staged_artifact(obs_store_path) as staged:
+        _write_observation_store(
+            staged, hourly, hourly_valid, daily, daily_valid, obs_units,
+            hourly_times, daily_times,
+            {
+                "units": obs_units,
+                "year": obs_year,
+                "month": obs_month,
+                "source_csv": obs_csv,
+                "source_sha256": obs_sha256,
+                "series_schema_version": SCHEMA_VERSION,
+                "cadences": ["hourly", "daily"],
+                "calendar": "proleptic_gregorian",
+                "timezone": "UTC",
+                "aggregation_timezone": aggregation_timezone,
+                "source_timezone": obs_timezone or "explicit-CSV-offsets",
+                "source_coverage": {
+                    "first_timestamp": readings[0][0].astimezone(UTC).isoformat(),
+                    "last_timestamp": readings[-1][0].astimezone(UTC).isoformat(),
+                    "reading_count": len(readings),
+                    "selected_reading_count": len(selected),
+                },
+                "synthetic": False,
+                "scientific_status": "unassessed",
+                "aggregation": "positive-difference-tip-sum"
+                if mode == "sum" and precipitation_kind == "cumulative"
+                else "increment-sum" if mode == "sum" else "C-to-K-mean",
+                "hourly_readings_required": HOURLY_READINGS_REQUIRED if mode == "sum" else 1,
+                "daily_coverage_required": COARSER_COVERAGE_REQUIRED,
+            },
+        )
+    return {"gar_sampled": gar_store_path, "obs": obs_store_path}
+
+
+def _write_model_store(path, monthly, store_units, epoch_hours, model_bounds, metadata):
+    import numpy as np
+    import zarr
+
+    gar_group = zarr.open_group(str(path), mode="w-")
     gar_group.create_array("monthly", data=monthly, attributes={"units": store_units})
     gar_group.create_array(
         "time", data=np.asarray(epoch_hours, dtype=np.int64), attributes={"units": TIME_UNITS}
@@ -307,69 +377,21 @@ def build_station_series(
         ),
         attributes={"units": TIME_UNITS},
     )
-    gar_group.attrs.update(
-        {
-            "series_schema_version": SCHEMA_VERSION,
-            "cadences": ["monthly"],
-            "cadence": "monthly",
-            "calendar": calendar,
-            "timezone": "UTC",
-            "aggregation_timezone": "UTC",
-            "source_coverage": {
-                "start": model_times[0].isoformat(),
-                "end": model_bounds[-1][1].isoformat(),
-            },
-            "bounds_origin": "source" if source_bounds else "validated-calendar-month-cadence",
-            "synthetic": False,
-            "scientific_status": "unassessed",
-            "method": "nearest",
-            "variable": gar_variable,
-            "crs": crs,
-            "grid_y": grid_y,
-            "grid_x": grid_x,
-            "cell_lon": float(lon[grid_y, grid_x]),
-            "cell_lat": float(lat[grid_y, grid_x]),
-            "station_lon": station_lon,
-            "station_lat": station_lat,
-            "source_gar": gar_source,
-            "source_gar_sha256": gar_sha256,
-        }
-    )
-    obs_group = zarr.open_group(str(obs_store_path), mode="w-")
+    gar_group.attrs.update(metadata)
+
+
+def _write_observation_store(
+    path, hourly, hourly_valid, daily, daily_valid, obs_units, hourly_times, daily_times, metadata,
+):
+    import numpy as np
+    import zarr
+
+    obs_group = zarr.open_group(str(path), mode="w-")
     obs_group.create_array("hourly", data=hourly, attributes={"units": obs_units})
     obs_group.create_array("hourly_valid", data=np.asarray(hourly_valid))
     obs_group.create_array("daily", data=daily, attributes={"units": obs_units})
     obs_group.create_array("daily_valid", data=np.asarray(daily_valid))
-    obs_group.attrs["units"] = obs_units
-    obs_group.attrs["year"] = obs_year
-    obs_group.attrs["month"] = obs_month
-    obs_group.attrs["source_csv"] = obs_csv
-    obs_group.attrs["source_sha256"] = obs_sha256
-    obs_group.attrs.update(
-        {
-            "series_schema_version": SCHEMA_VERSION,
-            "cadences": ["hourly", "daily"],
-            "calendar": "proleptic_gregorian",
-            "timezone": "UTC",
-            "aggregation_timezone": aggregation_timezone,
-            "source_timezone": obs_timezone or "explicit-CSV-offsets",
-            "source_coverage": {
-                "first_timestamp": readings[0][0].astimezone(UTC).isoformat(),
-                "last_timestamp": readings[-1][0].astimezone(UTC).isoformat(),
-                "reading_count": len(readings),
-                "selected_reading_count": len(selected),
-            },
-            "synthetic": False,
-            "scientific_status": "unassessed",
-            "aggregation": "positive-difference-tip-sum"
-            if mode == "sum" and precipitation_kind == "cumulative"
-            else "increment-sum"
-            if mode == "sum"
-            else "C-to-K-mean",
-            "hourly_readings_required": HOURLY_READINGS_REQUIRED if mode == "sum" else 1,
-            "daily_coverage_required": COARSER_COVERAGE_REQUIRED,
-        }
-    )
+    obs_group.attrs.update(metadata)
     for cadence, stamps in (("hourly", hourly_times), ("daily", daily_times)):
         name = f"{cadence}_time"
         obs_group.create_array(
@@ -394,5 +416,3 @@ def build_station_series(
             ),
             attributes={"units": SECOND_UNITS},
         )
-
-    return {"gar_sampled": gar_store_path, "obs": obs_store_path}

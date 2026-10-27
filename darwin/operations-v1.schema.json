@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "darwin.operations/1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "sources", "operations", "software"],
+  "properties": {
+    "contract": {"const": "darwin.operations/1"},
+    "software": {
+      "type": "object", "additionalProperties": false,
+      "required": ["darwin", "implementation_sha256", "xarray", "numpy", "netCDF4"],
+      "properties": {
+        "darwin": {"type": "string", "minLength": 1},
+        "implementation_sha256": {"$ref": "#/$defs/sha256"},
+        "xarray": {"type": "string", "minLength": 1},
+        "numpy": {"type": "string", "minLength": 1},
+        "netCDF4": {"type": "string", "minLength": 1}
+      }
+    },
+    "sources": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "sha256", "size_bytes"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "sha256": {"$ref": "#/$defs/sha256"},
+          "size_bytes": {"type": "integer", "minimum": 0}
+        }
+      }
+    },
+    "operations": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object", "additionalProperties": false,
+            "required": ["operation", "parameters"],
+            "properties": {
+              "operation": {"const": "select"},
+              "parameters": {
+                "type": "object", "additionalProperties": false,
+                "required": ["variables"],
+                "properties": {"variables": {"$ref": "#/$defs/variables"}}
+              }
+            }
+          },
+          {
+            "type": "object", "additionalProperties": false,
+            "required": ["operation", "parameters"],
+            "properties": {
+              "operation": {"enum": ["cut", "crop"]},
+              "parameters": {
+                "type": "object", "additionalProperties": false,
+                "required": ["dimension", "start", "end"],
+                "properties": {
+                  "dimension": {"type": "string", "minLength": 1},
+                  "start": {"type": ["number", "string"]},
+                  "end": {"type": ["number", "string"]}
+                }
+              }
+            }
+          },
+          {
+            "type": "object", "additionalProperties": false,
+            "required": ["operation", "parameters"],
+            "properties": {
+              "operation": {"const": "integrate"},
+              "parameters": {
+                "type": "object", "additionalProperties": false,
+                "required": ["dimension", "variables", "method"],
+                "properties": {
+                  "dimension": {"type": "string", "minLength": 1},
+                  "variables": {"$ref": "#/$defs/variables"},
+                  "method": {"const": "sum-discrete-amounts"}
+                }
+              }
+            }
+          },
+          {
+            "type": "object", "additionalProperties": false,
+            "required": ["operation", "parameters"],
+            "properties": {
+              "operation": {"const": "assemble"},
+              "parameters": {
+                "type": "object", "additionalProperties": false,
+                "required": ["dimension", "cadence_seconds"],
+                "properties": {
+                  "dimension": {"type": "string", "minLength": 1},
+                  "cadence_seconds": {"type": "number", "exclusiveMinimum": 0}
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "variables": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+  }
+}

@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, Any
 from darwin.publisher.candidate import Candidate
 from darwin.publisher.catalogue import Catalogue
 from darwin.publisher.manifest import Manifest
+from darwin.publisher.immutable import staged_artifact
 
 if TYPE_CHECKING:
     import xarray as xr
@@ -78,9 +79,8 @@ def publish_analysis_product(
     dataset.attrs["map_palette"] = style["palette"]
     dataset.attrs["map_transform"] = style["transform"]
     dataset.attrs["map_color_range"] = list(color_range)
-    dataset.to_zarr(
-        layout.analysis_uri, zarr_format=3, consolidated=True, mode="w"
-    )
+    with staged_artifact(layout.analysis_uri) as staged:
+        dataset.to_zarr(staged, zarr_format=3, consolidated=True, mode="w-")
 
     candidate = Candidate(
         candidate_id=f"{layout.product_id}@{layout.version}",
@@ -124,5 +124,6 @@ def write_download_netcdf(record: dict[str, Any], dataset: Any) -> str:
     dataset.attrs["manifest_revision"] = record["manifest_revision"]
     dataset.attrs["analysis_format"] = record["format"]
     path = record["download_uri"]
-    dataset.to_netcdf(path)
+    with staged_artifact(path) as staged:
+        dataset.to_netcdf(staged)
     return path

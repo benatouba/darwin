@@ -127,14 +127,18 @@ def build_year_store(
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     path = out_dir / f"{product_id}.zarr"
-    group = zarr.open_group(str(path), mode="w")
-    group.create_array(variable, data=values, chunks=values.shape)
-    group.create_array("x", data=xs)
-    group.create_array("y", data=ys)
-    group.create_array("time", data=np.asarray(offsets, dtype=np.int64))
-    group.attrs["time_units"] = TIME_UNITS
-    group.attrs["crs"] = crs
-    group[variable].attrs["units"] = STORE_UNITS[variable]
+    from darwin.publisher.immutable import staged_artifact
+
+    with staged_artifact(path) as staged:
+        group = zarr.open_group(str(staged), mode="w-")
+        group.create_array(variable, data=values, chunks=values.shape)
+        group.create_array("x", data=xs)
+        group.create_array("y", data=ys)
+        group.create_array("time", data=np.asarray(offsets, dtype=np.int64))
+        group.attrs["time_units"] = TIME_UNITS
+        group.attrs["crs"] = crs
+        group.attrs["source_sha256"] = expected_sha256
+        group[variable].attrs["units"] = STORE_UNITS[variable]
     return path
 
 

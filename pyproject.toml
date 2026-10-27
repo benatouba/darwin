@@ -1,6 +1,6 @@
 [project]
 name = "darwin"
-version = "1.1.0"
+version = "1.2.0"
 description = "Process and visualize measured and simulated data in the project DARWIN."
 authors = [{ name = "Benjamin Schmidt", email = "benschmidt@live.de" }]
 requires-python = ">=3.14,<3.15"
@@ -30,6 +30,7 @@ dependencies = [
     "pint>=0.26.2",
     "prettyprint>=0.1.5",
     "pyproj>=3.8.0",
+    "pyyaml>=6.0.3",
     "pyqt6>=6.11.0",
     "rasterio>=1.5.2",
     "rioxarray>=0.23.0",
