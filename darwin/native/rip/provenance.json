@@ -1,0 +1,37 @@
+{
+  "revision": "124a8336529af6397fe150e14bd436d923122cdd",
+  "release": "v1.4.2",
+  "license": "Apache-2.0",
+  "files": [
+    {
+      "url": "https://raw.githubusercontent.com/NCAR/wrf-python/124a8336529af6397fe150e14bd436d923122cdd/fortran/wrf_constants.f90",
+      "file": "wrf_constants.f90",
+      "size": 3216,
+      "sha256": "48ddf57db41a0894344091a2ee81c32cd1946e4bf5ab2346a574c352b470d81b"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/NCAR/wrf-python/124a8336529af6397fe150e14bd436d923122cdd/fortran/rip_cape.f90",
+      "file": "rip_cape.f90",
+      "size": 39301,
+      "sha256": "fa58761962ce740ca36f5950f211b7e246f953f51107ce1c5c941076f6c48fd0"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/NCAR/wrf-python/124a8336529af6397fe150e14bd436d923122cdd/fortran/wrf_user.f90",
+      "file": "wrf_user.f90",
+      "size": 29657,
+      "sha256": "42df9fe7ddcbfb4e87a25b0b2e5a343e27bdd4601cd946ebed396a1339b8930a"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/NCAR/wrf-python/124a8336529af6397fe150e14bd436d923122cdd/src/wrf/data/psadilookup.dat",
+      "file": "psadilookup.dat",
+      "size": 347079,
+      "sha256": "021b6a2de2724f3cd91050d29d3fc4ecb209688ae5a05bc3b2cfb7b09e590ee1"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/NCAR/wrf-python/124a8336529af6397fe150e14bd436d923122cdd/LICENSE",
+      "file": "LICENSE",
+      "size": 11345,
+      "sha256": "e989cf2c0d62847a2919a515d433f032cf20872e6d199033def61501333ce2c8"
+    }
+  ]
+}

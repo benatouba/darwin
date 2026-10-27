@@ -1,0 +1,127 @@
+{
+  "contract": "cjc.product-golden/1",
+  "producer": "cjc",
+  "generator": "tools/make_product_golden.py",
+  "definition_version": "gar-v2-python-1",
+  "python": "3.14.7",
+  "numpy": "2.5.4",
+  "xarray": "2026.9.0",
+  "native": {
+    "upstream": "124a8336529af6397fe150e14bd436d923122cdd",
+    "release": "v1.4.2",
+    "compiler": "GNU Fortran (GCC) 16.2.0",
+    "interface_sha256": "61e0e8993c4217e128c56ab85010eb5c7d0cef945d31243f5a4da09672cfe3e8",
+    "lookup_sha256": "021b6a2de2724f3cd91050d29d3fc4ecb209688ae5a05bc3b2cfb7b09e590ee1"
+  },
+  "cases": {
+    "derived": {
+      "input": "input.nc",
+      "call": "derive(normalize_wrf(input), variables, pressure_levels=pressure_levels)",
+      "variables": [
+        "t2",
+        "q2",
+        "psfc",
+        "pblh",
+        "hgt",
+        "u10",
+        "v10",
+        "ws10",
+        "u",
+        "v",
+        "ws",
+        "w",
+        "theta",
+        "temperature",
+        "pressure",
+        "geopotential",
+        "height_agl",
+        "qvapor",
+        "qliquid",
+        "qsolid",
+        "col_qvapor",
+        "col_qliquid",
+        "flux_int_qvapor_u_2d",
+        "flux_int_qvapor_v_2d",
+        "flux_int_qvapor_hor_2d",
+        "flux_qvapor_u_3d",
+        "prcp",
+        "prcp_c",
+        "prcp_nc",
+        "prcp_rate",
+        "prcp_fr",
+        "snowfall",
+        "graupel",
+        "hail",
+        "potevap",
+        "et",
+        "sfroff",
+        "udroff",
+        "qfx",
+        "swup",
+        "lwup",
+        "lwdown",
+        "netrad",
+        "low_cloud_fraction",
+        "t2eta",
+        "t2pbl",
+        "inversion"
+      ],
+      "pressure_levels": [
+        900.0,
+        700.0,
+        500.0
+      ],
+      "output": "derived.nc"
+    },
+    "daily": {
+      "input": "derived.nc",
+      "call": "aggregate(derived, '2024-01-01', '2024-01-02', 'D', 60)",
+      "output": "daily.nc"
+    },
+    "daily-gap": {
+      "input": "derived.nc without time index 10 (2024-01-01T11:00)",
+      "call": "aggregate(derived.drop_isel(time=[10]), '2024-01-01', '2024-01-02', 'D', 60)",
+      "output": "daily-gap.nc"
+    },
+    "native": {
+      "input": "native-input.nc",
+      "call": "derive(normalize_wrf(input), native_variables, rip_library)",
+      "variables": [
+        "mcape",
+        "mcin",
+        "lcl",
+        "lfc",
+        "slp"
+      ],
+      "output": "native-derived.nc",
+      "note": "native_library_sha256 attrs removed: build-specific identity"
+    }
+  },
+  "files": [
+    {
+      "file": "input.nc",
+      "sha256": "d806676e23c4218b51ec2ab8972a4193899900872d5efa735d8b0fbb4bd75cbc"
+    },
+    {
+      "file": "derived.nc",
+      "sha256": "9638a9d0b455ab418d04cfbdbdbecf6c1d6c02407549dacd04710b0541b46afb"
+    },
+    {
+      "file": "daily.nc",
+      "sha256": "ec41c96b8b8c93704044fe74e8ebc16df956f1d25fe62dc83a6db7966cf59d5d"
+    },
+    {
+      "file": "daily-gap.nc",
+      "sha256": "2f66ceaa6b5f9691fdeab8dd4b3bae919a2a2802c3b532949425250d987ddc31"
+    },
+    {
+      "file": "native-input.nc",
+      "sha256": "096710d6ee5ebab821f052abb88c6a5f71ce9640cd6ce7202eb4b39edb6bf5d8"
+    },
+    {
+      "file": "native-derived.nc",
+      "sha256": "a9c037c10225a1237a8f59054ea6bd8c3f3797a84dab651114b504b9c88bef3a"
+    }
+  ],
+  "scope": "synthetic software-parity reference; not real-data validation or acceptance"
+}

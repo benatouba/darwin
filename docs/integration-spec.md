@@ -59,7 +59,9 @@ transfer and credentials belong to deployment adapters. Shared paths between
 dashboard and cluster are not assumed.
 
 Current gaps include duplicated comparison calculations in the dashboard,
-scientific diagnostics still implemented in CJC, overwrite-capable stores, broad packaging dependencies and smoke series
+CJC product diagnostics/aggregation/native kernels (now migrated to
+`darwin.wrf_products`, see [wrf-products.md](wrf-products.md); CJC keeps a
+versioned compatibility path), overwrite-capable stores, broad packaging dependencies and smoke series
 that are not evidence of timestamp-aligned native-hourly comparisons. Preserve
 existing work and plan migrations separately. `CONTEXT.md`'s product-candidate
 terminology must not collapse acceptance and publication into one state.

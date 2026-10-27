@@ -2,6 +2,9 @@
 {
   packages = with pkgs; [
     vscode-json-languageserver
+    # Explicit native-diagnostic builds and tests (darwin.native_diagnostics).
+    gfortran
+    glibc.bin
   ];
 
   languages = {

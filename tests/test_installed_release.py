@@ -18,7 +18,7 @@ from packaging.requirements import Requirement
 
 ROOT = Path(__file__).resolve().parents[1]
 CJC_FIXTURES = ROOT / "tests" / "data" / "cjc-simulation-output-v2"
-RUNTIME = {"jsonschema", "netcdf4", "numpy", "pyyaml", "xarray", "zarr"}
+RUNTIME = {"jsonschema", "netcdf4", "numpy", "pandas", "pyyaml", "xarray", "zarr"}
 EXTRAS = {"research", "native", "visualization", "all"}
 # Representative packages that must never be runtime prerequisites.
 OPTIONAL = {
@@ -39,6 +39,9 @@ SUPPORTED_MODULES = (
     "darwin.publisher.analysis_stores",
     "darwin.acceptance",
     "darwin.handoff",
+    "darwin.wrf_diagnostics",
+    "darwin.wrf_products",
+    "darwin.native_diagnostics",
 )
 FORBIDDEN_IMPORTS = ("matplotlib", "salem", "cartopy", "metpy", "statsmodels", "seaborn", "cdo")
 
@@ -139,6 +142,17 @@ wrf = {{key: str(fixtures / mapping[key]) for key in artifact_ids([view])}}
 assert inspect_manifest(view, locations=wrf)["native_record_metadata"] == "checked"
 assembled = execute(make_recipe(wrf, [assemble_operation([view], ["T2"])]), wrf, "wrf-product")
 assert assembled["source_coverage"]["status"] == "complete", assembled
+from darwin.wrf_products import inventory as product_inventory
+from darwin.native_diagnostics import SOURCE, sha256
+for name, digest in product_inventory()["native"]["files"].items():
+    assert sha256(SOURCE / name) == digest, name
+assert (SOURCE / "interface.f90").is_file()
+products = subprocess.run(
+    [sys.executable, "-m", "darwin.wrf_products", "inventory"],
+    check=True, capture_output=True, text=True,
+)
+assert json.loads(products.stdout) == product_inventory()
+assert "pyproj" not in sys.modules
 print(json.dumps(report))
 """
     env = {
