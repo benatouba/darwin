@@ -1,8 +1,8 @@
-"""Smoke-release builder (T1): reviewed manifest in, published handoff out.
+"""Smoke-release builder (T1): reviewed manifest in, legacy handoff out.
 
-Loads one reviewed release manifest, registers one Product candidate per
-requested product, publishes every candidate, and writes the handoff
-JSON the dashboard catalogue ingests: product/version identifiers plus
+Loads one reviewed release manifest, prepares one Product candidate per
+requested product (nothing is published) and writes the legacy handoff
+JSON the dashboard catalogue imports: product/version identifiers plus
 full per-product provenance (manifest revision, creator, creation time,
 citation, normal period/method where applicable, the
 model/observation pairing for Comparison variable specifications) and
@@ -20,10 +20,9 @@ from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
 
-from darwin.publisher.candidate import run_manifest
-from darwin.publisher.catalogue import Catalogue
+from darwin.publisher.candidate import Candidate, plan_candidates
 from darwin.publisher.immutable import staged_artifact
-from darwin.publisher.manifest import load_manifest
+from darwin.publisher.manifest import Manifest, ProductSpec, load_manifest
 
 CREATOR = "darwin.publisher"
 
@@ -33,6 +32,47 @@ def _utc_now() -> str:
     return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def legacy_product_entry(
+    spec: ProductSpec,
+    candidate: Candidate,
+    manifest: Manifest,
+    *,
+    creator: str,
+    created_at: str,
+) -> dict:
+    """Return the legacy (unversioned) handoff fields of one product candidate.
+
+    ``darwin.product-handoff/2`` products carry every one of these fields
+    except ``status``, so importers of the legacy format keep working.
+    """
+    return {
+        "product_id": candidate.product_id,
+        "version": candidate.version,
+        "candidate_id": candidate.candidate_id,
+        "kind": spec.kind,
+        "manifest_revision": manifest.revision,
+        "creator": creator,
+        "created_at": created_at,
+        "citation": spec.citation,
+        "normal_period": spec.normal_period,
+        "method": spec.method,
+        "station_id": spec.station_id,
+        "model_product": spec.model_product,
+        "model_variable": spec.model_variable,
+        "observation_product": spec.observation_product,
+        "observation_field": spec.observation_field,
+        "variable": spec.variable,
+        "domain": spec.domain,
+        "format": spec.format,
+        "units": spec.units,
+        "palette": spec.palette,
+        "transform": spec.transform,
+        "color_range": list(spec.color_range),
+        "uris": dict(spec.uris),
+        "aggregations": [asdict(agg) for agg in spec.aggregations],
+    }
+
+
 def build_smoke_release(
     manifest_path: str | Path,
     out_path: str | Path,
@@ -40,50 +80,32 @@ def build_smoke_release(
     creator: str = CREATOR,
     created_at: str | None = None,
 ) -> dict:
-    """Build the smoke release and write its handoff JSON.
+    """Build the smoke release and write its legacy (unversioned) handoff JSON.
 
-    Every requested product is registered as an immutable candidate and
-    published, so the handoff only ever contains ``published`` versions
-    bound to the exact reviewed manifest revision.
+    Migration (darwin#18): this builder used to publish every candidate in a
+    throwaway in-memory catalogue and label each product ``published``. That
+    was never a dashboard publication or scientific acceptance. It now only
+    prepares candidates; each product carries ``status: "candidate"`` (a
+    dashboard publication decision is still required) and no acceptance
+    claim. Prefer :func:`darwin.handoff.prepare_handoff`
+    (``darwin.product-handoff/2``), which binds exact artifacts.
     """
     stamp = created_at or _utc_now()
     manifest = load_manifest(manifest_path)
-    catalogue = Catalogue()
-    run_manifest(manifest, catalogue)
     specs = {spec.product_id: spec for spec in manifest.products}
-    products = []
-    for candidate_id in catalogue.candidate_ids():
-        published = catalogue.publish(candidate_id)
-        spec = specs[published.product_id]
-        products.append(
-            {
-                "product_id": published.product_id,
-                "version": published.version,
-                "candidate_id": published.candidate_id,
-                "kind": spec.kind,
-                "status": "published",
-                "manifest_revision": manifest.revision,
-                "creator": creator,
-                "created_at": stamp,
-                "citation": spec.citation,
-                "normal_period": spec.normal_period,
-                "method": spec.method,
-                "station_id": spec.station_id,
-                "model_product": spec.model_product,
-                "model_variable": spec.model_variable,
-                "observation_product": spec.observation_product,
-                "observation_field": spec.observation_field,
-                "variable": spec.variable,
-                "domain": spec.domain,
-                "format": spec.format,
-                "units": spec.units,
-                "palette": spec.palette,
-                "transform": spec.transform,
-                "color_range": list(spec.color_range),
-                "uris": dict(spec.uris),
-                "aggregations": [asdict(agg) for agg in spec.aggregations],
-            }
-        )
+    products = [
+        {
+            **legacy_product_entry(
+                specs[candidate.product_id],
+                candidate,
+                manifest,
+                creator=creator,
+                created_at=stamp,
+            ),
+            "status": "candidate",
+        }
+        for candidate in plan_candidates(manifest)
+    ]
     handoff = {
         "release": manifest.release,
         "manifest": manifest.name,
@@ -114,4 +136,4 @@ if __name__ == "__main__":
     parser.add_argument("handoff", help="handoff JSON path to write")
     args = parser.parse_args()
     result = build_smoke_release(args.manifest, args.handoff)
-    print(f"release {result['release']}: {len(result['products'])} products published")
+    print(f"release {result['release']}: {len(result['products'])} candidates prepared")

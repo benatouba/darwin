@@ -50,7 +50,9 @@ historical research, mapping and plotting modules need extras
 `tests/test_installed_release.py` builds the wheel and installs it, runtime
 dependencies only, into a fresh environment from an empty directory (offline,
 from the uv cache), then runs the Python interface and CLI there.
-See [`docs/operations.md`](docs/operations.md) for the supported operation inventory.
+See [`docs/operations.md`](docs/operations.md) for the supported operation inventory
+and [`docs/product-handoff.md`](docs/product-handoff.md) for the product handoff and
+portable acceptance contracts.
 
 ## Tests on a fresh checkout
 

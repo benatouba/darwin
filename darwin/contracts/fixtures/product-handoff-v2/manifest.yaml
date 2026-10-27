@@ -1,0 +1,35 @@
+# Synthetic darwin.product-handoff/2 fixture manifest: not a reviewed release.
+name: synthetic-handoff-v2
+release: synthetic1
+sources:
+  - path: synthetic:source
+    sha256: c9e73d7c056ce843a739e08d7ff04e357b7eef67536467c5eb1ebf17f245b0d0
+products:
+  - product_id: "synthetic:prcp-slice"
+    kind: slice
+    citation: "Synthetic fixture; not a scientific product"
+    variable: prcp
+    domain: d02km
+    format: zarr
+    units: mm h-1
+    palette: viridis
+    transform: linear
+    color_range: [0.0, 2.0]
+    uris:
+      analysis: "synthetic:prcp-slice.zarr"
+    aggregations:
+      - method: sum
+        interval: daily
+        missing_data: require-complete
+  - product_id: "synthetic:landmask"
+    kind: reference
+    citation: "Synthetic fixture; not a scientific product"
+    variable: landmask
+    domain: d02km
+    format: zarr
+    units: "1"
+    palette: greys
+    transform: linear
+    color_range: [0.0, 1.0]
+    uris:
+      analysis: "synthetic:landmask.zarr"

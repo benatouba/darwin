@@ -30,6 +30,37 @@ class Candidate:
     status: str = "candidate"
 
 
+def _candidate(manifest: Manifest, product_id: str, version: str) -> Candidate:
+    digest = hashlib.sha256(
+        f"{manifest.revision}|{product_id}|{version}".encode("utf-8")
+    ).hexdigest()[:16]
+    return Candidate(
+        candidate_id=f"{product_id}@{version}#{digest}",
+        product_id=product_id,
+        version=version,
+        manifest_revision=manifest.revision,
+        source_entries=tuple((s.path, s.sha256) for s in manifest.sources),
+    )
+
+
+def plan_candidates(manifest: Manifest) -> list[Candidate]:
+    """Return the immutable candidates a manifest requests, without any catalogue.
+
+    Labels and ids equal those ``run_manifest`` assigns in an empty catalogue.
+    Nothing is registered, published or pointed at: publication belongs to the
+    dashboard, and preparation must work without it.
+    """
+    seen: dict[str, int] = {}
+    candidates = []
+    for spec in manifest.products:
+        seen[spec.product_id] = seen.get(spec.product_id, 0) + 1
+        version = spec.version or f"{manifest.release}.{seen[spec.product_id]}"
+        candidates.append(_candidate(manifest, spec.product_id, version))
+    if not candidates:
+        raise ValueError("manifest requests no products")
+    return candidates
+
+
 def run_manifest(manifest: Manifest, catalogue: Catalogue) -> Candidate:
     """Register one candidate per requested product, without scanning sources."""
     registered: Candidate | None = None
@@ -37,16 +68,7 @@ def run_manifest(manifest: Manifest, catalogue: Catalogue) -> Candidate:
         version = spec.version or catalogue.next_version(
             spec.product_id, manifest.release
         )
-        digest = hashlib.sha256(
-            f"{manifest.revision}|{spec.product_id}|{version}".encode("utf-8")
-        ).hexdigest()[:16]
-        candidate = Candidate(
-            candidate_id=f"{spec.product_id}@{version}#{digest}",
-            product_id=spec.product_id,
-            version=version,
-            manifest_revision=manifest.revision,
-            source_entries=tuple((s.path, s.sha256) for s in manifest.sources),
-        )
+        candidate = _candidate(manifest, spec.product_id, version)
         catalogue.register(candidate)
         if registered is None:
             registered = candidate

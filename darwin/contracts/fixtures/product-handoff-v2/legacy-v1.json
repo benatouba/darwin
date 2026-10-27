@@ -1,0 +1,79 @@
+{
+  "release": "synthetic1",
+  "manifest": "synthetic-handoff-v2",
+  "manifest_revision": "ddfcebe4971f3b2f2295e0101e8995259a4e786252e4a06f944f6115a914710b",
+  "creator": "synthetic:darwin-fixture-builder",
+  "created_at": "2026-10-27T00:00:00Z",
+  "products": [
+    {
+      "product_id": "synthetic:prcp-slice",
+      "version": "synthetic1.1",
+      "candidate_id": "synthetic:prcp-slice@synthetic1.1#2bdf44143c47d365",
+      "kind": "slice",
+      "manifest_revision": "ddfcebe4971f3b2f2295e0101e8995259a4e786252e4a06f944f6115a914710b",
+      "creator": "synthetic:darwin-fixture-builder",
+      "created_at": "2026-10-27T00:00:00Z",
+      "citation": "Synthetic fixture; not a scientific product",
+      "normal_period": "",
+      "method": "",
+      "station_id": "",
+      "model_product": "",
+      "model_variable": "",
+      "observation_product": "",
+      "observation_field": "",
+      "variable": "prcp",
+      "domain": "d02km",
+      "format": "zarr",
+      "units": "mm h-1",
+      "palette": "viridis",
+      "transform": "linear",
+      "color_range": [
+        0.0,
+        2.0
+      ],
+      "uris": {
+        "analysis": "synthetic:prcp-slice.zarr"
+      },
+      "aggregations": [
+        {
+          "method": "sum",
+          "interval": "daily",
+          "missing_data": "require-complete"
+        }
+      ],
+      "status": "candidate"
+    },
+    {
+      "product_id": "synthetic:landmask",
+      "version": "synthetic1.1",
+      "candidate_id": "synthetic:landmask@synthetic1.1#e1b909a429373538",
+      "kind": "reference",
+      "manifest_revision": "ddfcebe4971f3b2f2295e0101e8995259a4e786252e4a06f944f6115a914710b",
+      "creator": "synthetic:darwin-fixture-builder",
+      "created_at": "2026-10-27T00:00:00Z",
+      "citation": "Synthetic fixture; not a scientific product",
+      "normal_period": "",
+      "method": "",
+      "station_id": "",
+      "model_product": "",
+      "model_variable": "",
+      "observation_product": "",
+      "observation_field": "",
+      "variable": "landmask",
+      "domain": "d02km",
+      "format": "zarr",
+      "units": "1",
+      "palette": "greys",
+      "transform": "linear",
+      "color_range": [
+        0.0,
+        1.0
+      ],
+      "uris": {
+        "analysis": "synthetic:landmask.zarr"
+      },
+      "aggregations": [],
+      "status": "candidate"
+    }
+  ]
+}

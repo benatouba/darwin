@@ -59,11 +59,12 @@ transfer and credentials belong to deployment adapters. Shared paths between
 dashboard and cluster are not assumed.
 
 Current gaps include duplicated comparison calculations in the dashboard,
-scientific diagnostics still implemented in CJC, publisher approval/publication
-overlap, overwrite-capable stores, broad packaging dependencies and smoke series
+scientific diagnostics still implemented in CJC, overwrite-capable stores, broad packaging dependencies and smoke series
 that are not evidence of timestamp-aligned native-hourly comparisons. Preserve
 existing work and plan migrations separately. `CONTEXT.md`'s product-candidate
 terminology must not collapse acceptance and publication into one state.
+The handoff, evidence and acceptance contracts and the migration of the former
+smoke auto-publication are specified in [`product-handoff.md`](product-handoff.md).
 
 Future acceptance requires Python/CLI equivalence tests, dashboard consumption of
 the same operations, producer/consumer schema fixtures, reproducible exact-version

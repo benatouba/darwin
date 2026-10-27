@@ -1,7 +1,15 @@
-"""In-memory catalogue enforcing the product lifecycle.
+"""Legacy in-memory catalogue model of the product lifecycle.
 
 candidate -> published -> superseded, plus failed. Publishing moves the
-current-version pointer; older immutable versions stay addressable.
+current-version pointer of this in-memory object only; older immutable
+versions stay addressable.
+
+Migration (darwin#18): this is not a publication authority and records no
+scientific acceptance. The dashboard catalogue owns publication, access and
+current-version pointers; Darwin builders only prepare candidates
+(``darwin.publisher.candidate.plan_candidates``) and handoffs
+(``darwin.handoff``). Remaining uses are registries for storage builders and
+tests. Status values here never imply ``accepted``.
 """
 
 from __future__ import annotations

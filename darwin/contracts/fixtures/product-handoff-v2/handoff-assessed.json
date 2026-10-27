@@ -1,0 +1,189 @@
+{
+  "contract": "darwin.product-handoff/2",
+  "created_at": "2026-10-27T00:00:00Z",
+  "creator": "synthetic:darwin-fixture-builder",
+  "manifest": "synthetic-handoff-v2",
+  "manifest_revision": "ddfcebe4971f3b2f2295e0101e8995259a4e786252e4a06f944f6115a914710b",
+  "products": [
+    {
+      "acceptance": [
+        {
+          "authority": {
+            "authorization": {
+              "id": "synthetic:reviewer-authorization",
+              "sha256": "44beb9be6083709be51762c04df8921acb1dad31dd947a99c6ec8db664cfe5ec",
+              "version": "1"
+            },
+            "id": "synthetic:reviewer",
+            "kind": "reviewer"
+          },
+          "contract": "darwin-wrf-setups.acceptance-assessment/1",
+          "id": "synthetic:prcp-slice-assessment-1",
+          "requirements": {
+            "id": "synthetic:requirements",
+            "revision": "1",
+            "sha256": "b5a7d3ea218154aacf3fb64ceafecc46ae171733038dd17d94becf39b47c1015"
+          },
+          "sha256": "559d9d3be71dac8446f5996a95f71f6bbe376aec292e1f0fa299c0b712ab82d9",
+          "status": "rejected",
+          "supersedes": null
+        },
+        {
+          "authority": {
+            "authorization": {
+              "id": "synthetic:reviewer-authorization",
+              "sha256": "44beb9be6083709be51762c04df8921acb1dad31dd947a99c6ec8db664cfe5ec",
+              "version": "1"
+            },
+            "id": "synthetic:reviewer",
+            "kind": "reviewer"
+          },
+          "contract": "darwin-wrf-setups.acceptance-assessment/1",
+          "id": "synthetic:prcp-slice-assessment-2",
+          "requirements": {
+            "id": "synthetic:requirements",
+            "revision": "1",
+            "sha256": "b5a7d3ea218154aacf3fb64ceafecc46ae171733038dd17d94becf39b47c1015"
+          },
+          "sha256": "d0864325d0766500612b9d2dc3aa4c781563b4ae91675aa32dcc0a6bfab7e7ab",
+          "status": "accepted",
+          "supersedes": {
+            "id": "synthetic:prcp-slice-assessment-1",
+            "sha256": "559d9d3be71dac8446f5996a95f71f6bbe376aec292e1f0fa299c0b712ab82d9"
+          }
+        }
+      ],
+      "aggregations": [
+        {
+          "interval": "daily",
+          "method": "sum",
+          "missing_data": "require-complete"
+        }
+      ],
+      "artifacts": [
+        {
+          "identity_record_sha256": "8d42c04f50c53e90b230c7d7b406847292d7ecea4d94be4db53cee5bced5a424",
+          "kind": "file",
+          "name": "prcp-slice.json",
+          "sha256": "a1027adc20fd7bdf1c13bc14dbd2541d00628a0ae0c4038d5a50df277ec704e9",
+          "size_bytes": 21
+        }
+      ],
+      "candidate_id": "synthetic:prcp-slice@synthetic1.1#2bdf44143c47d365",
+      "citation": "Synthetic fixture; not a scientific product",
+      "color_range": [
+        0.0,
+        2.0
+      ],
+      "created_at": "2026-10-27T00:00:00Z",
+      "creator": "synthetic:darwin-fixture-builder",
+      "dataset": {
+        "id": "synthetic:prcp-slice",
+        "sha256": "efebedd1b0fb36bdbd35d1a0f94b585b99e5b4c8fa0adf4d739183ccd372e90f",
+        "version": "synthetic1.1"
+      },
+      "domain": "d02km",
+      "execution_completeness": "partial",
+      "execution_evidence": {
+        "id": "synthetic:execution-report",
+        "sha256": "c9e73d7c056ce843a739e08d7ff04e357b7eef67536467c5eb1ebf17f245b0d0",
+        "version": "1"
+      },
+      "format": "zarr",
+      "kind": "slice",
+      "lifecycle": "prepared",
+      "manifest_revision": "ddfcebe4971f3b2f2295e0101e8995259a4e786252e4a06f944f6115a914710b",
+      "method": "",
+      "model_product": "",
+      "model_variable": "",
+      "normal_period": "",
+      "observation_field": "",
+      "observation_product": "",
+      "palette": "viridis",
+      "product_id": "synthetic:prcp-slice",
+      "recipe": {
+        "id": "release-manifest:synthetic-handoff-v2",
+        "sha256": "ddfcebe4971f3b2f2295e0101e8995259a4e786252e4a06f944f6115a914710b",
+        "version": "ddfcebe4971f3b2f2295e0101e8995259a4e786252e4a06f944f6115a914710b"
+      },
+      "scientific_status": "accepted",
+      "sources": [
+        {
+          "id": "synthetic:source",
+          "sha256": "c9e73d7c056ce843a739e08d7ff04e357b7eef67536467c5eb1ebf17f245b0d0"
+        }
+      ],
+      "station_id": "",
+      "transform": "linear",
+      "units": "mm h-1",
+      "uris": {
+        "analysis": "synthetic:prcp-slice.zarr"
+      },
+      "variable": "prcp",
+      "version": "synthetic1.1"
+    },
+    {
+      "acceptance": [],
+      "aggregations": [],
+      "artifacts": [
+        {
+          "identity_record_sha256": "d5d37bf5d577270a1967d59eb1f3b2e242cd54e490512e513f571f2980b5868a",
+          "kind": "file",
+          "name": "landmask.json",
+          "sha256": "60b4dca483e00c944ebc47bb4e6065282e2d2cdc2d986c83126b5574a67e3a6a",
+          "size_bytes": 21
+        }
+      ],
+      "candidate_id": "synthetic:landmask@synthetic1.1#e1b909a429373538",
+      "citation": "Synthetic fixture; not a scientific product",
+      "color_range": [
+        0.0,
+        1.0
+      ],
+      "created_at": "2026-10-27T00:00:00Z",
+      "creator": "synthetic:darwin-fixture-builder",
+      "dataset": {
+        "id": "synthetic:landmask",
+        "sha256": "66d766d256763fa4893109b57ff866110b3fb29c4bc6544938e5247826146ab4",
+        "version": "synthetic1.1"
+      },
+      "domain": "d02km",
+      "execution_completeness": null,
+      "execution_evidence": null,
+      "format": "zarr",
+      "kind": "reference",
+      "lifecycle": "prepared",
+      "manifest_revision": "ddfcebe4971f3b2f2295e0101e8995259a4e786252e4a06f944f6115a914710b",
+      "method": "",
+      "model_product": "",
+      "model_variable": "",
+      "normal_period": "",
+      "observation_field": "",
+      "observation_product": "",
+      "palette": "greys",
+      "product_id": "synthetic:landmask",
+      "recipe": {
+        "id": "release-manifest:synthetic-handoff-v2",
+        "sha256": "ddfcebe4971f3b2f2295e0101e8995259a4e786252e4a06f944f6115a914710b",
+        "version": "ddfcebe4971f3b2f2295e0101e8995259a4e786252e4a06f944f6115a914710b"
+      },
+      "scientific_status": "unassessed",
+      "sources": [
+        {
+          "id": "synthetic:source",
+          "sha256": "c9e73d7c056ce843a739e08d7ff04e357b7eef67536467c5eb1ebf17f245b0d0"
+        }
+      ],
+      "station_id": "",
+      "transform": "linear",
+      "units": "1",
+      "uris": {
+        "analysis": "synthetic:landmask.zarr"
+      },
+      "variable": "landmask",
+      "version": "synthetic1.1"
+    }
+  ],
+  "release": "synthetic1",
+  "synthetic": true
+}

@@ -1,0 +1,27 @@
+{
+  "artifact": {
+    "files": [
+      {
+        "path": ".",
+        "sha256": "0f8ee02e212af25856aed1c6376afb5f8e5a861800e26d022eaf1f352787e4e3",
+        "size_bytes": 21
+      }
+    ],
+    "kind": "file",
+    "name": "prcp-slice.json",
+    "sha256": "a1027adc20fd7bdf1c13bc14dbd2541d00628a0ae0c4038d5a50df277ec704e9",
+    "size_bytes": 21
+  },
+  "contract": "darwin.artifact-identity/1",
+  "provenance": {
+    "artifact_class": "derived",
+    "builder": "tests.build_handoff_fixtures",
+    "sources": [
+      {
+        "id": "synthetic:source",
+        "sha256": "c9e73d7c056ce843a739e08d7ff04e357b7eef67536467c5eb1ebf17f245b0d0"
+      }
+    ]
+  },
+  "scientific_status": "unassessed"
+}

@@ -35,6 +35,8 @@ SUPPORTED_MODULES = (
     "darwin.publisher.immutable",
     "darwin.publisher.station_series",
     "darwin.publisher.analysis_stores",
+    "darwin.acceptance",
+    "darwin.handoff",
 )
 FORBIDDEN_IMPORTS = ("matplotlib", "salem", "cartopy", "metpy", "statsmodels", "seaborn", "cdo")
 
@@ -97,6 +99,14 @@ assert Path(darwin.__file__).is_relative_to(sys.prefix), darwin.__file__
 for name in {FORBIDDEN_IMPORTS!r}:
     assert importlib.util.find_spec(name) is None, name
     assert name not in sys.modules, name
+from importlib.resources import files
+from darwin.handoff import validate_handoff
+fixtures = files("darwin").joinpath("contracts", "fixtures", "product-handoff-v2")
+validate_handoff(
+    fixtures.joinpath("handoff-assessed.json").read_bytes(),
+    artifact_root=Path(str(fixtures.joinpath("artifacts"))),
+    allow_synthetic=True,
+)
 from darwin.operations import execute, inventory, make_recipe
 source = Path("native.nc")
 xr.Dataset(
