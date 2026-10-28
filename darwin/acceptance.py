@@ -34,6 +34,7 @@ from pathlib import Path
 
 import jsonschema
 
+from darwin.errors import emit_error
 from darwin.study_contracts import (
     ASSESSMENT_CONTRACT,
     EVIDENCE_CONTRACT,
@@ -405,8 +406,7 @@ def main(argv: Iterable[str] | None = None) -> None:
             _write_new(args.output, data)
             result = {"contract": ASSESSMENT_CONTRACT, "sha256": sha256_bytes(data)}
     except AcceptanceError as error:
-        sys.stderr.write(json.dumps({"code": error.code, "message": str(error)}) + "\n")
-        raise SystemExit(2) from error
+        emit_error(error.code, str(error))
     sys.stdout.write(json.dumps(result) + "\n")
 
 

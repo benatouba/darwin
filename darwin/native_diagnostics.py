@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import ctypes
 import fcntl
-import hashlib
 import json
 import subprocess
 import tempfile
@@ -21,6 +20,7 @@ from pathlib import Path
 import numpy as np
 import xarray as xr
 
+from darwin.publisher.immutable import file_sha256
 from darwin.wrf_diagnostics import state
 
 SOURCE = Path(__file__).parent / "native" / "rip"
@@ -33,9 +33,8 @@ RIP_MISSING = 1e19
 """Magnitudes at or above this are the NCAR kernel's missing-value sentinel."""
 
 
-def sha256(path: Path) -> str:
-    with path.open("rb") as stream:
-        return hashlib.file_digest(stream, "sha256").hexdigest()
+sha256 = file_sha256
+"""sha256 of a file's exact bytes (kept under its historical name)."""
 
 
 def runtime_identity(dependencies: dict[str, dict]) -> dict[str, dict[str, str]]:

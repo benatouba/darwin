@@ -17,6 +17,8 @@ from pathlib import Path
 
 import jsonschema
 
+from darwin.errors import CodedError
+
 REQUIREMENTS_CONTRACT = "darwin-wrf-setups.study-requirements/1"
 ASSESSMENT_CONTRACT = "darwin-wrf-setups.acceptance-assessment/1"
 SYNTHETIC_PREFIX = "synthetic:"
@@ -27,12 +29,8 @@ ArtifactKey = tuple[str, str]
 """``(id, version)`` of a cited artifact whose exact bytes the caller supplies."""
 
 
-class StudyContractError(ValueError):
+class StudyContractError(CodedError):
     """A malformed, mismatched or untrusted setups-owned record."""
-
-    def __init__(self, code: str, message: str) -> None:
-        self.code = code
-        super().__init__(message)
 
 
 def sha256(data: bytes) -> str:

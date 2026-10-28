@@ -121,7 +121,7 @@ Product handoffs, assessment evidence and acceptance records are described in
 
 Every production write in `darwin/publisher`, `darwin.operations` and
 `darwin.wrf_products` goes through
-`darwin.publisher.immutable.staged_artifact` (stage beside the destination, publish
+`darwin.publisher.immutable.staged_artifact` (stage beside the destination, commit
 with no-replace rename):
 
 | Writer | Artifact | Identity record sources |

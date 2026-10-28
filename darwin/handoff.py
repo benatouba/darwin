@@ -29,12 +29,12 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 
 from darwin import acceptance
+from darwin.errors import CodedError, emit_error
 from darwin.publisher.candidate import plan_candidates
 from darwin.publisher.immutable import (
     ArtifactIntegrityError,
@@ -50,12 +50,8 @@ CONTRACT = "darwin.product-handoff/2"
 SCHEMA = "product-handoff-v2.schema.json"
 
 
-class HandoffError(ValueError):
+class HandoffError(CodedError):
     """A handoff Darwin refuses to prepare or a consumer must refuse to read."""
-
-    def __init__(self, code: str, message: str):
-        super().__init__(message)
-        self.code = code
 
 
 def _verified_record(path: Path) -> dict:
@@ -433,12 +429,10 @@ def main(argv: Sequence[str] | None = None) -> None:
                 verify_acceptance=not args.no_verify_acceptance,
                 allow_synthetic=args.test_mode,
             )
-    except (HandoffError, acceptance.AcceptanceError) as error:
-        sys.stderr.write(json.dumps({"code": error.code, "message": str(error)}) + "\n")
-        raise SystemExit(2) from error
+    except CodedError as error:
+        emit_error(error.code, str(error))
     except OSError as error:
-        sys.stderr.write(json.dumps({"code": "io_error", "message": str(error)}) + "\n")
-        raise SystemExit(2) from error
+        emit_error("io_error", str(error))
     print(json.dumps({"contract": document["contract"], "products": len(document["products"])}))  # noqa: T201
 
 

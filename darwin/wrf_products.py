@@ -11,7 +11,6 @@ explicitly built kernel (``darwin.native_diagnostics``); the writer needs pyproj
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import re
@@ -24,7 +23,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from darwin.publisher.immutable import identity_path, staged_artifact
+from darwin.publisher.immutable import file_sha256, identity_path, staged_artifact
 from darwin.wrf_diagnostics import (
     accumulated_amount,
     destagger,
@@ -646,11 +645,6 @@ def write_products(  # noqa: PLR0913
     return [path for path, _, _ in planned]
 
 
-def _file_sha256(path: Path) -> str:
-    with Path(path).open("rb") as stream:
-        return hashlib.file_digest(stream, "sha256").hexdigest()
-
-
 def _software() -> dict[str, str]:
     try:
         darwin_version = version("darwin")
@@ -685,7 +679,7 @@ def derive_products(  # noqa: PLR0913
             native_library,
             pressure_levels=pressure_levels,
         )
-        digest = _file_sha256(source)
+        digest = file_sha256(source)
         product.attrs["source_sha256"] = digest
         software = _software()
         product.attrs.update(software)
@@ -725,7 +719,7 @@ def aggregate_products(  # noqa: PLR0913
     identity) are dropped rather than inherited from the first.
     """
     sources = [Path(path) for path in sources]
-    fragments = [{"id": path.name, "sha256": _file_sha256(path)} for path in sources]
+    fragments = [{"id": path.name, "sha256": file_sha256(path)} for path in sources]
     recipe = {
         "operation": "aggregate",
         "start": start,

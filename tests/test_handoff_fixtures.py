@@ -131,3 +131,21 @@ def test_cli_validation_verifies_acceptance_like_python(capsys):
     with pytest.raises(SystemExit):
         handoff.main(["validate", target, "--test-mode"])
     assert json.loads(capsys.readouterr().err)["code"] == "acceptance_unverified"
+
+
+def test_committed_fixtures_are_what_the_builder_writes(tmp_path):
+    # Receipts pin the check implementation hash, so a changed acceptance.py
+    # must come with regenerated consumer fixtures.
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "build_handoff_fixtures", Path(__file__).with_name("build_handoff_fixtures.py")
+    )
+    builder = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(builder)
+    builder.build(tmp_path / "fixtures")
+    built = {p.relative_to(tmp_path / "fixtures"): p.read_bytes()
+             for p in (tmp_path / "fixtures").rglob("*") if p.is_file()}
+    committed = {p.relative_to(ROOT): p.read_bytes() for p in ROOT.rglob("*") if p.is_file()}
+    assert built.keys() == committed.keys()
+    assert [name for name in built if built[name] != committed[name]] == []

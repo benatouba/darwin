@@ -10,12 +10,11 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import sys
 from contextlib import ExitStack
 from importlib.metadata import version
 from pathlib import Path
-from typing import NoReturn
 
+from darwin.errors import CodedError, emit_error
 from darwin.publisher.immutable import staged_artifact
 
 CONTRACT = "darwin.operations/1"
@@ -40,12 +39,8 @@ UNSUPPORTED_INTEGRATION = {
 }
 
 
-class OperationError(ValueError):
+class OperationError(CodedError):
     """Actionable stable error code, independent of Python/CLI invocation."""
-
-    def __init__(self, code: str, message: str):
-        super().__init__(message)
-        self.code = code
 
 
 def implementation_digest(files: dict[str, bytes]) -> str:
@@ -445,27 +440,19 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    def usage(message: str) -> NoReturn:
-        print(json.dumps({"code": "invalid_arguments", "message": message}), file=sys.stderr)
-        raise SystemExit(2)
-
     if args.inventory:
         if args.recipe or args.locations or args.output:
-            usage("--inventory takes no recipe, --locations or --output")
+            emit_error("invalid_arguments", "--inventory takes no recipe, --locations or --output")
         print(json.dumps(inventory(), sort_keys=True))
         return
     if not (args.recipe and args.locations and args.output):
-        usage("recipe, --locations and --output are required")
+        emit_error("invalid_arguments", "recipe, --locations and --output are required")
     try:
         report = execute(
             json.loads(args.recipe.read_text()), json.loads(args.locations.read_text()), args.output
         )
     except (OperationError, OSError, ValueError) as error:
-        print(
-            json.dumps({"code": getattr(error, "code", "invalid_input"), "message": str(error)}),
-            file=sys.stderr,
-        )
-        raise SystemExit(2) from error
+        emit_error(getattr(error, "code", "invalid_input"), str(error))
     print(json.dumps(report, sort_keys=True))
 
 

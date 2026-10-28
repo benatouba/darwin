@@ -22,6 +22,7 @@ from pathlib import Path
 
 from jsonschema import Draft202012Validator, ValidationError, validators
 
+from darwin.errors import CodedError
 from darwin.wrf_history import (
     PROJECTIONS,
     NativeHistoryError,
@@ -56,12 +57,8 @@ __all__ = [
 ]
 
 
-class SimulationOutputError(ValueError):
+class SimulationOutputError(CodedError):
     """A stable contract, storage-adapter or assembly failure."""
-
-    def __init__(self, code: str, message: str):
-        self.code = code
-        super().__init__(message)
 
 
 def contract_schema(contract: str = CONTRACT) -> dict:

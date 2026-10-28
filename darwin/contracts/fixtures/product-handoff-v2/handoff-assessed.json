@@ -24,7 +24,7 @@
             "revision": "1",
             "sha256": "ebd74747847471fa3997aad65621299194c9b8c2092c35adb96a4c8aae0dab50"
           },
-          "sha256": "63d95c9ef861748916928fffdcabf46e3502b41847c697371c8f931a6954214f",
+          "sha256": "016ad5e8ad7c6462f0eae81b1bce9bd8fa4eca63e3768ed69ccaa10ea927a00e",
           "status": "rejected",
           "supersedes": null
         },
@@ -45,11 +45,11 @@
             "revision": "1",
             "sha256": "ebd74747847471fa3997aad65621299194c9b8c2092c35adb96a4c8aae0dab50"
           },
-          "sha256": "3e044f0b87b9728462b58af5ad86dac89cb19b557689b2bf71db58618bc95655",
+          "sha256": "369399b054c0a5c75dbda8097c5eec165a1ba2340520b7d1b465415489970329",
           "status": "accepted",
           "supersedes": {
             "id": "synthetic:prcp-slice-assessment-1",
-            "sha256": "63d95c9ef861748916928fffdcabf46e3502b41847c697371c8f931a6954214f"
+            "sha256": "016ad5e8ad7c6462f0eae81b1bce9bd8fa4eca63e3768ed69ccaa10ea927a00e"
           }
         }
       ],

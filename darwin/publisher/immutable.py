@@ -1,9 +1,9 @@
-"""Local, no-replace publication of fully written, identity-bound artifacts.
+"""Local, no-replace commit of fully written, identity-bound artifacts.
 
-Directory publication requires Linux renameat2(RENAME_NOREPLACE). Unsupported
+Directory commits require Linux renameat2(RENAME_NOREPLACE). Unsupported
 filesystems fail closed. Object storage needs its own conditional-write adapter.
 
-An artifact published with ``provenance`` gets a sibling identity record
+An artifact committed with ``provenance`` gets a sibling identity record
 (``<name>.identity.json``, contract ``darwin.artifact-identity/1``) binding the
 exact bytes of every file to the builder, parameters and pinned source
 checksums. The record carries no timestamps, so an honest retry reproduces it
@@ -37,14 +37,14 @@ class ArtifactConflict(FileExistsError):
 
 
 class ArtifactIntegrityError(ValueError):
-    """Published bytes do not match their identity record, or no record exists."""
+    """Committed bytes do not match their identity record, or no record exists."""
 
 
-def _publish(source: Path, destination: Path) -> None:
+def _commit(source: Path, destination: Path) -> None:
     library = ctypes.CDLL(None, use_errno=True)
     rename = getattr(library, "renameat2", None)
     if rename is None:
-        raise OSError(errno.ENOTSUP, "atomic no-replace publication requires renameat2")
+        raise OSError(errno.ENOTSUP, "atomic no-replace commit requires renameat2")
     rename.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_uint]
     rename.restype = ctypes.c_int
     if rename(-100, os.fsencode(source), -100, os.fsencode(destination), 1):
@@ -79,7 +79,9 @@ def _regular_files(path: Path) -> list[tuple[str, Path]]:
     return sorted(files)
 
 
-def _file_sha256(path: Path) -> str:
+def file_sha256(path: str | Path) -> str:
+    """sha256 of one file's exact bytes, read in chunks."""
+    path = Path(path)
     digest = hashlib.sha256()
     with path.open("rb") as handle:
         while block := handle.read(_CHUNK):
@@ -98,7 +100,7 @@ def artifact_digest(path: str | Path) -> dict:
     entries = []
     digest = hashlib.sha256()
     for relative, file in _regular_files(path):
-        entry = {"path": relative, "size_bytes": file.stat().st_size, "sha256": _file_sha256(file)}
+        entry = {"path": relative, "size_bytes": file.stat().st_size, "sha256": file_sha256(file)}
         digest.update(f"{relative}\0{entry['size_bytes']}\0{entry['sha256']}\n".encode())
         entries.append(entry)
     return {
@@ -122,7 +124,7 @@ def _validated_provenance(provenance: dict) -> dict:
         if not _SHA256.fullmatch(str(source.get("sha256", ""))):
             raise ValueError(f"source {source.get('id')!r} needs a lowercase sha256")
     if provenance.get("artifact_class", "derived") != "derived":
-        raise ValueError("published artifacts are derived products, never original outputs")
+        raise ValueError("identity-bound artifacts are derived products, never original outputs")
     record = {**provenance, "artifact_class": "derived"}
     json.dumps(record, sort_keys=True, allow_nan=False)
     return record
@@ -170,9 +172,9 @@ def _byte_identical(left: Path, right: Path) -> bool:
     )
 
 
-def _publish_or_match(staged: Path, destination: Path, retry: str) -> None:
+def _commit_or_match(staged: Path, destination: Path, retry: str) -> None:
     try:
-        _publish(staged, destination)
+        _commit(staged, destination)
     except FileExistsError:
         if retry == "verify-identical" and _byte_identical(staged, destination):
             return
@@ -192,7 +194,7 @@ def staged_artifact(
     provenance: dict | None = None,
     retry: Literal["refuse", "verify-identical"] = "refuse",
 ):
-    """Yield a private path; publish only on success, never replacing a target.
+    """Yield a private path; commit only on success, never replacing a target.
 
     ``retry="refuse"`` (default) rejects every existing target before writing.
     ``retry="verify-identical"`` writes, then treats an existing target as an
@@ -201,15 +203,15 @@ def staged_artifact(
     ``ArtifactConflict`` and leaves the existing bytes untouched. Concurrent
     writers have exactly one winner; identical losers succeed in that mode.
 
-    With ``provenance`` the identity record is published first, then the
+    With ``provenance`` the identity record is committed first, then the
     artifact, so equal bytes are never attested to another provenance: an
     existing artifact without an identity record is refused (its writer made
     no provenance claim), and a crash between the two leaves an identity
     record without an artifact. ``verify_artifact`` rejects that state; only a
     ``verify-identical`` retry with the same bytes and provenance (the record
     must match byte for byte) completes it. Anything else conflicts, and the
-    operator recovers by publishing under a new name or, because no artifact
-    bytes were ever published there, removing the orphan record. Cleanup
+    operator recovers by committing under a new name or, because no artifact
+    bytes were ever committed there, removing the orphan record. Cleanup
     touches only this invocation's staging directory; a killed process can
     leave hidden staging, never a partial final artifact.
     """
@@ -242,14 +244,14 @@ def staged_artifact(
                 _identity_bytes(destination.name, artifact_digest(staged), record)
             )
         if record is not None:
-            _publish_or_match(staged_identity, identity_path(destination), retry)
-        _publish_or_match(staged, destination, retry)
+            _commit_or_match(staged_identity, identity_path(destination), retry)
+        _commit_or_match(staged, destination, retry)
     finally:
         shutil.rmtree(temporary)
 
 
 def verify_artifact(destination: str | Path) -> dict:
-    """Re-hash a published artifact against its identity record and return the record."""
+    """Re-hash a committed artifact against its identity record and return the record."""
     destination = Path(destination)
     try:
         record = json.loads(identity_path(destination).read_bytes())

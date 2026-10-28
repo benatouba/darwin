@@ -18,6 +18,8 @@ import re
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
+from darwin.errors import CodedError
+
 CALENDARS = ("standard", "noleap")
 PROJECTIONS = {1: "lambert_conformal", 2: "polar_stereographic", 3: "mercator", 6: "lat_lon"}
 _CALENDAR_NAMES = {
@@ -52,12 +54,8 @@ _FLOAT_ATTRIBUTES = {
 _NOLEAP_CUMULATIVE = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
 
 
-class NativeHistoryError(ValueError):
+class NativeHistoryError(CodedError):
     """A native file that cannot be read or does not look like WRF history."""
-
-    def __init__(self, code: str, message: str):
-        self.code = code
-        super().__init__(message)
 
 
 def calendar_date(text: str, calendar: str) -> date:

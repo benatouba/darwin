@@ -197,6 +197,11 @@ def _parse_policy(data: bytes, allow_synthetic: bool) -> dict:
             )
     if "histogram" in policy["metrics"] and "histogram_bins" not in policy:
         raise ComparisonError("invalid_policy", "histogram metrics need declared histogram_bins")
+    declared = [(p["model_variable"], p["observation_field"]) for p in policy["pairings"]]
+    if len(declared) != len(set(declared)):
+        raise ComparisonError(
+            "ambiguous_pairing", "the policy declares one model/observation pairing twice"
+        )
     for pairing in policy["pairings"]:
         key = (
             pairing["model_variable"],
@@ -457,7 +462,7 @@ def compare_with_policy(
         raise ComparisonError(
             "pairing_not_in_policy", "variable pairing is not declared by the policy"
         )
-    pairing = matches[0]
+    [pairing] = matches  # unique: _parse_policy refuses duplicate pairings
     if pairing["requirement_variable"] not in study["variables"]:
         raise ComparisonError("variable_not_in_requirements", "policy variable is not required")
     cadence = request["cadence"]

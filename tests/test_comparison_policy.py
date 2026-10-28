@@ -552,3 +552,11 @@ def test_version_one_interface_is_unchanged():
 
     assert v1.CONTRACT_VERSION == 1
     assert v1.POLICY == "native-intervals-v1"
+
+
+def test_a_policy_declaring_one_pairing_twice_is_ambiguous(inputs):
+    policy = json.loads(json.dumps(POLICY))
+    policy["pairings"].append({**policy["pairings"][0], "requirement_variable": "other"})
+    data = _encode(policy)
+    failure = error(inputs, policy=data, requirements=_requirements(data))
+    assert failure.code == "ambiguous_pairing"
