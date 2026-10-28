@@ -5,6 +5,9 @@
     # Explicit native-diagnostic builds and tests (darwin.native_diagnostics).
     gfortran
     glibc.bin
+    # The manylinux NumPy wheel's bundled Fortran runtime resolves libz at load
+    # time, including in the isolated installed-release test environment.
+    zlib
   ];
 
   languages = {

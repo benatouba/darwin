@@ -7,6 +7,10 @@ building on the [station-series time contract](station-series-time-contract.md)
 The version-1 `darwin.comparison` interface (`native-intervals-v1`, recipe
 `schema_version: 1`) is unchanged and remains what the dashboard currently
 consumes. It is a separate policy, not a default for this interface.
+It does not validate acceptance records: its recipe sources always report
+`scientific_status: unassessed`, preserving raw store metadata separately as
+`store_declared_status`. Use this policy-bound interface with signed dataset
+assessments when validated source acceptance is required.
 
 ## Interface
 

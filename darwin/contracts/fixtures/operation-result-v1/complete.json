@@ -1,0 +1,11 @@
+{
+  "contract": "darwin.operation-result/1",
+  "recipe_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "artifact": {
+    "id": "data.nc",
+    "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "size_bytes": 42
+  },
+  "execution_completeness": "complete",
+  "scientific_status": "unassessed"
+}

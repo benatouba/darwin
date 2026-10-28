@@ -1,0 +1,21 @@
+{
+  "contract": "darwin.operations/1",
+  "sources": [
+    {
+      "id": "synthetic:native-version-1",
+      "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "size_bytes": 42
+    }
+  ],
+  "operations": [
+    {"operation": "select", "parameters": {"variables": ["prcp"]}},
+    {"operation": "crop", "parameters": {"dimension": "x", "start": 0, "end": 2}}
+  ],
+  "software": {
+    "darwin": "synthetic-fixture",
+    "implementation_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+    "xarray": "synthetic-fixture",
+    "numpy": "synthetic-fixture",
+    "netCDF4": "synthetic-fixture"
+  }
+}
