@@ -67,9 +67,11 @@ def test_cited_acceptance_records_bind_the_exact_product_dataset():
                 evidence=bundle["evidence"],
                 authorizations=bundle["authorizations"],
                 prior=bundle["prior"],
+                signature=bundle["signature"],
                 allow_synthetic=True,
             )
             assert state["status"] == reference["status"]
+            assert state["signer"] is not None
             checked += 1
     assert checked == 2
 
@@ -100,7 +102,11 @@ def test_cli_prepares_the_same_assessed_handoff_as_python(tmp_path):
         )
     )
     execution = tmp_path / "execution.json"
-    run = {"id": "synthetic:execution-report", "version": "1", "sha256": "c9e73d7c056ce843a739e08d7ff04e357b7eef67536467c5eb1ebf17f245b0d0"}
+    run = {
+        "id": "synthetic:execution-report",
+        "version": "1",
+        "sha256": "c9e73d7c056ce843a739e08d7ff04e357b7eef67536467c5eb1ebf17f245b0d0",
+    }
     execution.write_text(
         json.dumps({"synthetic:prcp-slice": {"completeness": "partial", "evidence": run}})
     )
@@ -144,8 +150,11 @@ def test_committed_fixtures_are_what_the_builder_writes(tmp_path):
     builder = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(builder)
     builder.build(tmp_path / "fixtures")
-    built = {p.relative_to(tmp_path / "fixtures"): p.read_bytes()
-             for p in (tmp_path / "fixtures").rglob("*") if p.is_file()}
+    built = {
+        p.relative_to(tmp_path / "fixtures"): p.read_bytes()
+        for p in (tmp_path / "fixtures").rglob("*")
+        if p.is_file()
+    }
     committed = {p.relative_to(ROOT): p.read_bytes() for p in ROOT.rglob("*") if p.is_file()}
     assert built.keys() == committed.keys()
     assert [name for name in built if built[name] != committed[name]] == []

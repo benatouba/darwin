@@ -7,6 +7,7 @@ or as the arithmetic done on paper, not by calling Darwin's kernels.
 import hashlib
 import json
 import math
+import shutil
 import subprocess
 import sys
 from datetime import UTC, datetime
@@ -15,6 +16,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 import zarr
+from decision_signing import public_key, sign
 
 from darwin.comparison_policy import (
     ComparisonError,
@@ -22,6 +24,8 @@ from darwin.comparison_policy import (
     replay_with_policy,
     store_identity,
 )
+from darwin.handoff import artifact_entry, dataset_identity
+from darwin.publisher.immutable import staged_artifact
 
 SETUPS = Path(__file__).parent / "fixtures" / "setups-contracts"
 HOUR = 3600
@@ -118,6 +122,10 @@ POLICY = {
 }
 
 
+AUTHORIZATION = b"synthetic reviewer authorization; test only\n"
+RECEIPT = b"synthetic comparison receipt; test only\n"
+
+
 def _encode(document):
     return json.dumps(document, indent=2, sort_keys=True).encode()
 
@@ -130,8 +138,9 @@ def _requirements(policy_bytes, *, review_status="reviewed", **overrides):
             "authorization": {
                 "id": "synthetic:reviewer-authorization",
                 "version": "1",
-                "sha256": "c" * 64,
+                "sha256": hashlib.sha256(AUTHORIZATION).hexdigest(),
             },
+            "signing_keys": [public_key("reviewer")],
         }
     ]
     document = {
@@ -497,7 +506,28 @@ def test_cli_matches_python_and_emits_structured_errors(inputs, tmp_path):
     assert json.loads(refused.stderr)["code"] == "synthetic_not_trusted"
 
 
-def _assessment(requirements, dataset, status="unassessed"):
+def _publish(store, destination):
+    """Publish a station store as an identity-bound artifact (``<name>.identity.json``)."""
+    provenance = {
+        "builder": "tests.test_comparison_policy",
+        "sources": [{"id": "synthetic:upstream", "sha256": MODEL_SOURCE}],
+    }
+    with staged_artifact(destination, provenance=provenance) as staged:
+        shutil.copytree(store, staged)
+    return destination
+
+
+def _dataset(product_id, *stores):
+    """A handoff dataset as the producer lists it: product id, version, artifact entries."""
+    return {
+        "product_id": product_id,
+        "version": "1",
+        "artifacts": [artifact_entry(s) for s in stores],
+    }
+
+
+def _record(requirements, dataset, status="unassessed"):
+    decided = status != "unassessed"
     record = {
         "contract": "darwin-wrf-setups.acceptance-assessment/1",
         "id": "synthetic:model-assessment",
@@ -509,42 +539,251 @@ def _assessment(requirements, dataset, status="unassessed"):
             "sha256": hashlib.sha256(requirements).hexdigest(),
         },
         "status": status,
-        "evidence": [],
-        "authority": None,
+        "evidence": [
+            {
+                "criterion": "synthetic:criterion",
+                "evidence_type": "synthetic:comparison-recipe",
+                "artifact": {
+                    "id": "synthetic:receipt",
+                    "version": "1",
+                    "sha256": hashlib.sha256(RECEIPT).hexdigest(),
+                },
+            }
+        ]
+        if decided
+        else [],
+        "authority": {
+            "kind": "reviewer",
+            "id": "synthetic:reviewer",
+            "authorization": {
+                "id": "synthetic:reviewer-authorization",
+                "version": "1",
+                "sha256": hashlib.sha256(AUTHORIZATION).hexdigest(),
+            },
+        }
+        if decided
+        else None,
         "supersedes": None,
     }
     return _encode(record)
 
 
-def test_assessment_status_is_reported_only_from_bound_records(inputs):
-    record = _assessment(inputs["requirements"], inputs["request"]["model"])
-    result = run(inputs, assessments={"model": {"assessment": record, "evidence": {}}})
-    assert result["sources"]["model"]["scientific_status"] == "unassessed"
-    assert (
-        result["sources"]["model"]["assessment"]["assessment"]["sha256"]
-        == hashlib.sha256(record).hexdigest()
-    )
-    assert result["sources"]["observations"]["scientific_status"] == "unassessed"
-    # A store's self-declared status is reported as such, never promoted.
-    assert result["sources"]["model"]["store_declared_status"] == "unassessed"
-
-    wrong = _assessment(inputs["requirements"], inputs["request"]["observations"])
-    assert (
-        error(inputs, assessments={"model": {"assessment": wrong, "evidence": {}}}).code
-        == "dataset_mismatch"
-    )
-    other = _assessment(b"other requirements", inputs["request"]["model"])
-    assert (
-        error(inputs, assessments={"model": {"assessment": other, "evidence": {}}}).code
-        == "requirements_mismatch"
-    )
-    # An acceptance claim citing no evidence is a malformed decision.
-    claimed = json.loads(record) | {
-        "status": "accepted",
-        "authority": json.loads(inputs["requirements"])["acceptance"]["authorized_authorities"][0],
+def _bundle(record, *, signed=True):
+    decided = json.loads(record)["status"] != "unassessed"
+    return {
+        "assessment": record,
+        "evidence": {("synthetic:receipt", "1"): RECEIPT},
+        "authorizations": {("synthetic:reviewer-authorization", "1"): AUTHORIZATION},
+        "signature": sign(record) if decided and signed else None,
     }
-    failure = error(inputs, assessments={"model": {"assessment": _encode(claimed), "evidence": {}}})
-    assert failure.code == "invalid_assessment"
+
+
+@pytest.fixture
+def published(inputs, tmp_path):
+    """The fixture's stores published as artifacts of a model and an observation dataset."""
+    model = _publish(inputs["model_path"], tmp_path / "published" / "model.zarr")
+    obs = _publish(inputs["observations_path"], tmp_path / "published" / "obs.zarr")
+    model_dataset = _dataset("synthetic:model-product", model)
+    identity = dataset_identity("synthetic:model-product", "1", model_dataset["artifacts"])
+    return {
+        "inputs": {**inputs, "model_path": model, "observations_path": obs},
+        "model_dataset": model_dataset,
+        "model_identity": identity,
+        "obs_dataset": _dataset("synthetic:obs-product", obs),
+        "accepted": _record(inputs["requirements"], identity, "accepted"),
+    }
+
+
+def test_a_signed_acceptance_of_the_dataset_holding_the_compared_store_is_reported(published):
+    result = run(
+        published["inputs"],
+        datasets={"model": published["model_dataset"]},
+        assessments={"model": _bundle(published["accepted"])},
+    )
+    model = result["sources"]["model"]
+    assert model["scientific_status"] == "accepted"
+    assert model["dataset"] == published["model_identity"]
+    assert model["artifact"] == published["model_dataset"]["artifacts"][0]
+    assert model["assessment"]["signer"] == public_key("reviewer")
+    assert (
+        model["assessment"]["assessment"]["sha256"]
+        == hashlib.sha256(published["accepted"]).hexdigest()
+    )
+    # The comparison itself grants nothing, and the store identity still pins replay.
+    assert result["scientific_status"] == "unassessed"
+    assert result["recipe"]["request"]["model"]["sha256"] == store_identity(
+        published["inputs"]["model_path"]
+    )
+    assert result["recipe"]["datasets"] == {
+        "model": published["model_identity"],
+        "observations": None,
+    }
+    assert result["sources"]["observations"]["scientific_status"] == "unassessed"
+    assert result["sources"]["observations"]["dataset"] is None
+
+
+def test_a_dataset_without_an_assessment_is_verified_and_stays_unassessed(published):
+    result = run(published["inputs"], datasets={"observations": published["obs_dataset"]})
+    obs = result["sources"]["observations"]
+    assert obs["scientific_status"] == "unassessed"
+    assert obs["assessment"] is None
+    assert obs["dataset"]["id"] == "synthetic:obs-product"
+
+
+def test_a_record_bound_to_the_store_rather_than_the_dataset_is_refused(published):
+    store_bound = _record(
+        published["inputs"]["requirements"], published["inputs"]["request"]["model"], "accepted"
+    )
+    failure = error(
+        published["inputs"],
+        datasets={"model": published["model_dataset"]},
+        assessments={"model": _bundle(store_bound)},
+    )
+    assert failure.code == "dataset_mismatch"
+
+
+def test_a_record_under_other_requirements_or_malformed_is_refused(published):
+    other = _record(b"other requirements", published["model_identity"], "accepted")
+    claimed = json.loads(published["accepted"]) | {"evidence": []}
+    for record, code in (
+        (other, "requirements_mismatch"),
+        (_encode(claimed), "invalid_assessment"),
+    ):
+        failure = error(
+            published["inputs"],
+            datasets={"model": published["model_dataset"]},
+            assessments={"model": _bundle(record)},
+        )
+        assert failure.code == code
+
+
+def test_a_store_outside_the_assessed_dataset_is_refused(published):
+    # The accepted record is for the model dataset; the observation store is not in it.
+    failure = error(
+        published["inputs"],
+        datasets={"observations": published["model_dataset"]},
+        assessments={"observations": _bundle(published["accepted"])},
+    )
+    assert failure.code == "artifact_not_in_dataset"
+
+
+def test_acceptance_needs_the_dataset_and_a_pinned_signature(published):
+    inputs = published["inputs"]
+    assert (
+        error(inputs, assessments={"model": _bundle(published["accepted"])}).code
+        == "dataset_unavailable"
+    )
+    unsigned = _bundle(published["accepted"], signed=False)
+    failure = error(
+        inputs, datasets={"model": published["model_dataset"]}, assessments={"model": unsigned}
+    )
+    assert failure.code == "signature_unavailable"
+    forged = {**_bundle(published["accepted"]), "signature": sign(published["accepted"], "policy")}
+    failure = error(
+        inputs, datasets={"model": published["model_dataset"]}, assessments={"model": forged}
+    )
+    assert failure.code == "signer_not_authorized"
+
+
+def test_store_bytes_must_match_their_dataset_entry(published, inputs):
+    # An unpublished store has no identity record to bind it to a dataset entry.
+    unbound = error(
+        published["inputs"] | {"model_path": inputs["model_path"]},
+        datasets={"model": published["model_dataset"]},
+    )
+    assert unbound.code == "unbound_artifact"
+    # Changed bytes, even with a request naming the new store digest, no longer match.
+    model = published["inputs"]["model_path"]
+    zarr.open_group(str(model), mode="a").attrs["note"] = "changed after publication"
+    request = published["inputs"]["request"] | {
+        "model": published["inputs"]["request"]["model"] | {"sha256": store_identity(model)}
+    }
+    drifted = error(
+        published["inputs"], request=request, datasets={"model": published["model_dataset"]}
+    )
+    assert drifted.code == "artifact_mismatch"
+
+
+def test_a_malformed_dataset_is_refused(published):
+    for dataset in (
+        {"product_id": "synthetic:model-product", "version": "1"},
+        {**published["model_dataset"], "version": "latest"},
+        {**published["model_dataset"], "dataset": {"id": "x", "version": "1", "sha256": "0" * 64}},
+    ):
+        failure = error(published["inputs"], datasets={"model": dataset})
+        assert failure.code in {"invalid_dataset", "dataset_mismatch"}, dataset
+
+
+def test_cli_passes_datasets_and_signed_bundles_like_python(published, tmp_path):
+    inputs = published["inputs"]
+    expected = run(
+        inputs,
+        datasets={"model": published["model_dataset"]},
+        assessments={"model": _bundle(published["accepted"])},
+    )
+    folder = tmp_path / "cli"
+    folder.mkdir()
+    for name, data in {
+        "policy.json": inputs["policy"],
+        "requirements.json": inputs["requirements"],
+        "assessment.json": published["accepted"],
+        "assessment.json.sig": sign(published["accepted"]),
+        "receipt.json": RECEIPT,
+        "authorization.json": AUTHORIZATION,
+    }.items():
+        (folder / name).write_bytes(data)
+    (folder / "request.json").write_text(json.dumps(inputs["request"]))
+    (folder / "dataset.json").write_text(json.dumps(published["model_dataset"]))
+    (folder / "bundle.json").write_text(
+        json.dumps(
+            {
+                "assessment": "assessment.json",
+                "signature": "assessment.json.sig",
+                "evidence": [{"id": "synthetic:receipt", "version": "1", "path": "receipt.json"}],
+                "authorizations": [
+                    {
+                        "id": "synthetic:reviewer-authorization",
+                        "version": "1",
+                        "path": "authorization.json",
+                    }
+                ],
+            }
+        )
+    )
+    command = [
+        sys.executable, "-m", "darwin.comparison_policy",
+        "--model", str(inputs["model_path"]),
+        "--observations", str(inputs["observations_path"]),
+        "--policy", str(folder / "policy.json"),
+        "--requirements", str(folder / "requirements.json"),
+        "--request", str(folder / "request.json"),
+        "--dataset", f"model={folder / 'dataset.json'}",
+        "--assessment", f"model={folder / 'bundle.json'}",
+        "--test-mode",
+    ]  # fmt: skip
+    ran = subprocess.run(command, capture_output=True, text=True)
+    assert ran.returncode == 0, ran.stderr
+    assert json.loads(ran.stdout) == expected
+    without_dataset = [*command[:-5], *command[-3:]]  # drop "--dataset model=..."
+    refused = subprocess.run(without_dataset, capture_output=True, text=True)
+    assert refused.returncode == 2
+    assert json.loads(refused.stderr)["code"] == "dataset_unavailable"
+
+
+def test_replay_reproduces_a_dataset_bound_comparison(published):
+    inputs = published["inputs"]
+    options = {
+        "datasets": {"model": published["model_dataset"]},
+        "assessments": {"model": _bundle(published["accepted"])},
+    }
+    result = run(inputs, **options)
+    replay_args = {
+        k: inputs[k] for k in ("model_path", "observations_path", "policy", "requirements")
+    }
+    assert replay_with_policy(result["recipe"], **replay_args, **options) == result
+    with pytest.raises(ComparisonError) as caught:
+        replay_with_policy(result["recipe"], **replay_args)
+    assert caught.value.code == "identity"
 
 
 def test_version_one_interface_is_unchanged():

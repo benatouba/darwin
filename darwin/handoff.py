@@ -114,6 +114,7 @@ def _acceptance_references(
             evidence=record.get("evidence", {}),
             authorizations=record.get("authorizations", {}),
             prior=record.get("prior"),
+            signature=record.get("signature"),
             allow_synthetic=allow_synthetic,
         )
         previous = references[-1] if references else None
@@ -156,9 +157,11 @@ def prepare_handoff(  # noqa: PLR0913
     ``execution`` optionally maps a product to ``{"completeness":
     "complete"|"partial", "evidence": identity}``. ``assessments`` maps a
     product to its acceptance-assessment history, oldest first, each item
-    ``{"assessment", "requirements", "evidence", "authorizations", "prior"}``
-    as exact bytes (``evidence``/``authorizations`` keyed by ``(id, version)``);
-    every record is validated against the product's exact dataset identity.
+    ``{"assessment", "requirements", "evidence", "authorizations", "prior",
+    "signature"}`` as exact bytes (``evidence``/``authorizations`` keyed by
+    ``(id, version)``; ``signature`` the decision's detached SSHSIG); every
+    record is validated, signature included, against the product's exact
+    dataset identity.
     Nothing is published, no current pointer moves and no access is granted.
     """
     manifest = load_manifest(manifest_path)
@@ -303,8 +306,9 @@ def validate_handoff(
 
     A reference is only a claim. By default every product that cites
     acceptance needs its exact record bytes in ``assessments`` (the same
-    ``{"assessment", "requirements", "evidence", "authorizations", "prior"}``
-    bundles :func:`prepare_handoff` takes); the references are re-derived from
+    ``{"assessment", "requirements", "evidence", "authorizations", "prior",
+    "signature"}`` bundles :func:`prepare_handoff` takes; a decision without a
+    valid pinned-key signature is refused); the references are re-derived from
     them and must match exactly, so a forged or altered reference is refused
     (``acceptance_mismatch``) and an unbacked one is ``acceptance_unverified``.
     ``verify_acceptance=False`` is only for a consumer that validates every

@@ -17,8 +17,8 @@
   "evidence": [
     {
       "artifact": {
-        "id": "darwin-evidence:7f2297b26ec5d27e5ed6870635bdfd80ebc8fcb6fbd5fc9d6241a02d2c85c7a1",
-        "sha256": "f00918b636845206be5059c23397b0944084af3f56aef0778a850cd7ce70ef51",
+        "id": "darwin-evidence:cc6019e30099cec0229d99a5093811f34657d600bea2f5a293faf975c3948eed",
+        "sha256": "e4c6272a8b3cdbdf250a7e118e554c03d74178d03ebc609cd403e3c245417c61",
         "version": "1"
       },
       "criterion": "synthetic:criterion-a",
@@ -26,8 +26,8 @@
     },
     {
       "artifact": {
-        "id": "darwin-evidence:f80df6d60c84b894f859a9fb020f1fac37f1ad428bdf13d19ff2ecdc80189987",
-        "sha256": "752e96381e462f32705947c7a8f27720f25f56852ff2830e306052f727650f23",
+        "id": "darwin-evidence:9a86092e70654b83f8bc92f53656e3374dd422adb7aa58acad6faa719a6c9c5e",
+        "sha256": "7a649c5fd6b91ba82782d26def6d3bb25c4819b20cd80db718decda25f4d8542",
         "version": "1"
       },
       "criterion": "synthetic:criterion-a",
@@ -35,8 +35,8 @@
     },
     {
       "artifact": {
-        "id": "darwin-evidence:c1139d8f2745c065396768a7f39e27779272d407aaf9f092a670603da0d66a10",
-        "sha256": "179cc4857a2dc00b5d9d7075d09cca03949da041186821faaffb154ef31e6c04",
+        "id": "darwin-evidence:d342db871e7705ac4e34ee0a0b95d18af0ddafeedb79250d691be18d07f616cb",
+        "sha256": "b1900ebf54f160b636c4eb1bdc79112dd33a5ab645a112225ac06df521e8748f",
         "version": "1"
       },
       "criterion": "synthetic:criterion-b",
@@ -47,12 +47,12 @@
   "requirements": {
     "id": "synthetic:requirements",
     "revision": "1",
-    "sha256": "ebd74747847471fa3997aad65621299194c9b8c2092c35adb96a4c8aae0dab50"
+    "sha256": "2127bfd3ce7bf8e7eb24b173ac93c8aba640e31c364094be46875e1877d0e6b0"
   },
   "status": "accepted",
   "supersedes": {
     "id": "synthetic:prcp-slice-assessment-1",
-    "sha256": "016ad5e8ad7c6462f0eae81b1bce9bd8fa4eca63e3768ed69ccaa10ea927a00e"
+    "sha256": "6d6f12264edcbe07c616d9b2cd9bbf4c8376ff9c3d18cf89bf3b68d06b675578"
   },
   "synthetic": true
 }

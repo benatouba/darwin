@@ -9,11 +9,12 @@
   ],
   "evidence": [
     {
-      "id": "darwin-evidence:7f2297b26ec5d27e5ed6870635bdfd80ebc8fcb6fbd5fc9d6241a02d2c85c7a1",
-      "path": "evidence/f00918b636845206be5059c23397b0944084af3f56aef0778a850cd7ce70ef51.json",
+      "id": "darwin-evidence:cc6019e30099cec0229d99a5093811f34657d600bea2f5a293faf975c3948eed",
+      "path": "evidence/e4c6272a8b3cdbdf250a7e118e554c03d74178d03ebc609cd403e3c245417c61.json",
       "version": "1"
     }
   ],
   "prior": null,
-  "requirements": "requirements.json"
+  "requirements": "requirements.json",
+  "signature": "assessment-1-rejected.json.sig"
 }

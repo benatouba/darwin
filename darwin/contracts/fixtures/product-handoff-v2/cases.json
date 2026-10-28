@@ -50,6 +50,20 @@
       "acceptance": {
         "synthetic:prcp-slice": [
           "acceptance/bundle-1-rejected.json",
+          "acceptance/unsigned-bundle-2-accepted.json"
+        ]
+      },
+      "expect": {
+        "error": "signature_unavailable"
+      },
+      "handoff": "handoff-assessed.json",
+      "name": "unsigned-decision",
+      "test_mode": true
+    },
+    {
+      "acceptance": {
+        "synthetic:prcp-slice": [
+          "acceptance/bundle-1-rejected.json",
           "acceptance/bundle-2-accepted.json"
         ]
       },

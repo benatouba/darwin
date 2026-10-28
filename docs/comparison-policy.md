@@ -19,12 +19,14 @@ result = compare_with_policy(
     observations_path="obs.zarr",
     policy=policy_bytes,           # darwin.comparison-policy/1, exact bytes
     requirements=requirements_bytes,  # darwin-wrf-setups.study-requirements/1, exact bytes
-    assessments=None,              # optional acceptance-assessment/1 records per source
+    datasets=None,                 # optional {"model"|"observations": handoff dataset}
+    assessments=None,              # optional assessment bundles per source (need datasets)
     allow_draft=False,
     allow_synthetic=False,
 )
 replay_with_policy(result["recipe"], model_path=..., observations_path=...,
-                   policy=policy_bytes, requirements=requirements_bytes)
+                   policy=policy_bytes, requirements=requirements_bytes,
+                   datasets=..., assessments=...)   # the same ones as the original run
 ```
 
 The CLI uses the same functions and prints the result JSON, or a structured
@@ -36,11 +38,13 @@ python -m darwin.comparison_policy --model M.zarr --observations O.zarr \
 python -m darwin.comparison_policy ... --recipe recipe.json   # exact replay
 ```
 
-`--allow-draft`, `--test-mode` (accept `synthetic:` fixtures) and repeated
-`--assessment model=bundle.json` (bundle, read by
-`darwin.study_contracts.load_assessment_bundle`: `{"assessment": path,
+`--allow-draft`, `--test-mode` (accept `synthetic:` fixtures), repeated
+`--dataset model=dataset.json` (`{product_id, version, artifacts}` or a whole
+handoff product entry) and repeated `--assessment model=bundle.json` (bundle,
+read by `darwin.study_contracts.load_assessment_bundle`: `{"assessment": path,
 "evidence": [{id, version, path}], "authorizations": [{id, version, path}],
-"prior": path|null}`, paths relative to the bundle) mirror the keywords.
+"prior": path|null, "signature": path|null}`, paths relative to the bundle)
+mirror the keywords.
 
 ### Request
 
@@ -118,18 +122,57 @@ Unsupported here, and refused rather than approximated:
   stores hold hourly/daily only, and current model stores monthly only, so no
   existing builder output pair is comparable at one native cadence yet.
 
+## Acceptance binds the dataset, not the store
+
+The chain from a researcher's choice to a compared store is:
+
+> setup → reviewed requirements → signed acceptance → dataset → compared store
+
+1. The WRF setup the researcher chose is the source of truth; its reviewed setups
+   `study-requirements/1` define the criteria and the authorities that may decide,
+   each with pinned Ed25519 `signing_keys`.
+2. An `accepted`/`rejected` `acceptance-assessment/1` record is valid only with a
+   detached SSHSIG (namespace `darwin-acceptance`) over its exact bytes by a key
+   pinned for its authority (see the README section on signed decisions).
+3. The record binds a **dataset**: the `darwin.product-handoff/2` identity
+   `darwin.handoff.dataset_identity(product_id, version, artifacts)`, a digest
+   over the producer's artifact list, never a store digest.
+4. The compared store must be one of that dataset's artifacts. Darwin re-verifies
+   the store against its `<name>.identity.json` (`darwin.handoff.artifact_entry`)
+   and requires that exact entry, name, kind, sha256, size and identity-record
+   sha256, to be in the dataset's list.
+
+So for each source the caller passes `datasets[name] = {"product_id", "version",
+"artifacts"}` exactly as the producer's handoff lists them, and, optionally,
+`assessments[name]` (the bundle including `signature`). Darwin recomputes the
+dataset identity, validates the record (requirements, evidence, authorization,
+signature) against it and checks store membership, then reports
+`sources[name].dataset`, `.artifact`, `.assessment` (with `signer`) and
+`.scientific_status`. Refusals: `dataset_unavailable` (an assessment without its
+dataset), `invalid_dataset` (malformed or dynamic version), `dataset_mismatch`
+(the record binds another dataset, or a supplied `dataset` identity does not
+match its artifact list), `artifact_not_in_dataset`, `unbound_artifact` (the
+store has no identity record), `artifact_mismatch` (store bytes differ from its
+identity record), `requirements_mismatch` (bundle names other requirements) and
+every assessment refusal (`signature_unavailable`, `signer_not_authorized`, ...).
+
+`store_identity(path)` still pins the exact store bytes in the request, recipe
+and replay; it is not what acceptance binds. A record bound to a store digest
+is refused as `dataset_mismatch`.
+
 ## Provenance
 
 `result["recipe"]` (`darwin.comparison-recipe/2`) records the request, the
-policy and requirements identities (with review status), validated assessment
-identities, the draft/test-mode flags and the exact software digest. Replay
-refuses any changed store byte, policy, requirements or implementation.
+policy and requirements identities (with review status), the recomputed
+dataset identities (`datasets`), validated assessment identities, the
+draft/test-mode flags and the exact software digest. Replay refuses any changed
+store byte, dataset, policy, requirements or implementation.
 
 `scientific_status` of the comparison is always `unassessed`. Each source's
-`scientific_status` comes only from a supplied acceptance-assessment record that
-validates against the same requirements bytes and the requested dataset
-identity; a store's own `scientific_status` attribute is reported as
-`store_declared_status` and never promoted.
+`scientific_status` comes only from a supplied, signed acceptance-assessment
+record that validates against the same requirements bytes and the dataset
+holding the compared store; a store's own `scientific_status` attribute is
+reported as `store_declared_status` and never promoted.
 
 ## Open gates
 

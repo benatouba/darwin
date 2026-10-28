@@ -1,0 +1,29 @@
+{
+  "assessment": "assessment-2-accepted.json",
+  "authorizations": [
+    {
+      "id": "synthetic:reviewer-authorization",
+      "path": "authorizations/reviewer.json",
+      "version": "1"
+    }
+  ],
+  "evidence": [
+    {
+      "id": "darwin-evidence:cc6019e30099cec0229d99a5093811f34657d600bea2f5a293faf975c3948eed",
+      "path": "evidence/e4c6272a8b3cdbdf250a7e118e554c03d74178d03ebc609cd403e3c245417c61.json",
+      "version": "1"
+    },
+    {
+      "id": "darwin-evidence:9a86092e70654b83f8bc92f53656e3374dd422adb7aa58acad6faa719a6c9c5e",
+      "path": "evidence/7a649c5fd6b91ba82782d26def6d3bb25c4819b20cd80db718decda25f4d8542.json",
+      "version": "1"
+    },
+    {
+      "id": "darwin-evidence:d342db871e7705ac4e34ee0a0b95d18af0ddafeedb79250d691be18d07f616cb",
+      "path": "evidence/b1900ebf54f160b636c4eb1bdc79112dd33a5ab645a112225ac06df521e8748f.json",
+      "version": "1"
+    }
+  ],
+  "prior": "assessment-1-rejected.json",
+  "requirements": "requirements.json"
+}

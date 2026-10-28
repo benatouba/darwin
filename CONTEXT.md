@@ -33,7 +33,7 @@ A Darwin receipt (`darwin.assessment-evidence/1`) of one check outcome for one c
 _Avoid_: validation result, approval
 
 **Acceptance assessment**:
-A portable record (setups contract `darwin-wrf-setups.acceptance-assessment/1`) stating that an exact dataset is accepted, rejected or unassessed under an exact requirements revision, citing exact evidence and, for a decision, the reviewer or authorized policy that made it. A reassessment supersedes an earlier record without rewriting it.
+A portable record (setups contract `darwin-wrf-setups.acceptance-assessment/1`) stating that an exact dataset is accepted, rejected or unassessed under an exact requirements revision, citing exact evidence and, for a decision, the reviewer or authorized policy that made it. A decision is valid only with a detached SSH signature over its exact bytes by a key the reviewed requirements pin for that authority. It binds the product's dataset identity, never a single store. A reassessment supersedes an earlier record without rewriting it.
 _Avoid_: approval flag, QC pass
 
 **Scientific status**:

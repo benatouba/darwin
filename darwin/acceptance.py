@@ -12,10 +12,14 @@ Three separate things, never one flag:
   contract; Darwin produces and consumes it). ``accepted``/``rejected`` need a
   reviewer or policy that the exact requirements list as authorized;
   ``unassessed`` has no authority. A reassessment supersedes its prior record
-  by exact bytes and keeps every prior evidence entry.
+  by exact bytes and keeps every prior evidence entry. A decision only counts
+  once that authority signs the exact record bytes with a key the reviewed
+  requirements pin for it: ``ssh-keygen -Y sign -f KEY -n darwin-acceptance
+  RECORD`` writes the detached ``RECORD.sig``. Darwin never holds or uses a
+  reviewer's private key.
 * **Validation.** :func:`validate_assessment` (from
-  :mod:`darwin.study_contracts`) checks a record's exact bindings. It never
-  grants acceptance and cannot prove that an authorization is genuine.
+  :mod:`darwin.study_contracts`) checks a record's exact bindings and its
+  decision signature. It never grants acceptance.
 
 Execution completeness and publication are recorded elsewhere (the product
 handoff and the dashboard catalogue); nothing here reads or changes them.
@@ -34,6 +38,7 @@ from pathlib import Path
 
 import jsonschema
 
+from darwin.decision_signature import NAMESPACE as SIGNATURE_NAMESPACE
 from darwin.errors import emit_error
 from darwin.study_contracts import (
     ASSESSMENT_CONTRACT,
@@ -41,7 +46,9 @@ from darwin.study_contracts import (
     REQUIREMENTS_CONTRACT,
     SYNTHETIC_PREFIX,
     ArtifactKey,
+    check_assessment,
     inspect_requirements,
+    load_assessment_bundle,
     parse_requirements,
     refuse_synthetic,
     schema_validator,
@@ -55,6 +62,7 @@ __all__ = [
     "ASSESSMENT_CONTRACT",
     "EVIDENCE_CONTRACT",
     "REQUIREMENTS_CONTRACT",
+    "SIGNATURE_NAMESPACE",
     "AcceptanceError",
     "canonical_bytes",
     "evidence_reference",
@@ -237,12 +245,19 @@ def record_assessment(  # noqa: PLR0913
     """Return the exact bytes of a new acceptance-assessment record.
 
     ``accepted``/``rejected`` need ``authority``: a reviewer or explicitly
-    authorized policy listed by these exact requirements, plus ``authorization``,
-    the exact bytes of the authorization artifact whose sha256 the requirements
-    pin for it. Darwin never infers either, and execution success or check
-    outcomes alone never set a status. Holding those bytes is not proof that
-    the reviewer or policy issued them: authenticating an authorization is a
-    deployment/human gate outside Darwin (see docs/integration-spec.md).
+    authorized policy listed by these exact requirements (the requirements
+    entry may be passed as is; its ``signing_keys`` are not copied into the
+    record), plus ``authorization``, the exact bytes of the authorization
+    artifact whose sha256 the requirements pin for it. Darwin never infers
+    either, and execution success or check outcomes alone never set a status.
+
+    Every binding is validated except the decision signature, which cannot
+    exist yet: the returned decision bytes are **unsigned** and are not a valid
+    decision until the authority signs exactly these bytes with a key the
+    requirements pin for it (``ssh-keygen -Y sign -f KEY -n darwin-acceptance
+    RECORD``, which writes ``RECORD.sig``). Store the record unchanged next to
+    that signature; :func:`validate_assessment` and the handoff/comparison
+    interfaces require it. Darwin never signs on a reviewer's behalf.
     ``evidence`` are exact Darwin receipt bytes for this dataset and
     requirements. A reassessment passes the exact ``prior`` record bytes and
     the bytes of the evidence it cites (``prior_evidence``, keyed by
@@ -289,11 +304,14 @@ def record_assessment(  # noqa: PLR0913
         "requirements": requirements_identity,
         "status": status,
         "evidence": entries,
-        "authority": dict(authority) if authority is not None else None,
+        # A requirements entry's pinned keys stay in the requirements, not the record.
+        "authority": None
+        if authority is None
+        else {key: value for key, value in authority.items() if key != "signing_keys"},
         "supersedes": None if prior is None else {"id": prior_id, "sha256": sha256_bytes(prior)},
     }
     data = canonical_bytes(document)
-    validate_assessment(
+    check_assessment(
         data,
         requirements=requirements,
         dataset=identity,
@@ -307,6 +325,7 @@ def record_assessment(  # noqa: PLR0913
         },
         prior=prior,
         allow_synthetic=allow_synthetic,
+        verify_signature_bytes=False,
     )
     return data
 
@@ -354,24 +373,55 @@ def _parser() -> argparse.ArgumentParser:
     record.add_argument("--prior", help="exact prior record bytes")
     record.add_argument("--prior-evidence", nargs="*", default=[], help="receipts the prior cites")
     record.add_argument("--output", type=Path, required=True)
-    for command in (checks, record):
+    validate = commands.add_parser(
+        "validate", help="validate one signed (or unassessed) record from an assessment bundle"
+    )
+    validate.add_argument(
+        "--bundle",
+        type=Path,
+        required=True,
+        help="assessment bundle (darwin.study_contracts.load_assessment_bundle)",
+    )
+    for command in (checks, record, validate):
         command.add_argument("--dataset", required=True, help="JSON {id, version, sha256}")
-        command.add_argument("--requirements", required=True, help="exact requirements bytes")
+        command.add_argument(
+            "--requirements",
+            required=command is not validate,
+            help="exact requirements bytes"
+            + (" (default: the bundle's)" if command is validate else ""),
+        )
         command.add_argument("--test-mode", action="store_true", help="accept synthetic fixtures")
     return parser
 
 
 def main(argv: Iterable[str] | None = None) -> None:
-    """CLI over the same functions: ``run-checks`` and ``record``.
+    """CLI over the same functions: ``run-checks``, ``record`` and ``validate``.
 
-    Validation of an existing record is ``python -m darwin.handoff validate``
-    (as part of a handoff) or :func:`validate_assessment` from Python.
+    ``record`` writes an unsigned decision and reports the ``ssh-keygen`` command
+    that signs it; ``validate`` checks a record, its signature and bindings from
+    an assessment bundle (also part of ``python -m darwin.handoff validate``).
     """
     args = _parser().parse_args(None if argv is None else list(argv))
     try:
         dataset = _read_json(args.dataset)
-        requirements = _read_bytes(args.requirements)
-        if args.command == "run-checks":
+        requirements = _read_bytes(args.requirements) if args.requirements else None
+        if args.command == "validate":
+            bundle = load_assessment_bundle(args.bundle)
+            requirements = requirements or bundle.get("requirements")
+            if requirements is None:
+                raise AcceptanceError("invalid_bundle", f"{args.bundle} names no requirements")
+            state = validate_assessment(
+                bundle["assessment"],
+                requirements=requirements,
+                dataset=dataset,
+                evidence=bundle["evidence"],
+                authorizations=bundle["authorizations"],
+                prior=bundle["prior"],
+                signature=bundle["signature"],
+                allow_synthetic=args.test_mode,
+            )
+            result = {"contract": ASSESSMENT_CONTRACT, **state}
+        elif args.command == "run-checks":
             receipts = run_checks(
                 dataset,
                 requirements,
@@ -405,6 +455,13 @@ def main(argv: Iterable[str] | None = None) -> None:
             )
             _write_new(args.output, data)
             result = {"contract": ASSESSMENT_CONTRACT, "sha256": sha256_bytes(data)}
+            if args.status != "unassessed":
+                # Unsigned until the authority signs these exact bytes.
+                result["signature"] = f"{args.output}.sig"
+                key = "<your pinned key>"
+                result["sign"] = (
+                    f"ssh-keygen -Y sign -f {key} -n {SIGNATURE_NAMESPACE} {args.output}"
+                )
     except AcceptanceError as error:
         emit_error(error.code, str(error))
     sys.stdout.write(json.dumps(result) + "\n")

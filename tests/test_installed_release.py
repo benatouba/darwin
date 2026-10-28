@@ -18,7 +18,16 @@ from packaging.requirements import Requirement
 
 ROOT = Path(__file__).resolve().parents[1]
 CJC_FIXTURES = ROOT / "tests" / "data" / "cjc-simulation-output-v2"
-RUNTIME = {"jsonschema", "netcdf4", "numpy", "pandas", "pyyaml", "xarray", "zarr"}
+RUNTIME = {
+    "cryptography",
+    "jsonschema",
+    "netcdf4",
+    "numpy",
+    "pandas",
+    "pyyaml",
+    "xarray",
+    "zarr",
+}
 EXTRAS = {"research", "native", "visualization", "all"}
 # Representative packages that must never be runtime prerequisites.
 OPTIONAL = {

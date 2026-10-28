@@ -44,9 +44,11 @@ Darwin runs scientific checks and prepares evidence against a named requirements
 revision. Acceptance is granted by a reviewer or explicitly authorized policy and
 recorded portably against exact datasets, requirements, evidence and authority.
 Execution success alone is not acceptance. Darwin binds a decision to the exact
-authorization artifact bytes the reviewed requirements pin; authenticating that
-the named reviewer or policy actually issued the decision remains a human and
-deployment gate (see docs/product-handoff.md, "Still open").
+authorization artifact bytes the reviewed requirements pin and requires a
+detached SSH signature over the record by a key those requirements pin for the
+authority (README, "Signed acceptance decisions"). Pinning, rotating and
+revoking keys stays a human requirements-review step (see
+docs/product-handoff.md, "Still open").
 
 Darwin prepares validated products and publication-ready handoffs, independently
 of the dashboard. The dashboard catalogue owns publication/access and current

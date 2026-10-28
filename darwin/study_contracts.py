@@ -1,9 +1,11 @@
 """Consumer validation of setups-owned study requirements and acceptance records.
 
 ``darwin-wrf-setups`` owns ``study-requirements/1`` and ``acceptance-assessment/1``.
-Darwin vendors their schemas byte-for-byte and checks exact bindings. Validation
-never grants acceptance and cannot establish that an authorization is genuine.
-Identities in the ``synthetic:`` namespace are refused outside explicit test mode.
+Darwin vendors their schemas byte-for-byte and checks exact bindings, including
+the detached SSH signature (SSHSIG, namespace ``darwin-acceptance``) that an
+``accepted``/``rejected`` decision needs from a key the reviewed requirements pin
+for its authority. Validation never grants acceptance. Identities in the
+``synthetic:`` namespace are refused outside explicit test mode.
 """
 
 from __future__ import annotations
@@ -17,6 +19,7 @@ from pathlib import Path
 
 import jsonschema
 
+from darwin.decision_signature import SignatureError, verify_signature
 from darwin.errors import CodedError
 
 REQUIREMENTS_CONTRACT = "darwin-wrf-setups.study-requirements/1"
@@ -41,9 +44,7 @@ def sha256(data: bytes) -> str:
 @cache
 def schema_validator(*parts: str) -> jsonschema.Draft202012Validator:
     """Cached validator for a schema shipped inside the ``darwin`` package."""
-    return jsonschema.Draft202012Validator(
-        json.loads(files("darwin").joinpath(*parts).read_text())
-    )
+    return jsonschema.Draft202012Validator(json.loads(files("darwin").joinpath(*parts).read_text()))
 
 
 def _parse(data: bytes, contract: str, schema: str, invalid: str) -> dict:
@@ -160,7 +161,7 @@ def _darwin_receipt(data: bytes) -> dict | None:
     """A cited Darwin receipt, or ``None`` for evidence of another (opaque) type."""
     try:
         receipt = json.loads(data)
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return None
     if not isinstance(receipt, dict) or receipt.get("contract") != EVIDENCE_CONTRACT:
         return None
@@ -239,26 +240,63 @@ def validate_assessment(  # noqa: PLR0913
     evidence: Mapping[ArtifactKey, bytes],
     authorizations: Mapping[ArtifactKey, bytes] | None = None,
     prior: bytes | None = None,
+    signature: bytes | None = None,
     allow_synthetic: bool = False,
 ) -> dict:
-    """Check one record's exact bindings and report its state; never approve science.
+    """Check one record's exact bindings and signature and report its state.
 
     ``dataset`` is the caller's verified product identity (never taken from the
     record). ``evidence`` and ``authorizations`` hold the exact bytes of every
     cited artifact keyed by ``(id, version)``; ``prior`` the exact bytes of a
-    superseded record.
+    superseded record; ``signature`` the detached armored SSHSIG over
+    ``assessment`` (the ``<record>.sig`` file ``ssh-keygen -Y sign -n
+    darwin-acceptance`` writes).
 
-    A decision must cite authorization bytes whose sha256 the requirements pin.
-    That binds the record to the reviewed authorization artifact, so copying an
-    authority entry out of the requirements is not enough. It cannot prove the
-    artifact was issued by that reviewer or policy: authenticating issuers is a
-    deployment gate outside Darwin.
+    A decision must cite authorization bytes whose sha256 the requirements pin
+    and carry a signature over its exact bytes by one of the ``signing_keys``
+    the reviewed requirements pin for its authority. Refusals:
+    ``signature_unavailable``, ``signature_invalid``,
+    ``signature_namespace_mismatch``, ``signer_not_authorized`` (including a key
+    pinned for another authority) and ``signature_mismatch``. An unassessed
+    record carries no signature (``unexpected_signature``). The report's
+    ``signer`` is the pinned key that signed, or ``None``. Trust rests on the
+    review that pinned the keys; validation never judges the science.
 
     Cited Darwin receipts (``darwin.assessment-evidence/1``) must report this
     dataset, requirements and criterion, and an ``accepted`` record needs a
     passing receipt for every criterion whose cited evidence is all Darwin
     receipts (a failed attempt may stay cited next to a passing rerun). Other
     evidence types are opaque and checked by exact bytes only.
+    """
+    return check_assessment(
+        assessment,
+        requirements=requirements,
+        dataset=dataset,
+        evidence=evidence,
+        authorizations=authorizations,
+        prior=prior,
+        signature=signature,
+        allow_synthetic=allow_synthetic,
+    )
+
+
+def check_assessment(  # noqa: PLR0913
+    assessment: bytes,
+    *,
+    requirements: bytes,
+    dataset: Mapping,
+    evidence: Mapping[ArtifactKey, bytes],
+    authorizations: Mapping[ArtifactKey, bytes] | None = None,
+    prior: bytes | None = None,
+    signature: bytes | None = None,
+    allow_synthetic: bool = False,
+    verify_signature_bytes: bool = True,
+) -> dict:
+    """:func:`validate_assessment`, optionally without the decision signature step.
+
+    ``verify_signature_bytes=False`` exists only for
+    :func:`darwin.acceptance.record_assessment`, which checks a decision before the
+    reviewer has signed it; a record checked that way is not a valid decision.
     """
     document = _parse_assessment(assessment)
     synthetic = _refuse_untrusted(document, allow_synthetic)
@@ -272,16 +310,21 @@ def validate_assessment(  # noqa: PLR0913
         raise StudyContractError("dataset_mismatch", "record is bound to a different dataset")
     criteria = {c["id"]: c["evidence_type"] for c in rules["acceptance"]["criteria"]}
     outcomes = _evidence_outcomes(document, criteria, evidence)
+    signer = None
     if document["status"] != "unassessed":
         if not inspected["ready"]:
             raise StudyContractError(
                 "requirements_not_reviewed", "only reviewed requirements can carry a decision"
             )
-        if document["authority"] not in rules["acceptance"]["authorized_authorities"]:
-            raise StudyContractError(
-                "unauthorized_authority", "authority is not authorized by these requirements"
-            )
+        authority = authorized_authority(document["authority"], rules)
         _cited_bytes(document["authority"]["authorization"], authorizations or {}, "authorization")
+        if verify_signature_bytes:
+            signer = _check_signature(assessment, signature, authority["signing_keys"])
+    elif signature is not None:
+        raise StudyContractError(
+            "unexpected_signature",
+            "an unassessed record is not a decision and carries no signature",
+        )
     if document["status"] == "accepted":
         _check_acceptance(outcomes, criteria)
     if document["supersedes"]:
@@ -298,8 +341,29 @@ def validate_assessment(  # noqa: PLR0913
         "authority": document["authority"],
         "evidence": document["evidence"],
         "supersedes": document["supersedes"],
+        "signer": signer,
         "synthetic": synthetic,
     }
+
+
+def authorized_authority(authority: Mapping, rules: Mapping) -> dict:
+    """The requirements entry naming exactly this authority (kind, id, authorization)."""
+    for entry in rules["acceptance"]["authorized_authorities"]:
+        if all(entry[field] == authority[field] for field in ("kind", "id", "authorization")):
+            return entry
+    raise StudyContractError(
+        "unauthorized_authority", "authority is not authorized by these requirements"
+    )
+
+
+def _check_signature(assessment: bytes, signature: bytes | None, keys: list[str]) -> str:
+    """A decision's detached signature covers its exact bytes by a key pinned for it."""
+    if signature is None:
+        raise StudyContractError("signature_unavailable", "a decision needs its detached signature")
+    try:
+        return verify_signature(assessment, signature, keys)
+    except SignatureError as error:
+        raise StudyContractError(error.code, str(error)) from error
 
 
 def _check_prior(document: dict, prior: bytes | None, allow_synthetic: bool) -> None:
@@ -333,7 +397,9 @@ def load_assessment_bundle(path: str | Path) -> dict:
 
     The bundle is JSON with paths relative to its own directory, in the setups
     fixture-manifest shape: ``{"assessment", "requirements"?, "evidence":
-    [{id, version, path}], "authorizations": [{id, version, path}], "prior"?}``.
+    [{id, version, path}], "authorizations": [{id, version, path}], "prior"?,
+    "signature"?}``. ``signature`` names the detached ``<record>.sig`` file a
+    decision needs; it is loaded as ``signature`` bytes (``None`` when absent).
     """
     path = Path(path)
     try:
@@ -344,6 +410,9 @@ def load_assessment_bundle(path: str | Path) -> dict:
             "evidence": _keyed_bytes(bundle.get("evidence", []), root),
             "authorizations": _keyed_bytes(bundle.get("authorizations", []), root),
             "prior": (root / bundle["prior"]).read_bytes() if bundle.get("prior") else None,
+            "signature": (
+                (root / bundle["signature"]).read_bytes() if bundle.get("signature") else None
+            ),
         }
         if bundle.get("requirements"):
             loaded["requirements"] = (root / bundle["requirements"]).read_bytes()

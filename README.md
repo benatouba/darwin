@@ -55,6 +55,49 @@ See [`docs/operations.md`](docs/operations.md) for the supported operation inven
 and [`docs/product-handoff.md`](docs/product-handoff.md) for the product handoff and
 portable acceptance contracts.
 
+## Signed acceptance decisions
+
+The source of truth for a dataset is the WRF setup the researcher chose. Its
+reviewed setups `study-requirements/1` define the acceptance criteria and the
+authorities (reviewer or policy) that may decide, and pin for each authority the
+Ed25519 OpenSSH public keys (`signing_keys`) allowed to sign its decisions. An
+`accepted` or `rejected` `darwin-wrf-setups.acceptance-assessment/1` record is
+valid only with a detached SSHSIG over its exact bytes, under the namespace
+`darwin-acceptance`, by one of those keys. `unassessed` records are never signed.
+
+1. Record the decision. `darwin.acceptance.record_assessment(...)` (CLI
+   `python -m darwin.acceptance record ...`) validates every binding and returns
+   the **unsigned** record bytes. Darwin never holds a reviewer's private key.
+2. The authority signs the exact file, without editing or re-formatting it:
+   `ssh-keygen -Y sign -f ~/.ssh/<pinned key> -n darwin-acceptance record.json`
+   writes `record.json.sig`. Keep both files together.
+3. Consumers pass the signature with the record. In Python it is
+   `validate_assessment(..., signature=sig_bytes)`; in an assessment bundle
+   (`darwin.study_contracts.load_assessment_bundle`) it is the `"signature"`
+   path, used by `python -m darwin.acceptance validate --bundle`,
+   `python -m darwin.handoff ... --assessment PRODUCT=BUNDLE` and
+   `python -m darwin.comparison_policy ... --assessment NAME=BUNDLE`.
+
+Verification (`darwin.decision_signature`, a copy of the setups verifier kept in
+parity by the copied setups fixtures) parses the SSHSIG, requires the
+`darwin-acceptance` namespace and a key pinned for the record's own authority,
+and checks the signature over the exact bytes. It needs the `cryptography`
+runtime dependency, not `ssh-keygen`. Refusals: `signature_unavailable`,
+`signature_invalid`, `signature_namespace_mismatch`, `signer_not_authorized`
+(including a key pinned for another authority), `signature_mismatch` and
+`unexpected_signature` (a signed unassessed record). See the setups README for
+the reviewer how-to.
+
+A decision binds a product **dataset**, not a store:
+
+> setup → reviewed requirements → signed acceptance → dataset → compared store
+
+The dataset identity is `darwin.handoff.dataset_identity(product_id, version,
+artifacts)` over the producer's handoff artifact list. A comparison reports a
+source as accepted only when its signed record validates against that dataset and
+the compared store is one of its artifacts (see
+[`docs/comparison-policy.md`](docs/comparison-policy.md)).
+
 ## Tests on a fresh checkout
 
 Install [uv](https://docs.astral.sh/uv/) and Python 3.14, then run:

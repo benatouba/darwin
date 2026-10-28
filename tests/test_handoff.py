@@ -11,13 +11,20 @@ import json
 from pathlib import Path
 
 import pytest
+from decision_signing import sign
 
 from darwin import acceptance, handoff
 from darwin.publisher.immutable import staged_artifact
 from darwin.publisher.manifest import load_manifest
 from darwin.publisher.smoke import build_smoke_release
 
-SETUPS = Path(__file__).parent / "fixtures" / "setups-contracts" / "fixtures" / "acceptance-assessment-v1"
+SETUPS = (
+    Path(__file__).parent
+    / "fixtures"
+    / "setups-contracts"
+    / "fixtures"
+    / "acceptance-assessment-v1"
+)
 REQUIREMENTS = (SETUPS / "requirements.json").read_bytes()
 REVIEWER = json.loads(REQUIREMENTS)["acceptance"]["authorized_authorities"][0]
 AUTHORIZATION = (SETUPS / "authorizations" / "reviewer.json").read_bytes()
@@ -168,7 +175,10 @@ def _assessments_for(dataset):
         "evidence": {**failing, **passing},
         "authorizations": AUTHORIZATIONS,
     }
-    return [{**base, "assessment": rejected}, {**base, "assessment": accepted, "prior": rejected}]
+    return [
+        {**base, "assessment": rejected, "signature": sign(rejected)},
+        {**base, "assessment": accepted, "prior": rejected, "signature": sign(accepted)},
+    ]
 
 
 def test_status_and_completeness_are_independent_and_history_is_kept(tmp_path, smoke_artifacts):
@@ -225,6 +235,38 @@ def test_acceptance_for_another_dataset_or_a_broken_chain_is_refused(tmp_path, s
             allow_synthetic=True,
         )
     assert broken.value.code == "broken_acceptance_chain"
+
+
+@pytest.mark.parametrize(
+    "signature,code",
+    [(None, "signature_unavailable"), ("policy", "signer_not_authorized")],
+)
+def test_a_handoff_cites_only_decisions_signed_by_their_pinned_authority(
+    tmp_path, smoke_artifacts, signature, code
+):
+    first = _prepare(tmp_path, smoke_artifacts)
+    landmask = next(p for p in first["products"] if p["product_id"] == "GAR_d02km_static_landmask")
+    chain = _assessments_for(landmask["dataset"])
+    accepted = chain[1]["assessment"]
+    chain[1]["signature"] = None if signature is None else sign(accepted, signature)
+    with pytest.raises(acceptance.AcceptanceError) as prepared:
+        _prepare(
+            tmp_path,
+            smoke_artifacts,
+            name="unsigned.json",
+            assessments={"GAR_d02km_static_landmask": chain},
+            allow_synthetic=True,
+        )
+    assert prepared.value.code == code
+    document, signed = _assessed(tmp_path / "signed", smoke_artifacts)
+    signed[1]["signature"] = chain[1]["signature"]
+    with pytest.raises(handoff.HandoffError) as validated:
+        handoff.validate_handoff(
+            json.dumps(document).encode(),
+            assessments={"GAR_d02km_static_landmask": signed},
+            allow_synthetic=True,
+        )
+    assert validated.value.code == code
 
 
 def _mutated(tmp_path, smoke_artifacts, change):
@@ -289,9 +331,7 @@ def _assessed(tmp_path, smoke_artifacts):
 
 def _forge(document):
     forged = json.loads(json.dumps(document))
-    product = next(
-        p for p in forged["products"] if p["product_id"] == "GAR_d02km_static_landmask"
-    )
+    product = next(p for p in forged["products"] if p["product_id"] == "GAR_d02km_static_landmask")
     product["acceptance"] = [
         {
             **product["acceptance"][-1],
@@ -336,7 +376,9 @@ def test_unverified_reading_still_refuses_an_inconsistent_chain(tmp_path, smoke_
 
 def test_artifacts_built_from_sources_outside_the_manifest_are_refused(tmp_path, smoke_artifacts):
     foreign = _artifact(
-        tmp_path / "foreign", "GAR_d02km_static_landmask.bin", "other",
+        tmp_path / "foreign",
+        "GAR_d02km_static_landmask.bin",
+        "other",
         sources=[{"id": "other-release", "sha256": "e" * 64}],
     )
     smoke_artifacts["GAR_d02km_static_landmask"] = [foreign]
@@ -349,9 +391,11 @@ def test_the_recipe_is_the_exact_release_manifest(tmp_path, smoke_artifacts):
     manifest = load_manifest(SMOKE)
     document = _prepare(tmp_path, smoke_artifacts)
     assert {json.dumps(p["recipe"]) for p in document["products"]} == {
-        json.dumps({
-            "id": "release-manifest:smoke-jan2020-prcp",
-            "version": manifest.release,
-            "sha256": hashlib.sha256(SMOKE.read_bytes()).hexdigest(),
-        })
+        json.dumps(
+            {
+                "id": "release-manifest:smoke-jan2020-prcp",
+                "version": manifest.release,
+                "sha256": hashlib.sha256(SMOKE.read_bytes()).hexdigest(),
+            }
+        )
     }

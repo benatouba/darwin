@@ -43,9 +43,12 @@ Each product in a handoff:
   history, oldest first. Each record supersedes the one before it. The status
   is the status of the latest record, or `unassessed` when there is none.
   A reference is a claim: `validate_handoff` re-derives every reference from
-  the exact record bytes (`assessments=`, CLI `--assessment PRODUCT=BUNDLE`)
-  and refuses a forged or altered one (`acceptance_mismatch`) or one without
-  record bytes (`acceptance_unverified`). `verify_acceptance=False`
+  the exact record bytes and each decision's detached signature
+  (`assessments=`, CLI `--assessment PRODUCT=BUNDLE`) and refuses a forged or
+  altered one (`acceptance_mismatch`), one without record bytes
+  (`acceptance_unverified`) and a decision without a valid signature by a key
+  the requirements pin for its authority (`signature_unavailable`,
+  `signer_not_authorized`, ...). `verify_acceptance=False`
   (`--no-verify-acceptance`) only checks the chain's internal consistency and
   is for consumers that validate every cited record themselves.
 - **Legacy fields.** Every field of the unversioned legacy format except
@@ -81,7 +84,10 @@ and the expected outcome or error code:
   completeness are independent. The cited records, evidence receipts,
   authorization artifact and requirements are under `acceptance/`, with one
   `load_assessment_bundle` file per record (`bundle-*.json`) that cases name
-  under `acceptance`.
+  under `acceptance`. Each decision has its detached signature next to it
+  (`assessment-*.json.sig`, made with the setups TEST-ONLY reviewer key), and
+  the `unsigned-decision` case (`unsigned-bundle-2-accepted.json`) is refused
+  `signature_unavailable`.
 - `legacy-v1.json`: the same manifest in the legacy format.
 - `negative/`: an unknown contract, a publication claim, a status no record
   backs, a tampered artifact digest, a dynamic version and a forged acceptance
@@ -121,6 +127,12 @@ threshold.
 - A reassessment passes the exact prior record bytes. The new record
   supersedes the prior one by sha256 and keeps every prior evidence entry. The
   prior bytes are never changed.
+- A decision is returned **unsigned**. It counts only after the authority signs
+  the exact bytes with a key the reviewed requirements pin for it
+  (`ssh-keygen -Y sign -f KEY -n darwin-acceptance RECORD` writes
+  `RECORD.sig`); the CLI `record` output names that file and command. Darwin
+  never holds a reviewer's key. `python -m darwin.acceptance validate --bundle
+  BUNDLE --dataset DATASET` checks a signed record (bundle key `signature`).
 
 ## Migration of the legacy auto-publication
 
@@ -141,13 +153,11 @@ Still open:
 
 - Real reviewed requirements, checks and authorities (setups#39, darwin#15 and
   darwin#16).
-- Authenticating an authority beyond binding its authorization bytes. Darwin
-  checks that a decision cites the exact authorization artifact the reviewed
-  requirements pin, but holding those bytes does not prove that the reviewer
-  or policy issued the decision. Signing or otherwise attesting who records a
-  decision is a human/deployment gate (reviewed requirements, controlled
-  storage of authorization artifacts and of records); Darwin does not provide
-  a PKI. Consumers must not present `accepted` as authenticated beyond that.
+- Key management. A decision must be signed by an SSH key the reviewed
+  requirements pin for its authority, so trust rests on that review: Darwin
+  proves the holder of a pinned key signed the exact bytes, not that the key
+  was not compromised. Registering, rotating and revoking keys is a
+  requirements-review (human) step; Darwin provides no PKI.
 - Dashboard consumption of v2 and of the setups assessment records, replacing
   its provisional acceptance reference (dashboard#18). The dashboard keys
   imports by `manifest_revision`, so a new handoff that adds assessments for the

@@ -22,9 +22,9 @@
           "requirements": {
             "id": "synthetic:requirements",
             "revision": "1",
-            "sha256": "ebd74747847471fa3997aad65621299194c9b8c2092c35adb96a4c8aae0dab50"
+            "sha256": "2127bfd3ce7bf8e7eb24b173ac93c8aba640e31c364094be46875e1877d0e6b0"
           },
-          "sha256": "016ad5e8ad7c6462f0eae81b1bce9bd8fa4eca63e3768ed69ccaa10ea927a00e",
+          "sha256": "6d6f12264edcbe07c616d9b2cd9bbf4c8376ff9c3d18cf89bf3b68d06b675578",
           "status": "rejected",
           "supersedes": null
         },
@@ -43,13 +43,13 @@
           "requirements": {
             "id": "synthetic:requirements",
             "revision": "1",
-            "sha256": "ebd74747847471fa3997aad65621299194c9b8c2092c35adb96a4c8aae0dab50"
+            "sha256": "2127bfd3ce7bf8e7eb24b173ac93c8aba640e31c364094be46875e1877d0e6b0"
           },
-          "sha256": "369399b054c0a5c75dbda8097c5eec165a1ba2340520b7d1b465415489970329",
+          "sha256": "eb9042447999984a4155d28e52b5833f4ebb5febb4283f109fa714c4c3f165ee",
           "status": "accepted",
           "supersedes": {
             "id": "synthetic:prcp-slice-assessment-1",
-            "sha256": "016ad5e8ad7c6462f0eae81b1bce9bd8fa4eca63e3768ed69ccaa10ea927a00e"
+            "sha256": "6d6f12264edcbe07c616d9b2cd9bbf4c8376ff9c3d18cf89bf3b68d06b675578"
           }
         }
       ],

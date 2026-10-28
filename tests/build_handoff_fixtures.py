@@ -12,11 +12,19 @@ import json
 import sys
 from pathlib import Path
 
+from decision_signing import sign
+
 from darwin import acceptance, handoff
 from darwin.publisher.immutable import staged_artifact
 from darwin.publisher.smoke import build_smoke_release
 
-SETUPS = Path(__file__).parent / "fixtures" / "setups-contracts" / "fixtures" / "acceptance-assessment-v1"
+SETUPS = (
+    Path(__file__).parent
+    / "fixtures"
+    / "setups-contracts"
+    / "fixtures"
+    / "acceptance-assessment-v1"
+)
 STAMP = "2026-10-27T00:00:00Z"
 AUTHORIZATION_ID = ("synthetic:reviewer-authorization", "1")
 CREATOR = "synthetic:darwin-fixture-builder"
@@ -81,17 +89,29 @@ def _write(path: Path, data: bytes) -> None:
     path.write_bytes(data)
 
 
-def _bundle(root: Path, name: str, record: str, prior: str | None, evidence: dict) -> None:
+def _bundle(
+    root: Path, name: str, record: str, prior: str | None, evidence: dict, signed: bool = True
+) -> None:
     """A load_assessment_bundle file citing exact bytes by relative path."""
     bundle = {
         "assessment": record,
+        **({"signature": f"{record}.sig"} if signed else {}),
         "requirements": "requirements.json",
         "evidence": [
-            {"id": key[0], "version": key[1], "path": f"evidence/{acceptance.sha256_bytes(data)}.json"}
+            {
+                "id": key[0],
+                "version": key[1],
+                "path": f"evidence/{acceptance.sha256_bytes(data)}.json",
+            }
             for key, data in evidence.items()
         ],
-        "authorizations": [{"id": AUTHORIZATION_ID[0], "version": AUTHORIZATION_ID[1],
-                            "path": "authorizations/reviewer.json"}],
+        "authorizations": [
+            {
+                "id": AUTHORIZATION_ID[0],
+                "version": AUTHORIZATION_ID[1],
+                "path": "authorizations/reviewer.json",
+            }
+        ],
         "prior": prior,
     }
     _write(root / "acceptance" / name, acceptance.canonical_bytes(bundle))
@@ -103,7 +123,10 @@ def _assessments(root: Path, dataset: dict) -> list[dict]:
     authorization = (SETUPS / "authorizations/reviewer.json").read_bytes()
     _write(root / "acceptance/authorizations/reviewer.json", authorization)
     reviewer = json.loads(requirements)["acceptance"]["authorized_authorities"][0]
-    assert (reviewer["authorization"]["id"], reviewer["authorization"]["version"]) == AUTHORIZATION_ID
+    assert (
+        reviewer["authorization"]["id"],
+        reviewer["authorization"]["version"],
+    ) == AUTHORIZATION_ID
     failing = acceptance.run_checks(
         dataset,
         requirements,
@@ -140,13 +163,40 @@ def _assessments(root: Path, dataset: dict) -> list[dict]:
     )
     _write(root / "acceptance/assessment-1-rejected.json", rejected)
     _write(root / "acceptance/assessment-2-accepted.json", accepted)
-    _bundle(root, "bundle-1-rejected.json", "assessment-1-rejected.json", None,
-            dict(list(evidence.items())[:1]))
-    _bundle(root, "bundle-2-accepted.json", "assessment-2-accepted.json",
-            "assessment-1-rejected.json", evidence)
-    base = {"requirements": requirements, "evidence": evidence,
-            "authorizations": {AUTHORIZATION_ID: authorization}}
-    return [{**base, "assessment": rejected}, {**base, "assessment": accepted, "prior": rejected}]
+    # The reviewer signs each decision's exact bytes with the TEST-ONLY fixture key.
+    _write(root / "acceptance/assessment-1-rejected.json.sig", sign(rejected))
+    _write(root / "acceptance/assessment-2-accepted.json.sig", sign(accepted))
+    _bundle(
+        root,
+        "bundle-1-rejected.json",
+        "assessment-1-rejected.json",
+        None,
+        dict(list(evidence.items())[:1]),
+    )
+    _bundle(
+        root,
+        "bundle-2-accepted.json",
+        "assessment-2-accepted.json",
+        "assessment-1-rejected.json",
+        evidence,
+    )
+    _bundle(
+        root,
+        "unsigned-bundle-2-accepted.json",
+        "assessment-2-accepted.json",
+        "assessment-1-rejected.json",
+        evidence,
+        signed=False,
+    )
+    base = {
+        "requirements": requirements,
+        "evidence": evidence,
+        "authorizations": {AUTHORIZATION_ID: authorization},
+    }
+    return [
+        {**base, "assessment": rejected, "signature": sign(rejected)},
+        {**base, "assessment": accepted, "prior": rejected, "signature": sign(accepted)},
+    ]
 
 
 def _negative(root: Path, name: str, document: dict, change) -> None:
@@ -189,47 +239,115 @@ def build(root: Path) -> None:
     )
     for name in ("handoff-unassessed.json", "handoff-assessed.json"):
         (root / f"{name}.identity.json").unlink()
-    _negative(root, "unknown-contract.json", unassessed,
-              lambda d: d.update(contract="darwin.product-handoff/99"))
-    _negative(root, "publication-claim.json", unassessed,
-              lambda d: d["products"][0].update(status="published"))
-    _negative(root, "unbacked-acceptance.json", unassessed,
-              lambda d: d["products"][0].update(scientific_status="accepted"))
-    _negative(root, "tampered-artifact.json", unassessed,
-              lambda d: d["products"][0]["artifacts"][0].update(sha256="f" * 64))
-    _negative(root, "dynamic-version.json", unassessed,
-              lambda d: d["products"][0]["dataset"].update(version="latest"))
+    _negative(
+        root,
+        "unknown-contract.json",
+        unassessed,
+        lambda d: d.update(contract="darwin.product-handoff/99"),
+    )
+    _negative(
+        root,
+        "publication-claim.json",
+        unassessed,
+        lambda d: d["products"][0].update(status="published"),
+    )
+    _negative(
+        root,
+        "unbacked-acceptance.json",
+        unassessed,
+        lambda d: d["products"][0].update(scientific_status="accepted"),
+    )
+    _negative(
+        root,
+        "tampered-artifact.json",
+        unassessed,
+        lambda d: d["products"][0]["artifacts"][0].update(sha256="f" * 64),
+    )
+    _negative(
+        root,
+        "dynamic-version.json",
+        unassessed,
+        lambda d: d["products"][0]["dataset"].update(version="latest"),
+    )
     assessed = json.loads((root / "handoff-assessed.json").read_bytes())
 
     def forge(document):
         product = next(p for p in document["products"] if p["acceptance"])
-        product["acceptance"] = [{**product["acceptance"][-1], "id": "synthetic:forged-assessment",
-                                  "sha256": "0" * 64, "supersedes": None}]
+        product["acceptance"] = [
+            {
+                **product["acceptance"][-1],
+                "id": "synthetic:forged-assessment",
+                "sha256": "0" * 64,
+                "supersedes": None,
+            }
+        ]
 
     _negative(root, "forged-reference.json", assessed, forge)
-    bundle = {"synthetic:prcp-slice": ["acceptance/bundle-1-rejected.json",
-                                       "acceptance/bundle-2-accepted.json"]}
+    bundle = {
+        "synthetic:prcp-slice": [
+            "acceptance/bundle-1-rejected.json",
+            "acceptance/bundle-2-accepted.json",
+        ]
+    }
     both = {"synthetic:prcp-slice": None, "synthetic:landmask": None}
     ok = lambda status, completeness: {  # noqa: E731
         "scientific_status": {**dict.fromkeys(both, "unassessed"), **status},
         "execution_completeness": {**both, **completeness},
     }
     cases = [
-        {"name": "unassessed", "handoff": "handoff-unassessed.json", "artifact_root": "artifacts",
-         "test_mode": True,
-         "expect": ok({}, {"synthetic:prcp-slice": "complete"})},
-        {"name": "rejected-then-accepted", "handoff": "handoff-assessed.json",
-         "artifact_root": "artifacts", "acceptance": bundle, "test_mode": True,
-         "expect": ok({"synthetic:prcp-slice": "accepted"}, {"synthetic:prcp-slice": "partial"})},
-        {"name": "acceptance-without-record-bytes", "handoff": "handoff-assessed.json",
-         "test_mode": True, "expect": {"error": "acceptance_unverified"}},
-        {"name": "forged-reference", "handoff": "negative/forged-reference.json",
-         "acceptance": bundle, "test_mode": True, "expect": {"error": "acceptance_mismatch"}},
-        {"name": "synthetic-outside-test-mode", "handoff": "handoff-assessed.json",
-         "test_mode": False, "expect": {"error": "synthetic_not_trusted"}},
+        {
+            "name": "unassessed",
+            "handoff": "handoff-unassessed.json",
+            "artifact_root": "artifacts",
+            "test_mode": True,
+            "expect": ok({}, {"synthetic:prcp-slice": "complete"}),
+        },
+        {
+            "name": "rejected-then-accepted",
+            "handoff": "handoff-assessed.json",
+            "artifact_root": "artifacts",
+            "acceptance": bundle,
+            "test_mode": True,
+            "expect": ok({"synthetic:prcp-slice": "accepted"}, {"synthetic:prcp-slice": "partial"}),
+        },
+        {
+            "name": "acceptance-without-record-bytes",
+            "handoff": "handoff-assessed.json",
+            "test_mode": True,
+            "expect": {"error": "acceptance_unverified"},
+        },
+        {
+            "name": "unsigned-decision",
+            "handoff": "handoff-assessed.json",
+            "acceptance": {
+                "synthetic:prcp-slice": [
+                    "acceptance/bundle-1-rejected.json",
+                    "acceptance/unsigned-bundle-2-accepted.json",
+                ]
+            },
+            "test_mode": True,
+            "expect": {"error": "signature_unavailable"},
+        },
+        {
+            "name": "forged-reference",
+            "handoff": "negative/forged-reference.json",
+            "acceptance": bundle,
+            "test_mode": True,
+            "expect": {"error": "acceptance_mismatch"},
+        },
+        {
+            "name": "synthetic-outside-test-mode",
+            "handoff": "handoff-assessed.json",
+            "test_mode": False,
+            "expect": {"error": "synthetic_not_trusted"},
+        },
         *(
-            {"name": name.removesuffix(".json"), "handoff": f"negative/{name}", "test_mode": True,
-             "expect": {"error": code}}
+            {
+                "name": name.removesuffix(".json"),
+                "handoff": f"negative/{name}",
+                "test_mode": True,
+                "expect": {"error": code},
+            }
             for name, code in (
                 ("unknown-contract.json", "unsupported_contract"),
                 ("publication-claim.json", "invalid_handoff"),
@@ -239,10 +357,17 @@ def build(root: Path) -> None:
             )
         ),
     ]
-    _write(root / "cases.json", acceptance.canonical_bytes(
-        {"fixture_set": "darwin.product-handoff-fixtures/2", "synthetic": True,
-         "notice": NOTICE, "cases": cases}
-    ))
+    _write(
+        root / "cases.json",
+        acceptance.canonical_bytes(
+            {
+                "fixture_set": "darwin.product-handoff-fixtures/2",
+                "synthetic": True,
+                "notice": NOTICE,
+                "cases": cases,
+            }
+        ),
+    )
 
 
 if __name__ == "__main__":

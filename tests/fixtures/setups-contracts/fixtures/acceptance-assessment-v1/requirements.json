@@ -46,7 +46,10 @@
           "id": "synthetic:reviewer-authorization",
           "version": "1",
           "sha256": "cee0320102a85f413142449bf86620f372c0ecb31d71bcb5251f5c5116d910b7"
-        }
+        },
+        "signing_keys": [
+          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN1hxp5KaDSTOcRrPyUG8Fu8yTLyNfJDVS/RUsO4zOPm"
+        ]
       },
       {
         "kind": "policy",
@@ -55,7 +58,10 @@
           "id": "synthetic:policy-authorization",
           "version": "1",
           "sha256": "aa05f9866fbce479c0d8cc859854b4e25f74e45cfc95d672600175be6416dc78"
-        }
+        },
+        "signing_keys": [
+          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICzpZVJeZMv17v7ZlSr2foZmq16ffyYwIe6C0SXavCa0"
+        ]
       }
     ]
   }

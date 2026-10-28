@@ -36,6 +36,7 @@ def _kwargs(case):
             for entry in case.get("authorizations", [])
         },
         "prior": (CASES / case["prior"]).read_bytes() if case.get("prior") else None,
+        "signature": (CASES / case["signature"]).read_bytes() if case.get("signature") else None,
         "allow_synthetic": case.get("test_mode", False),
     }
 
@@ -56,6 +57,19 @@ def test_assessment_cases_match_producer_expectations(case):
     assert result["authority"] == expect["authority"]
     assert result["evidence"] == expect["evidence"]
     assert result["supersedes"] == expect["supersedes"]
+    assert result["signer"] == expect["signer"]
+    assert result["synthetic"] is expect["synthetic"]
+
+
+def test_the_producer_covers_every_signature_refusal():
+    codes = {case["expect"].get("error") for case in MANIFEST["cases"]}
+    assert {
+        "signature_unavailable",
+        "signer_not_authorized",
+        "signature_namespace_mismatch",
+        "signature_mismatch",
+        "unexpected_signature",
+    } <= codes
 
 
 def test_draft_requirements_fixture_is_identity_only_never_ready():

@@ -10,7 +10,7 @@
   "requirements": {
     "id": "synthetic:requirements",
     "revision": "1",
-    "sha256": "ebd74747847471fa3997aad65621299194c9b8c2092c35adb96a4c8aae0dab50"
+    "sha256": "2127bfd3ce7bf8e7eb24b173ac93c8aba640e31c364094be46875e1877d0e6b0"
   },
   "status": "accepted",
   "evidence": [
@@ -53,6 +53,6 @@
   },
   "supersedes": {
     "id": "synthetic:rejected",
-    "sha256": "ff0df3e9ccad6698760640053091bc62f5970b2adda3d11911106905dffa6297"
+    "sha256": "4ecc5bc358440c6fd06de05d9af9e7f47831162eab64c28b72cb9fd75fb58a9f"
   }
 }

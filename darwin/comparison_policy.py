@@ -9,6 +9,14 @@ labelled draft. Results report scientific status from validated setups
 ``acceptance-assessment/1`` records, never from the comparison itself: running a
 comparison, a draft policy or a UI selection grants no acceptance.
 
+Acceptance binds a product **dataset**, not a store. The chain is: the WRF setup a
+researcher chose -> its reviewed setups requirements -> an acceptance decision
+signed by a key those requirements pin -> the dataset the decision binds (a
+``darwin.product-handoff/2`` dataset: product id, version and artifact list) ->
+the compared store, which must be one of that dataset's identity-bound artifacts
+with matching bytes. ``store_identity`` still pins the exact store bytes for the
+recipe and replay.
+
 The version-1 ``darwin.comparison`` interface (``native-intervals-v1``) is a
 separate policy and is unchanged.
 """
@@ -32,8 +40,8 @@ from pathlib import Path
 
 import jsonschema
 
-from darwin import study_contracts
-from darwin.publisher import series
+from darwin import decision_signature, handoff, study_contracts
+from darwin.publisher import immutable, series
 from darwin.publisher.series import (
     TimeSeries,
     TimeValidationError,
@@ -106,7 +114,14 @@ def store_identity(path: str | Path) -> str:
 
 def _software() -> dict:
     digest = hashlib.sha256()
-    for module in (sys.modules[__name__], study_contracts, series):
+    for module in (
+        sys.modules[__name__],
+        study_contracts,
+        decision_signature,
+        handoff,
+        immutable,
+        series,
+    ):
         digest.update(Path(module.__file__).read_bytes())
     digest.update(files("darwin").joinpath("comparison-policy-v1.schema.json").read_bytes())
     return {"darwin": version("darwin"), "implementation_sha256": digest.hexdigest()}
@@ -162,6 +177,33 @@ _REQUEST_SCHEMA = {
                 "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
             },
         }
+    },
+}
+
+
+_SHA256 = {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+_DATASET_SCHEMA = {
+    "type": "object",
+    "required": ["product_id", "version", "artifacts"],
+    "properties": {
+        "product_id": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "minLength": 1},
+        "artifacts": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["name", "kind", "sha256", "size_bytes", "identity_record_sha256"],
+                "properties": {
+                    "name": {"type": "string", "minLength": 1, "pattern": "^[^/]+$"},
+                    "kind": {"enum": ["file", "directory"]},
+                    "sha256": _SHA256,
+                    "size_bytes": {"type": "integer", "minimum": 0},
+                    "identity_record_sha256": _SHA256,
+                },
+            },
+        },
     },
 }
 
@@ -408,6 +450,93 @@ def _check_store(name: str, request: dict, path: Path, group, study: dict) -> di
     return {"upstream_sha256": upstream, "store_declared_status": attrs.get("scientific_status")}
 
 
+def _dataset_identity(name: str, dataset: Mapping) -> dict:
+    """Recompute a source's dataset identity from its product id, version and artifacts.
+
+    ``dataset`` may be a whole ``darwin.product-handoff/2`` product entry; only
+    ``product_id``, ``version``, ``artifacts`` and, when present, ``dataset`` are read.
+    """
+    _validate(dict(dataset), _DATASET_SCHEMA, "invalid_dataset")
+    if dataset["version"].lower() in {v.lower() for v in DYNAMIC_VERSIONS}:
+        raise ComparisonError("invalid_dataset", f"{name} dataset needs an exact version")
+    identity = handoff.dataset_identity(
+        dataset["product_id"], dataset["version"], dataset["artifacts"]
+    )
+    if "dataset" in dataset and dataset["dataset"] != identity:
+        raise ComparisonError(
+            "dataset_mismatch",
+            f"{name} dataset identity does not match its artifact list",
+            {"declared": dataset["dataset"], "computed": identity},
+        )
+    return identity
+
+
+def _store_in_dataset(name: str, path: Path, dataset: Mapping) -> dict:
+    """The compared store's verified artifact entry, which the dataset must list."""
+    try:
+        entry = handoff.artifact_entry(path)
+    except handoff.HandoffError as error:
+        raise ComparisonError(error.code, f"{name} store: {error}") from error
+    if entry not in dataset["artifacts"]:
+        raise ComparisonError(
+            "artifact_not_in_dataset",
+            f"{name} store is not an artifact of its dataset",
+            {"artifact": entry, "dataset": dataset["product_id"]},
+        )
+    return entry
+
+
+def _source_acceptance(  # noqa: PLR0913
+    name: str,
+    path: Path,
+    dataset: Mapping | None,
+    record: Mapping | None,
+    requirements: bytes,
+    *,
+    allow_synthetic: bool,
+) -> dict:
+    """Dataset identity, store membership and validated assessment of one source."""
+    if dataset is None:
+        if record is not None:
+            raise ComparisonError(
+                "dataset_unavailable",
+                f"{name} assessment needs the dataset it binds (product id, version, artifacts)",
+            )
+        return {"dataset": None, "artifact": None, "assessment": None}
+    identity = _dataset_identity(name, dataset)
+    entry = _store_in_dataset(name, path, dataset)
+    if record is None:
+        return {"dataset": identity, "artifact": entry, "assessment": None}
+    if record.get("requirements") not in (None, requirements):
+        raise ComparisonError(
+            "requirements_mismatch",
+            f"{name} assessment bundle names other requirements than the comparison",
+        )
+    try:
+        summary = study_contracts.validate_assessment(
+            record["assessment"],
+            requirements=requirements,
+            dataset=identity,
+            evidence=record.get("evidence", {}),
+            authorizations=record.get("authorizations", {}),
+            prior=record.get("prior"),
+            signature=record.get("signature"),
+            allow_synthetic=allow_synthetic,
+        )
+    except StudyContractError as error:
+        raise ComparisonError(error.code, f"{name} assessment: {error}") from error
+    return {
+        "dataset": identity,
+        "artifact": entry,
+        "assessment": {
+            "assessment": summary["assessment"],
+            "status": summary["status"],
+            "authority": summary["authority"],
+            "signer": summary["signer"],
+        },
+    }
+
+
 def compare_with_policy(
     request: Mapping,
     *,
@@ -415,16 +544,27 @@ def compare_with_policy(
     observations_path: str | Path,
     policy: bytes,
     requirements: bytes,
+    datasets: Mapping[str, Mapping] | None = None,
     assessments: Mapping[str, Mapping] | None = None,
     allow_draft: bool = False,
     allow_synthetic: bool = False,
 ) -> dict:
     """Compare two exact station stores under one requirements-pinned policy revision.
 
-    ``policy`` and ``requirements`` are exact bytes. ``assessments`` optionally maps
-    ``"model"``/``"observations"`` to ``{"assessment": bytes, "evidence": {id: bytes},
-    "prior": bytes | None}`` records validated against the same requirements and the
-    requested dataset identity. Raises ``ComparisonError`` with a stable code.
+    ``policy`` and ``requirements`` are exact bytes. ``datasets`` optionally maps
+    ``"model"``/``"observations"`` to the dataset that source's store belongs to:
+    ``{"product_id", "version", "artifacts"}`` exactly as the producer's
+    ``darwin.product-handoff/2`` product lists them (a whole product entry may be
+    passed). Darwin recomputes ``darwin.handoff.dataset_identity`` from the list and
+    requires the compared store, re-verified against its ``<name>.identity.json``,
+    to be one of those artifact entries. ``assessments`` maps a source to its
+    assessment bundle as :func:`darwin.study_contracts.load_assessment_bundle`
+    returns it (``assessment``, ``evidence``, ``authorizations``, ``prior``,
+    ``signature``); it is validated against these requirements and the recomputed
+    dataset identity, signature included, and needs that source's dataset.
+    Refusals include ``dataset_unavailable``, ``invalid_dataset``,
+    ``dataset_mismatch``, ``artifact_not_in_dataset``, ``unbound_artifact``,
+    ``artifact_mismatch`` and every assessment code. Raises ``ComparisonError``.
     """
     import zarr
 
@@ -569,31 +709,22 @@ def compare_with_policy(
             model_values, obs_values, pairing["wet_threshold_mm"]
         )
 
-    validated = {}
-    for name in ("model", "observations"):
-        record = (assessments or {}).get(name)
-        if record is None:
-            validated[name] = None
-            continue
-        try:
-            summary = study_contracts.validate_assessment(
-                record["assessment"],
-                requirements=requirements,
-                dataset=request[name],
-                evidence=record.get("evidence", {}),
-                authorizations=record.get("authorizations", {}),
-                prior=record.get("prior"),
-                allow_synthetic=allow_synthetic,
-            )
-        except StudyContractError as error:
-            raise ComparisonError(error.code, f"{name} assessment: {error}") from error
-        validated[name] = {
-            "assessment": summary["assessment"],
-            "status": summary["status"],
-            "authority": summary["authority"],
-        }
+    bound = {
+        name: _source_acceptance(
+            name,
+            path,
+            (datasets or {}).get(name),
+            (assessments or {}).get(name),
+            requirements,
+            allow_synthetic=allow_synthetic,
+        )
+        for name, path in paths.items()
+    }
+    validated = {name: state["assessment"] for name, state in bound.items()}
     for name, path in paths.items():
         sources[name]["identity"] = request[name]
+        sources[name]["dataset"] = bound[name]["dataset"]
+        sources[name]["artifact"] = bound[name]["artifact"]
         sources[name]["assessment"] = validated[name]
         sources[name]["scientific_status"] = (
             validated[name]["status"] if validated[name] else "unassessed"
@@ -613,6 +744,7 @@ def compare_with_policy(
             "request": request,
             "policy": policy_identity,
             "requirements": report["requirements"] | {"review_status": report["review_status"]},
+            "datasets": {name: state["dataset"] for name, state in bound.items()},
             "assessments": {
                 name: summary["assessment"] if summary else None
                 for name, summary in validated.items()
@@ -630,9 +762,13 @@ def replay_with_policy(
     observations_path: str | Path,
     policy: bytes,
     requirements: bytes,
+    datasets: Mapping[str, Mapping] | None = None,
     assessments: Mapping[str, Mapping] | None = None,
 ) -> dict:
-    """Reproduce a recipe exactly; any changed input, policy or software is refused."""
+    """Reproduce a recipe exactly; any changed input, policy or software is refused.
+
+    Pass the same ``datasets`` and ``assessments`` the recipe was made with.
+    """
     if recipe.get("contract") != RECIPE_CONTRACT or recipe.get("operation") != OPERATION:
         raise ComparisonError("recipe", "unsupported comparison recipe")
     if recipe.get("software") != _software():
@@ -643,6 +779,7 @@ def replay_with_policy(
         observations_path=observations_path,
         policy=policy,
         requirements=requirements,
+        datasets=datasets,
         assessments=assessments,
         **recipe["flags"],
     )
@@ -661,7 +798,20 @@ def main(argv: list[str] | None = None) -> int:
     action = parser.add_mutually_exclusive_group(required=True)
     action.add_argument("--request", type=Path, help="comparison request JSON")
     action.add_argument("--recipe", type=Path, help="recipe JSON to reproduce exactly")
-    parser.add_argument("--assessment", action="append", default=[], metavar="NAME=BUNDLE")
+    parser.add_argument(
+        "--dataset",
+        action="append",
+        default=[],
+        metavar="NAME=FILE",
+        help="JSON {product_id, version, artifacts} (or a handoff product) for model/observations",
+    )
+    parser.add_argument(
+        "--assessment",
+        action="append",
+        default=[],
+        metavar="NAME=BUNDLE",
+        help="assessment bundle incl. its signature; needs --dataset for the same NAME",
+    )
     parser.add_argument("--allow-draft", action="store_true")
     parser.add_argument("--test-mode", action="store_true", help="accept synthetic: fixtures")
     args = parser.parse_args(argv)
@@ -670,11 +820,16 @@ def main(argv: list[str] | None = None) -> int:
         for item in args.assessment:
             name, _, bundle = item.partition("=")
             assessments[name] = study_contracts.load_assessment_bundle(bundle)
+        datasets = {}
+        for item in args.dataset:
+            name, _, path = item.partition("=")
+            datasets[name] = json.loads(Path(path).read_text())
         common = {
             "model_path": args.model,
             "observations_path": args.observations,
             "policy": args.policy.read_bytes(),
             "requirements": args.requirements.read_bytes(),
+            "datasets": datasets or None,
             "assessments": assessments or None,
         }
         if args.recipe:
