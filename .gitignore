@@ -15,6 +15,7 @@ pyrightconfig.json
 plots/
 
 .devenv/
+/.pre-commit-config.yaml
 .claude/
 
 *.tif
