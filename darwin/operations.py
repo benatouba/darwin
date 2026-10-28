@@ -178,22 +178,56 @@ def _refuse_unsupported(operations) -> None:
             raise OperationError("unsupported_method", f"integrate {method}: {reason}")
 
 
+def validate_result(result: dict) -> None:
+    """Validate the producer-owned result contract, not its artifact bytes or science.
+
+    A consumer must still verify the recipe and artifact digests against the
+    resolved bundle. Execution completeness is never scientific acceptance.
+    """
+    from importlib.resources import files
+
+    import jsonschema
+
+    if not isinstance(result, dict) or result.get("contract") != "darwin.operation-result/1":
+        raise OperationError("unsupported_contract", "expected darwin.operation-result/1")
+    schema = json.loads(files("darwin").joinpath("operation-result-v1.schema.json").read_text())
+    try:
+        json.dumps(result, allow_nan=False)
+        jsonschema.Draft202012Validator(schema).validate(result)
+    except (TypeError, ValueError, jsonschema.ValidationError) as error:
+        raise OperationError("invalid_result", getattr(error, "message", str(error))) from error
+    coverage = result.get("source_coverage")
+    expected = coverage["status"] if coverage is not None else "complete"
+    if result["execution_completeness"] != expected:
+        raise OperationError("invalid_result", "execution completeness must match source coverage")
+    if coverage is not None:
+        complete = all(view["status"] == "complete" for view in coverage["views"])
+        if (coverage["status"] == "complete") != complete:
+            raise OperationError("invalid_result", "source coverage must match its views' status")
+        if complete and coverage["missing_times"]:
+            raise OperationError("invalid_result", "complete coverage cannot contain missing times")
+
+
 def _axis(dataset, name):
     if name not in dataset.coords or dataset[name].dims != (name,):
         raise OperationError("coordinate", f"{name!r} must be an explicit 1D dimension coordinate")
     index = dataset.indexes[name]
+    if len(index) == 0:
+        raise OperationError("coordinate", f"{name!r} must not be empty")
     if not index.is_unique or not index.is_monotonic_increasing:
         raise OperationError("coordinate", f"{name!r} must be unique and increasing")
     return index
 
 
 def _assemble(datasets, dimension, cadence_seconds):
-    import numpy as np
+    import pandas as pd
     import xarray as xr
 
     first = datasets[0]
     for dataset in datasets:
-        _axis(dataset, dimension)
+        index = _axis(dataset, dimension)
+        if not isinstance(index, (pd.DatetimeIndex, xr.CFTimeIndex)):
+            raise OperationError("coordinate", "assembly requires a decoded datetime axis")
         if set(dataset.data_vars) != set(first.data_vars) or set(dataset.coords) != set(
             first.coords
         ):
@@ -227,13 +261,10 @@ def _assemble(datasets, dimension, cadence_seconds):
         raise OperationError("incompatible_assembly", str(error)) from error
     index = _axis(result, dimension)
     if len(index) > 1:
-        try:
-            differences = [float((b - a).total_seconds()) for a, b in zip(index[:-1], index[1:])]
-        except AttributeError as error:
-            raise OperationError(
-                "coordinate", "assembly requires a decoded datetime axis"
-            ) from error
-        if not np.allclose(differences, cadence_seconds, rtol=0, atol=0):
+        # Comparing float total_seconds() loses submicrosecond differences and
+        # can silently approve off-cadence timestamps. Preserve decoded precision.
+        expected = pd.Timedelta(seconds=cadence_seconds)
+        if any(b - a != expected for a, b in zip(index[:-1], index[1:])):
             raise OperationError("time_gap", "time axis differs from explicitly declared cadence")
     return result
 
@@ -369,6 +400,7 @@ def execute(recipe: dict, locations: dict, destination: str | Path) -> dict:
                 }
                 if coverage is not None:
                     report["source_coverage"] = coverage
+                validate_result(report)
                 (staged / "result.json").write_text(
                     json.dumps(report, sort_keys=True, indent=2) + "\n"
                 )

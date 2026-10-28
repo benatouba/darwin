@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "darwin.operation-result/1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "recipe_sha256", "artifact", "execution_completeness", "scientific_status"],
+  "properties": {
+    "contract": {"const": "darwin.operation-result/1"},
+    "recipe_sha256": {"$ref": "#/$defs/sha256"},
+    "artifact": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "sha256", "size_bytes"],
+      "properties": {
+        "id": {"const": "data.nc"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "size_bytes": {"type": "integer", "minimum": 0}
+      }
+    },
+    "execution_completeness": {"enum": ["complete", "partial"]},
+    "scientific_status": {"const": "unassessed"},
+    "source_coverage": {
+      "type": "object", "additionalProperties": false,
+      "required": ["status", "covered_times", "missing_times", "views"],
+      "properties": {
+        "status": {"enum": ["complete", "partial"]},
+        "covered_times": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "missing_times": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "views": {
+          "type": "array", "minItems": 1,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["id", "sha256", "status", "reason"],
+            "properties": {
+              "id": {"type": "string", "minLength": 1},
+              "sha256": {"$ref": "#/$defs/sha256"},
+              "status": {"enum": ["complete", "partial", "missing", "failed"]},
+              "reason": {"type": ["string", "null"]}
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {"sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}
+}

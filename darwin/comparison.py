@@ -114,7 +114,10 @@ def compare_stores(
         )
         sources[name] = {
             "sha256": identity,
-            "scientific_status": group.attrs.get("scientific_status", "unassessed"),
+            # This legacy interface does not validate signed dataset assessments.
+            # Store metadata is a claim, never authority to accept a dataset.
+            "scientific_status": "unassessed",
+            "store_declared_status": group.attrs.get("scientific_status", "unassessed"),
         }
     result = asdict(metrics.compare(model_variable, observation_field, *selected))
     gar, obs, _ = align_series(*selected)

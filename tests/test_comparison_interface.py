@@ -91,6 +91,13 @@ def test_replay_rejects_changed_metadata(stores):
         replay(recipe, *stores)
 
 
+def test_store_metadata_cannot_grant_scientific_acceptance(stores):
+    zarr.open_group(str(stores[0]), mode="a").attrs["scientific_status"] = "accepted"
+    source = run(stores)["recipe"]["sources"]["model"]
+    assert source["scientific_status"] == "unassessed"
+    assert source["store_declared_status"] == "accepted"
+
+
 def test_unsupported_policy_and_unit_conversion_fail(stores):
     with pytest.raises(TimeValidationError, match="policy"):
         compare_stores(

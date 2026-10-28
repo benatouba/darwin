@@ -1,6 +1,6 @@
 # Supported dataset operations — Darwin 1.2
 
-The public entry points are `darwin.operations.make_recipe`, `validate_recipe`,
+The public entry points are `darwin.operations.make_recipe`, `validate_recipe`, `validate_result`,
 `source_identity`, `execute`, `inventory`, and `python -m darwin.operations`. They use the same
 implementation and the packaged producer-owned `operations-v1.schema.json`.
 `OperationError.code` is the structured error boundary. Comparison remains the
@@ -34,6 +34,14 @@ means execution complete, **scientifically unassessed**, and not published.
 Existing destinations, including identical retries, are never replaced. A new
 version/destination is required. Inputs are checked before and after execution.
 
+`darwin.operation-result/1` has the packaged `operation-result-v1.schema.json`.
+`validate_result(result)` checks its shape and completeness consistency, refusing
+attempts to promote execution to scientific acceptance. It does not verify bytes:
+consumers must also check `recipe_sha256` against `recipe.json` and the artifact's
+sha256/size against `data.nc` (or verify the enclosing immutable bundle).
+Packaged synthetic shape examples for recipes/results live in
+`darwin/contracts/fixtures/operation-result-v1/`; they are not executable evidence.
+
 ## Version-1 semantics
 
 | Operation | Parameters and scope |
@@ -65,7 +73,7 @@ commonly requested transformations and the reason for each:
 
 Scope violations of supported operations fail with their own codes: `calendar`
 (cut on a non-datetime64 axis), `coordinate` (missing, multi-dimensional,
-non-unique or decreasing coordinates, including curvilinear grids), `selection`,
+empty, non-unique or decreasing coordinates, including curvilinear grids), `selection`,
 `empty_selection`, `variable`, `assembly_required`, `incompatible_assembly`,
 `time_gap`. `assemble_simulation_output` adds the view-set codes listed in
 [simulation-output-interface.md](simulation-output-interface.md):
@@ -73,7 +81,8 @@ non-unique or decreasing coordinates, including curvilinear grids), `selection`,
 `time_overlap` and others. Recipe/environment failures use `unsupported_contract`,
 `invalid_recipe`, `software_mismatch`, `missing_source`, `source_mismatch`,
 `destination_exists` and `invalid_input`; CLI usage errors are
-`invalid_arguments`.
+`invalid_arguments`. Result validation uses `invalid_result` for malformed or
+inconsistent result records, or `unsupported_contract` for an unknown version.
 
 ## Semantics
 
@@ -82,6 +91,10 @@ must be assembled before selections. Assembly never sorts, fills, deduplicates,
 interpolates, averages or converts units. Incompatible global attributes and
 encoded time units fail too: reconciliation requires a separately supported,
 explicit transformation. Existing files must provide actual native coordinates.
+Each assembly input needs a nonempty decoded datetime axis, including singleton
+inputs. Cadence comparisons retain decoded timestamp precision; submicrosecond
+gaps are not rounded away. Empty discrete-amount axes fail instead of becoming
+zero totals.
 The recipe pins bytes and software (`implementation_sha256` covers `operations.py`,
 `simulation_output.py` and `wrf_history.py`, each framed by its name and byte
 length); relocating unchanged bytes is allowed. The result's
@@ -99,8 +112,8 @@ Curvilinear geographic crops, time-bound/accumulation-aware rate integrals,
 resampling and nonstandard-calendar cuts are not implemented. Comparison and
 specialized existing publisher builders are not silently redirected here.
 
-Runtime dependencies are only jsonschema, netCDF4, numpy, PyYAML (publisher
-manifests), xarray and zarr. Historical research, native-library and plotting
+Runtime dependencies are cryptography (signed decisions), jsonschema, netCDF4,
+numpy, pandas, PyYAML (publisher manifests), xarray and zarr. Historical research, native-library and plotting
 modules require the `research`, `native` and `visualization` extras (see the
 README). No sibling project, Slurm or dashboard server is needed to call the
 interface; `tests/test_installed_release.py` proves this for an installed wheel.

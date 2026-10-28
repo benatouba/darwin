@@ -38,6 +38,7 @@ OPTIONAL = {
 SUPPORTED_MODULES = (
     "darwin.operations",
     "darwin.comparison",
+    "darwin.comparison_policy",
     "darwin.simulation_output",
     "darwin.wrf_history",
     "darwin.observation_qc",
@@ -126,7 +127,7 @@ validate_handoff(
     ]}},
     allow_synthetic=True,
 )
-from darwin.operations import execute, inventory, make_recipe
+from darwin.operations import execute, inventory, make_recipe, validate_result
 source = Path("native.nc")
 xr.Dataset(
     {{"prcp": ("time", [1.0, 2.0])}},
@@ -135,6 +136,10 @@ xr.Dataset(
 select = {{"operation": "select", "parameters": {{"variables": ["prcp"]}}}}
 recipe = make_recipe({{"native": source}}, [select])
 report = execute(recipe, {{"native": str(source)}}, "python-product")
+validate_result(report)
+validate_result(json.loads(files("darwin").joinpath(
+    "contracts", "fixtures", "operation-result-v1", "complete.json"
+).read_text()))
 Path("recipe.json").write_text(json.dumps(recipe))
 Path("locations.json").write_text(json.dumps({{"native": str(source)}}))
 cli = subprocess.run(

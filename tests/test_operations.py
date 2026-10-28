@@ -4,6 +4,7 @@ import copy
 import json
 import subprocess
 import sys
+from importlib.resources import files
 
 import numpy as np
 import pytest
@@ -17,6 +18,7 @@ from darwin.operations import (
     make_recipe,
     source_identity,
     validate_recipe,
+    validate_result,
 )
 from darwin.publisher.immutable import verify_artifact
 
@@ -69,6 +71,7 @@ def test_python_cli_equivalence_and_location_independence(tmp_path):
     before = source_identity(source)
     locations = {"native-version-1": str(source)}
     report = execute(recipe, locations, tmp_path / "python")
+    validate_result(report)
     (tmp_path / "recipe.json").write_text(json.dumps(recipe))
     (tmp_path / "locations.json").write_text(json.dumps(locations))
     completed = subprocess.run(
@@ -327,3 +330,132 @@ def test_implementation_identity_frames_each_file():
     first = implementation_digest({"a.py": b"xy", "b.py": b"z"})
     assert first != implementation_digest({"a.py": b"x", "b.py": b"yz"})
     assert first == implementation_digest({"a.py": b"xy", "b.py": b"z"})
+
+
+@pytest.mark.parametrize("coordinate", [[], [0], ["not-a-time"]])
+def test_assembly_requires_nonempty_decoded_time_even_for_singletons(tmp_path, coordinate):
+    source = tmp_path / "native.nc"
+    xr.Dataset({"prcp": ("time", np.ones(len(coordinate)))}, coords={"time": coordinate}).to_netcdf(
+        source
+    )
+    recipe = make_recipe({"native": source}, [ASSEMBLE])
+    before = source.read_bytes()
+    with pytest.raises(OperationError) as caught:
+        execute(recipe, {"native": source}, tmp_path / "product")
+    assert caught.value.code == "coordinate"
+    assert not (tmp_path / "product").exists()
+    assert source.read_bytes() == before
+
+
+def test_empty_amount_axis_is_not_silently_reported_as_zero(tmp_path):
+    source = tmp_path / "empty.nc"
+    xr.Dataset({"prcp": ("time", [])}, coords={"time": []}).to_netcdf(source)
+    recipe = make_recipe(
+        {"native": source},
+        [
+            {
+                "operation": "integrate",
+                "parameters": {
+                    "dimension": "time",
+                    "variables": ["prcp"],
+                    "method": "sum-discrete-amounts",
+                },
+            }
+        ],
+    )
+    with pytest.raises(OperationError) as caught:
+        execute(recipe, {"native": source}, tmp_path / "product")
+    assert caught.value.code == "coordinate"
+    assert not (tmp_path / "product").exists()
+
+
+def test_assembly_does_not_round_away_submicrosecond_time_gaps(tmp_path):
+    source = tmp_path / "jitter.nc"
+    times = np.array(
+        ["2020-01-01T00:00:00", "2020-01-01T01:00:00.000000001"], dtype="datetime64[ns]"
+    )
+    xr.Dataset({"prcp": ("time", [1.0, 2.0])}, coords={"time": times}).to_netcdf(source)
+    recipe = make_recipe({"native": source}, [ASSEMBLE])
+    with pytest.raises(OperationError) as caught:
+        execute(recipe, {"native": source}, tmp_path / "product")
+    assert caught.value.code == "time_gap"
+    assert not (tmp_path / "product").exists()
+
+
+@pytest.mark.parametrize("calendar", ["proleptic_gregorian", "360_day"])
+def test_singleton_decoded_calendars_remain_supported(tmp_path, calendar):
+    source = tmp_path / "singleton.nc"
+    times = xr.date_range("2020-01-01", periods=1, freq="h", calendar=calendar)
+    xr.Dataset({"prcp": ("time", [1.0])}, coords={"time": times}).to_netcdf(source)
+    recipe = make_recipe({"native": source}, [ASSEMBLE])
+    execute(recipe, {"native": source}, tmp_path / "product")
+    with xr.open_dataset(tmp_path / "product/data.nc") as result:
+        assert result.prcp.values.tolist() == [1.0]
+
+
+def result_fixture():
+    return json.loads(
+        files("darwin")
+        .joinpath("contracts", "fixtures", "operation-result-v1", "complete.json")
+        .read_text()
+    )
+
+
+def test_packaged_operation_result_fixture():
+    validate_result(result_fixture())
+    validate_recipe(
+        json.loads(
+            files("darwin")
+            .joinpath("contracts", "fixtures", "operation-result-v1", "recipe.json")
+            .read_text()
+        )
+    )
+
+
+@pytest.mark.parametrize(
+    "mutation,code",
+    [
+        (lambda r: r.update(contract="darwin.operation-result/999"), "unsupported_contract"),
+        (lambda r: r.update(scientific_status="accepted"), "invalid_result"),
+        (lambda r: r.update(execution_completeness="partial"), "invalid_result"),
+        (lambda r: r["artifact"].update(id="../data.nc"), "invalid_result"),
+        (lambda r: r["artifact"].update(sha256="changed"), "invalid_result"),
+        (lambda r: r["artifact"].update(size_bytes=-1), "invalid_result"),
+        (lambda r: r.update(recipe_sha256=None), "invalid_result"),
+        (lambda r: r.update(published=True), "invalid_result"),
+    ],
+)
+def test_result_contract_refuses_malformed_or_promoted_execution(mutation, code):
+    result = result_fixture()
+    mutation(result)
+    with pytest.raises(OperationError) as caught:
+        validate_result(result)
+    assert caught.value.code == code
+
+
+@pytest.mark.parametrize("promote", [False, True])
+def test_result_cannot_promote_partial_source_coverage(promote):
+    result = result_fixture()
+    result["execution_completeness"] = "partial"
+    result["source_coverage"] = {
+        "status": "partial",
+        "covered_times": ["2020-01-01T00:00:00Z"],
+        "missing_times": ["2020-01-01T01:00:00Z"],
+        "views": [
+            {
+                "id": "synthetic:view",
+                "sha256": "0" * 64,
+                "status": "partial",
+                "reason": "missing record",
+            }
+        ],
+    }
+    validate_result(result)
+    if promote:
+        result["execution_completeness"] = "complete"
+        result["source_coverage"]["status"] = "complete"
+    else:
+        result["execution_completeness"] = "complete"
+    with pytest.raises(OperationError) as caught:
+        validate_result(result)
+    assert caught.value.code == "invalid_result"
