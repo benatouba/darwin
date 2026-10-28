@@ -8,9 +8,12 @@ readme = "README.md"
 license-files = ["uc2-data-standard.pdf", "uc2-datenstandard.pdf"]
 # Runtime prerequisites of the supported interface only (darwin.operations,
 # darwin.comparison, darwin.simulation_output, darwin.observation_qc, the
-# publisher and darwin.wrf_products). Historical research, native-library and
-# plotting modules need extras. pandas is already required by xarray; it is
-# declared because darwin.wrf_products uses its calendar offsets directly.
+# publisher and the darwin.wrf_products diagnostics/aggregation). Historical
+# research, native-library and plotting modules need extras; so does the
+# georeferenced GAR writer behind darwin.wrf_products derive (pyproj, `native`
+# extra) and native MCAPE/MCIN/SLP. pandas is already required by xarray; it is
+# declared because darwin.wrf_products uses its calendar offsets directly (the
+# `research` extra repeats it from before; harmless).
 dependencies = [
     "jsonschema>=4.25.1",
     "netCDF4>=1.7.5",

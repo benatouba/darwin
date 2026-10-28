@@ -606,9 +606,9 @@ def assemble_views(views: list[dict], variables: list[str], locations: dict) -> 
     variable metadata are verified against every view first. Values keep their
     native dtype and attributes; only declared, contiguous records are included.
     """
-    import netCDF4
-    import numpy as np
-    import xarray as xr
+    import netCDF4  # noqa: PLC0415 - data readers load only when records are read
+    import numpy as np  # noqa: PLC0415
+    import xarray as xr  # noqa: PLC0415
 
     checked, coverage = check_views(views, variables)
     for view in checked:

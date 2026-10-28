@@ -264,3 +264,15 @@ def test_native_rip_2d_conventions_and_invalid_profile(tmp_path: Path) -> None:
     invalid = sounding(unstable_profile)
     invalid.QVAPOR.values[0, 5, 0, 0] = np.nan
     assert np.isnan(mcape_mcin(invalid, library).mcape).all()
+
+
+# --- Darwin review regressions ---
+
+
+def test_off_grid_timestamps_are_refused_not_dropped() -> None:
+    times = np.arange(
+        np.datetime64("2024-01-01T00:30"), np.datetime64("2024-01-02T00:30"), np.timedelta64(30, "m")
+    )
+    data = xr.Dataset({"t2": ("time", np.ones(len(times)))}, coords={"time": times})
+    with pytest.raises(ValueError, match="cadence"):
+        aggregate(data, "2024-01-01", "2024-01-02", "D", 60)

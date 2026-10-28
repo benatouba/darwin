@@ -72,7 +72,8 @@ non-unique or decreasing coordinates, including curvilinear grids), `selection`,
 `incompatible_calendar`, `incompatible_grid`, `incompatible_units`,
 `time_overlap` and others. Recipe/environment failures use `unsupported_contract`,
 `invalid_recipe`, `software_mismatch`, `missing_source`, `source_mismatch`,
-`destination_exists` and `invalid_input`.
+`destination_exists` and `invalid_input`; CLI usage errors are
+`invalid_arguments`.
 
 ## Semantics
 
@@ -82,7 +83,10 @@ interpolates, averages or converts units. Incompatible global attributes and
 encoded time units fail too: reconciliation requires a separately supported,
 explicit transformation. Existing files must provide actual native coordinates.
 The recipe pins bytes and software (`implementation_sha256` covers `operations.py`,
-`simulation_output.py` and `wrf_history.py`); relocating unchanged bytes is allowed.
+`simulation_output.py` and `wrf_history.py`, each framed by its name and byte
+length); relocating unchanged bytes is allowed. The result's
+`execution_completeness` is `complete`, or the `source_coverage` status
+(`partial`) when a simulation-output assembly covers only part of its window.
 
 ## Explicit implementation gaps
 
@@ -115,7 +119,8 @@ Product handoffs, assessment evidence and acceptance records are described in
 
 ### Write-path inventory
 
-Every production write in `darwin/publisher` and `darwin.operations` goes through
+Every production write in `darwin/publisher`, `darwin.operations` and
+`darwin.wrf_products` goes through
 `darwin.publisher.immutable.staged_artifact` (stage beside the destination, publish
 with no-replace rename):
 
@@ -129,7 +134,18 @@ with no-replace rename):
 | `storage.write_download_netcdf` | `download.nc` | manifest sources; parameters pin the analysis-store sha256 |
 | `smoke.build_smoke_release` | legacy handoff JSON | release manifest (revision) + manifest sources |
 | `handoff.prepare_handoff` | `darwin.product-handoff/2` JSON | release manifest (revision) + manifest sources + every cited artifact sha256 |
-| `operations.execute` | bundle directory | `result.json` binds `data.nc` and `recipe.json` (no sidecar) |
+| `operations.execute` | bundle directory | recipe sources (id, sha256); recipe = sha256 of the stored `recipe.json`; `result.json` binds `data.nc` |
+| `wrf_products.derive_products` | one NetCDF4 candidate per variable | WRF history file sha256; recipe = variables, pressure levels, definition version |
+| `wrf_products.aggregate_products` | one NetCDF4 candidate per variable | every fragment's sha256, in order; recipe = start, end, frequency, cadence |
+
+`wrf_products.write_products` (the lower-level writer CJC's compatibility path
+calls) publishes through `staged_artifact` as well; without `provenance=` its
+products are unbound candidates that a handoff refuses. It checks every target
+of a set before writing the first, so a conflict writes nothing; a crash mid-set
+is completed with `retry="verify-identical"` (NetCDF output is deterministic).
+`native_diagnostics.build_native` is a local build, not a product: it stages the
+library and `build.json` together and moves both under an exclusive
+`.build.lock`, so concurrent builds leave a matching pair.
 
 Out of scope, not published products: matplotlib figures in research/plotting
 modules (`plots.py`, `core.py`, `accessors.py`, `plot_*.py`, `geogrid_simulator.py`)

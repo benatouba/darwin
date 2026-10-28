@@ -14,6 +14,7 @@ import sys
 from contextlib import ExitStack
 from importlib.metadata import version
 from pathlib import Path
+from typing import NoReturn
 
 from darwin.publisher.immutable import staged_artifact
 
@@ -47,13 +48,23 @@ class OperationError(ValueError):
         self.code = code
 
 
+def implementation_digest(files: dict[str, bytes]) -> str:
+    """Unambiguous sha256 of named files: each framed by its name and byte length."""
+    digest = hashlib.sha256()
+    for name, data in files.items():
+        encoded = name.encode()
+        digest.update(f"{len(encoded)}:".encode() + encoded + f"{len(data)}:".encode())
+        digest.update(data)
+    return digest.hexdigest()
+
+
 def software() -> dict:
     """Exact algorithm and dependency identities needed for recipe replay."""
     return {
         "darwin": version("darwin"),
-        "implementation_sha256": hashlib.sha256(
-            b"".join((Path(__file__).parent / name).read_bytes() for name in IMPLEMENTATION)
-        ).hexdigest(),
+        "implementation_sha256": implementation_digest(
+            {name: (Path(__file__).parent / name).read_bytes() for name in IMPLEMENTATION}
+        ),
         "xarray": version("xarray"),
         "numpy": version("numpy"),
         "netCDF4": version("netCDF4"),
@@ -69,6 +80,15 @@ def source_identity(path: str | Path) -> dict:
             size += len(chunk)
             digest.update(chunk)
     return {"sha256": digest.hexdigest(), "size_bytes": size}
+
+
+def _recipe_bytes(recipe: dict) -> bytes:
+    return (json.dumps(recipe, sort_keys=True, indent=2) + "\n").encode()
+
+
+def _recipe_sha256(recipe: dict) -> str:
+    """sha256 of the exact ``recipe.json`` bytes an operation bundle stores."""
+    return hashlib.sha256(_recipe_bytes(recipe)).hexdigest()
 
 
 def make_recipe(sources: dict, operations: list[dict]) -> dict:
@@ -324,7 +344,13 @@ def execute(recipe: dict, locations: dict, destination: str | Path) -> dict:
                 raise OperationError(
                     "assembly_required", "a product requires one assembled dataset"
                 )
-            with staged_artifact(destination) as staged:
+            provenance = {
+                "builder": "darwin.operations.execute",
+                "recipe": {"sha256": _recipe_sha256(recipe)},
+                "sources": [{"id": item["id"], "sha256": item["sha256"]} for item in sources],
+                "software": recipe["software"],
+            }
+            with staged_artifact(destination, provenance=provenance) as staged:
                 staged.mkdir()
                 datasets[0].to_netcdf(staged / "data.nc", engine="netcdf4")
                 for source in sources:
@@ -334,14 +360,16 @@ def execute(recipe: dict, locations: dict, destination: str | Path) -> dict:
                         raise OperationError(
                             "source_mismatch", f"source changed during execution: {source['id']}"
                         )
-                (staged / "recipe.json").write_text(
-                    json.dumps(recipe, sort_keys=True, indent=2) + "\n"
-                )
+                (staged / "recipe.json").write_bytes(_recipe_bytes(recipe))
                 report = {
                     "contract": "darwin.operation-result/1",
                     "recipe_sha256": source_identity(staged / "recipe.json")["sha256"],
                     "artifact": {"id": "data.nc", **source_identity(staged / "data.nc")},
-                    "execution_completeness": "complete",
+                    # The operation ran over every given source; the coverage of
+                    # those sources (a partial simulation output) bounds it.
+                    "execution_completeness": "complete"
+                    if coverage is None
+                    else coverage["status"],
                     "scientific_status": "unassessed",
                 }
                 if coverage is not None:
@@ -416,13 +444,18 @@ def main() -> None:
         "--inventory", action="store_true", help="print the supported operation inventory"
     )
     args = parser.parse_args()
+
+    def usage(message: str) -> NoReturn:
+        print(json.dumps({"code": "invalid_arguments", "message": message}), file=sys.stderr)
+        raise SystemExit(2)
+
     if args.inventory:
         if args.recipe or args.locations or args.output:
-            parser.error("--inventory takes no recipe, --locations or --output")
+            usage("--inventory takes no recipe, --locations or --output")
         print(json.dumps(inventory(), sort_keys=True))
         return
     if not (args.recipe and args.locations and args.output):
-        parser.error("recipe, --locations and --output are required")
+        usage("recipe, --locations and --output are required")
     try:
         report = execute(
             json.loads(args.recipe.read_text()), json.loads(args.locations.read_text()), args.output

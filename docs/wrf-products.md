@@ -24,13 +24,21 @@ in `darwin.native_diagnostics`.
 CLI and Python run the same functions. The CLI prints one JSON report on stdout
 (`{"contract": "darwin.wrf-products/1", "products": [...]}`; `build-native` prints
 `{"library", "receipt"}`). On failure it exits 2, prints nothing on stdout and
-writes `{"code", "message"}` to stderr: `destination_exists` (no-clobber refusal)
-or `invalid_input` with the same message as the Python exception.
+writes `{"code", "message"}` to stderr: `destination_exists` (no-clobber refusal),
+`missing_dependency` (for example pyproj without the `native` extra) or
+`invalid_input` with the same message as the Python exception.
 
 Products are one-variable NetCDF4 **candidates** (`product_status = candidate`);
 nothing here accepts, approves or publishes data. `derive_products` records the
 source byte identity (`source_sha256`), `product_contract` and `darwin_version`,
-never a deployment path.
+never a deployment path. Both `derive_products` and `aggregate_products` publish
+every product with a `darwin.artifact-identity/1` record (see
+[operations.md](operations.md#immutable-artifact-writes)), so products can be
+bound by a handoff. An aggregate names every fragment (`sources` attribute and
+identity record, in order) and its recipe (`recipe`); attributes that differ
+between fragments, including each fragment's own `source_sha256`, are dropped
+instead of inherited from the first. `aggregate` refuses in-window timestamps
+off the declared native cadence instead of dropping them.
 
 ## Runtime and native extra
 

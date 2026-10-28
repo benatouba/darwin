@@ -12,11 +12,13 @@ import xarray as xr
 from darwin.operations import (
     OperationError,
     execute,
+    implementation_digest,
     inventory,
     make_recipe,
     source_identity,
     validate_recipe,
 )
+from darwin.publisher.immutable import verify_artifact
 
 
 def write_source(path, start=0, *, units="mm", x=(1.0, 2.0), offset=0):
@@ -295,3 +297,33 @@ def test_recipe_roundtrips_through_json_and_the_written_bundle(tmp_path):
     assert (tmp_path / "first/data.nc").read_bytes() == (tmp_path / "second/data.nc").read_bytes()
     with xr.open_dataset(tmp_path / "second/data.nc") as result:
         assert result.prcp.values[:, 0].tolist() == [3.0, 11.0]
+
+
+def test_operation_bundles_are_identity_bound_to_recipe_and_sources(tmp_path):
+    source = write_source(tmp_path / "native.nc")
+    select = {"operation": "select", "parameters": {"variables": ["prcp"]}}
+    recipe = make_recipe({"native": source}, [select])
+    report = execute(recipe, {"native": str(source)}, tmp_path / "product")
+    record = verify_artifact(tmp_path / "product")
+    assert record["provenance"]["builder"] == "darwin.operations.execute"
+    assert record["provenance"]["sources"] == [
+        {"id": "native", "sha256": source_identity(source)["sha256"]}
+    ]
+    assert record["provenance"]["recipe"] == {"sha256": report["recipe_sha256"]}
+
+
+def test_cli_usage_errors_are_structured(tmp_path):
+    completed = subprocess.run(
+        [sys.executable, "-m", "darwin.operations", "--inventory", "--output", str(tmp_path)],
+        capture_output=True,
+        text=True,
+    )
+    assert completed.returncode == 2
+    assert json.loads(completed.stderr)["code"] == "invalid_arguments"
+
+
+def test_implementation_identity_frames_each_file():
+    # Moving bytes between implementation files must change the identity.
+    first = implementation_digest({"a.py": b"xy", "b.py": b"z"})
+    assert first != implementation_digest({"a.py": b"x", "b.py": b"yz"})
+    assert first == implementation_digest({"a.py": b"xy", "b.py": b"z"})

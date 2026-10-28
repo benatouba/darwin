@@ -12,6 +12,8 @@ from pathlib import Path
 import pytest
 import xarray as xr
 
+from darwin.handoff import artifact_entry
+from darwin.publisher.immutable import verify_artifact
 from darwin.wrf_products import (
     CONTRACT,
     aggregate_products,
@@ -120,3 +122,62 @@ def test_native_build_cli_matches_python_receipt(tmp_path):
     library = Path(report["library"])
     assert report["receipt"] == verify_native(library)
     assert report["receipt"]["contract"] == "darwin.native-build/1"
+
+
+def _sha256(path: Path) -> str:
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def test_derived_products_are_identity_bound_to_their_source(tmp_path):
+    source = GOLDEN / "input.nc"
+    paths = derive_products(source, tmp_path, 2, ["t2", "prcp"])
+    for path in paths:
+        record = verify_artifact(path)
+        assert record["provenance"]["sources"] == [{"id": "input.nc", "sha256": _sha256(source)}]
+        assert record["provenance"]["builder"] == "darwin.wrf_products.derive_products"
+        assert record["provenance"]["recipe"]["variables"] == ["t2", "prcp"]
+        assert artifact_entry(path)["sha256"] == record["artifact"]["sha256"]
+
+
+def test_aggregates_name_every_fragment_and_their_recipe(tmp_path):
+    native = derive_products(GOLDEN / "input.nc", tmp_path / "native", 2, ["prcp"])
+    [daily] = aggregate_products(native, tmp_path / "daily", 2, "2024-01-01", "2024-01-02", "D", 60)
+    record = verify_artifact(daily)
+    fragments = [{"id": path.name, "sha256": _sha256(path)} for path in native]
+    assert record["provenance"]["sources"] == fragments
+    assert record["provenance"]["recipe"] == {
+        "operation": "aggregate",
+        "start": "2024-01-01",
+        "end": "2024-01-02",
+        "frequency": "D",
+        "cadence_minutes": 60,
+    }
+    with xr.open_dataset(daily) as product:
+        # The first fragment's own source identity must not pass as the aggregate's.
+        assert "source_sha256" not in product.attrs
+        assert json.loads(product.attrs["sources"]) == fragments
+
+
+def test_a_set_with_any_existing_product_writes_nothing(tmp_path):
+    source = GOLDEN / "input.nc"
+    [_, second] = derive_products(source, tmp_path / "first", 2, ["t2", "prcp"])
+    target = tmp_path / "set" / second.relative_to(tmp_path / "first")
+    target.parent.mkdir(parents=True)
+    target.write_bytes(b"occupied")
+    with pytest.raises(FileExistsError):
+        derive_products(source, tmp_path / "set", 2, ["t2", "prcp"])
+    assert [p.name for p in (tmp_path / "set").rglob("*") if p.is_file()] == [target.name]
+
+
+def test_a_missing_optional_dependency_is_a_structured_cli_error(tmp_path, monkeypatch, capsys):
+    from darwin import wrf_products
+
+    monkeypatch.setitem(sys.modules, "pyproj", None)  # import pyproj -> ImportError
+    with pytest.raises(SystemExit):
+        wrf_products.main(
+            ["derive", str(GOLDEN / "input.nc"), "--destination", str(tmp_path), "--domain", "2",
+             "--variables", "t2"]
+        )
+    error = json.loads(capsys.readouterr().err)
+    assert error["code"] == "missing_dependency"
+    assert "pyproj" in error["message"]

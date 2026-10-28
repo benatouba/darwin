@@ -11,6 +11,7 @@ installation is involved. See docs/wrf-products.md.
 from __future__ import annotations
 
 import ctypes
+import fcntl
 import hashlib
 import json
 import subprocess
@@ -25,6 +26,11 @@ from darwin.wrf_diagnostics import state
 SOURCE = Path(__file__).parent / "native" / "rip"
 LIBRARY_NAME = "libdarwin_rip.so"
 BUILD_CONTRACT = "darwin.native-build/1"
+MIN_MASS_LEVELS = 3
+PARCEL_SEARCH_DEPTH_M = 3000
+"""RIP searches the max-theta-e parcel below 3 km AGL; a column needs a level there."""
+RIP_MISSING = 1e19
+"""Magnitudes at or above this are the NCAR kernel's missing-value sentinel."""
 
 
 def sha256(path: Path) -> str:
@@ -101,7 +107,15 @@ def load_native(library: Path) -> ctypes.CDLL:
 
 
 def build_native(destination: Path) -> Path:
-    """Explicit native build; never compile or download at import time."""
+    """Explicit native build; never compile or download at import time.
+
+    The library and its ``build.json`` receipt are built and described in a
+    private staging directory, then moved into place together under an
+    exclusive lock on ``destination/.build.lock``, so concurrent builds always
+    leave a matching pair. A reader racing a rebuild fails closed in
+    :func:`verify_native` rather than loading a mismatched library.
+    """
+    destination = Path(destination)
     destination.mkdir(parents=True, exist_ok=True)
     provenance = json.loads((SOURCE / "provenance.json").read_text())
     for record in provenance["files"]:
@@ -110,8 +124,8 @@ def build_native(destination: Path) -> Path:
     target = destination.resolve() / LIBRARY_NAME
     with tempfile.TemporaryDirectory(dir=destination) as temporary:
         output = Path(temporary) / LIBRARY_NAME
-        subprocess.run(
-            [
+        subprocess.run(  # noqa: S603
+            [  # noqa: S607 - the devenv provides gfortran on PATH
                 "gfortran",
                 "-shared",
                 "-fPIC",
@@ -128,18 +142,25 @@ def build_native(destination: Path) -> Path:
             cwd=temporary,
             check=True,
         )
-        output.replace(target)
-    receipt = {
-        "contract": BUILD_CONTRACT,
-        "upstream": provenance["revision"],
-        "library_sha256": sha256(target),
-        "interface_sha256": sha256(SOURCE / "interface.f90"),
-        "compiler": subprocess.run(
-            ["gfortran", "--version"], capture_output=True, text=True, check=True
-        ).stdout.splitlines()[0],
-        "dependencies": dynamic_dependencies({"rip": target}),
-    }
-    (destination / "build.json").write_text(json.dumps(receipt, indent=2) + "\n")
+        receipt = {
+            "contract": BUILD_CONTRACT,
+            "upstream": provenance["revision"],
+            "library_sha256": sha256(output),
+            "interface_sha256": sha256(SOURCE / "interface.f90"),
+            "compiler": subprocess.run(
+                ["gfortran", "--version"],  # noqa: S607
+                capture_output=True,
+                text=True,
+                check=True,
+            ).stdout.splitlines()[0],
+            "dependencies": dynamic_dependencies({"rip": output}),
+        }
+        staged_receipt = Path(temporary) / "build.json"
+        staged_receipt.write_text(json.dumps(receipt, indent=2) + "\n")
+        with (destination / ".build.lock").open("a") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            output.replace(target)
+            staged_receipt.replace(destination / "build.json")
     return target
 
 
@@ -187,14 +208,14 @@ def mcape_mcin(dataset: xr.Dataset, library: Path) -> xr.Dataset:
             dtype=np.float64,
         )
         nx, ny, nz = arrays[0].shape
-        if nz < 3:
+        if nz < MIN_MASS_LEVELS:
             raise ValueError("CAPE requires at least three vertical mass levels")
         valid = np.isfinite(terrain) & np.isfinite(psfc) & (psfc > 0)
         valid &= np.all(arrays[0] > 0, axis=2) & np.all(arrays[1] > 0, axis=2)
         valid &= np.all(arrays[2] >= 0, axis=2)
         valid &= np.all(np.diff(arrays[0], axis=2) > 0, axis=2)
         valid &= np.all(np.diff(arrays[3], axis=2) < 0, axis=2)
-        valid &= np.any((arrays[3] - terrain[:, :, None]) < 3000, axis=2)
+        valid &= np.any((arrays[3] - terrain[:, :, None]) < PARCEL_SEARCH_DEPTH_M, axis=2)
         valid &= np.all(arrays[0] < psfc[:, :, None], axis=2)
         for array in arrays:
             valid &= np.all(np.isfinite(array), axis=2)
@@ -225,21 +246,22 @@ def mcape_mcin(dataset: xr.Dataset, library: Path) -> xr.Dataset:
                 raise ValueError(f"NCAR RIP diagnostic failed with code {error.value}")
             for index, value in enumerate(native):
                 scalar = value[:, 0]
-                result[index][valid] = np.where(np.abs(scalar) >= 1e19, np.nan, scalar)
+                result[index][valid] = np.where(np.abs(scalar) >= RIP_MISSING, np.nan, scalar)
         outputs.append(result)
     data = np.asarray(outputs)
     variables = {}
     for i, name in enumerate(["mcape", "mcin", "lcl", "lfc"]):
+        energy = name in {"mcape", "mcin"}
         variables[name] = xr.DataArray(
             data[:, i].transpose(0, 2, 1),
             dims=("time", "south_north", "west_east"),
             coords={"time": dataset.time},
             attrs={
-                "units": "J kg-1" if i < 2 else "m",
+                "units": "J kg-1" if energy else "m",
                 "definition": "NCAR-RIP-cape_2d-v1.4.2",
                 "parcel": "max-theta-e-lowest-3km-500m-pressure-weighted",
                 "sign_convention": "positive magnitude" if i == 1 else "nonnegative",
-                "height_reference": "AGL" if i >= 2 else "not applicable",
+                "height_reference": "not applicable" if energy else "AGL",
                 "native_library_sha256": sha256(library),
                 "lookup_sha256": sha256(SOURCE / "psadilookup.dat"),
             },

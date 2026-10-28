@@ -11,17 +11,20 @@ explicitly built kernel (``darwin.native_diagnostics``); the writer needs pyproj
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
 from datetime import datetime
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
-from uuid import uuid4
+from typing import Literal
 
 import numpy as np
 import pandas as pd
 import xarray as xr
 
+from darwin.publisher.immutable import identity_path, staged_artifact
 from darwin.wrf_diagnostics import (
     accumulated_amount,
     destagger,
@@ -74,6 +77,31 @@ DIRECT: dict[str, str] = {
         "IVGTYP",
     ]
 }
+INVERSION_DESCRIPTORS = (
+    "inversion_base",
+    "inversion_top",
+    "inversion_delta_t",
+    "inversion_gradient",
+)
+"""Inversion variables averaged only where an inversion is present."""
+INVERSION_COMPANIONS = ("inversion_profile_valid", "inversion_interval_present")
+PRESSURE_INTERPOLATED = (
+    "theta",
+    "temperature",
+    "qvapor",
+    "qliquid",
+    "qsolid",
+    "u",
+    "v",
+    "w",
+    "ws",
+    "geopotential",
+)
+DOMAIN_NAMES = {1: "d10km", 2: "d02km"}
+PRODUCT_LEVELS = {"D": "d", "MS": "m", "YS": "y"}
+"""Aggregation frequency to product level (native records are ``h``)."""
+FRAGMENT_IDENTITY_ATTRS = ("source_sha256", "source_path", "sources", "recipe")
+"""Per-input identity attributes an aggregate must never inherit from one fragment."""
 DEFAULT_VARIABLES = [
     "t2",
     "q2",
@@ -345,18 +373,7 @@ def derive(
             result[name].attrs["aggregation"] = "mean"
         else:
             result[name] = variable(name)
-        if pressure_levels and name in [
-            "theta",
-            "temperature",
-            "qvapor",
-            "qliquid",
-            "qsolid",
-            "u",
-            "v",
-            "w",
-            "ws",
-            "geopotential",
-        ]:
+        if pressure_levels and name in PRESSURE_INTERPOLATED:
             result[f"{name}_press"] = interpolate_pressure(
                 variable(name), get_state().pressure_pa, pressure_levels
             )
@@ -391,24 +408,28 @@ def aggregate(
     if not offset.is_on_offset(left) or not offset.is_on_offset(right):
         raise ValueError("Aggregation bounds must lie on frequency boundaries")
     expected = pd.date_range(left, right, freq=f"{cadence_minutes}min", inclusive="right")
+    times = pd.DatetimeIndex(dataset.time.values)
+    inside = times[(times > left) & (times <= right)]
+    off_grid = inside.difference(expected)
+    if len(off_grid):
+        raise ValueError(
+            f"{len(off_grid)} timestamps are off the {cadence_minutes}-minute native cadence "
+            f"(first {off_grid[0].isoformat()}); resample explicitly before aggregating"
+        )
     aligned = dataset.reindex(time=expected)
     boundaries = pd.date_range(left, right, freq=frequency)
+    attrs = {k: v for k, v in dataset.attrs.items() if k not in FRAGMENT_IDENTITY_ATTRS}
     results = []
     for lo, hi in zip(boundaries[:-1], boundaries[1:], strict=True):
         block = aligned.sel(
             time=(aligned.time > np.datetime64(lo)) & (aligned.time <= np.datetime64(hi))
         )
-        out = xr.Dataset(attrs=dataset.attrs)
+        out = xr.Dataset(attrs=attrs)
         for name, value in block.data_vars.items():
             if name == "time_bounds" or "time" not in value.dims:
                 continue
             aggregation = value.attrs.get("aggregation", "mean")
-            conditional = name in [
-                "inversion_base",
-                "inversion_top",
-                "inversion_delta_t",
-                "inversion_gradient",
-            ]
+            conditional = name in INVERSION_DESCRIPTORS
             fraction = (
                 block.inversion_profile_valid.fillna(0).mean("time")
                 if conditional
@@ -491,33 +512,32 @@ def native_coordinates(source: xr.Dataset) -> dict[str, xr.DataArray]:
     return coords
 
 
-def write_products(
+def _render(  # noqa: PLR0913
     dataset: xr.Dataset,
     destination: Path,
     domain: int,
     label: str,
-    frequency: str = "h",
-    source: xr.Dataset | None = None,
-) -> list[Path]:
-    """Write one variable per atomic NetCDF4 product candidate; explicit period label."""
-    if domain not in [1, 2] or frequency not in ["h", "d", "m", "y"]:
+    frequency: str,
+    source: xr.Dataset | None,
+) -> list[tuple[Path, xr.Dataset, dict]]:
+    """Plan every product of a set (path, dataset, encoding) without writing anything."""
+    if domain not in DOMAIN_NAMES or frequency not in ["h", "d", "m", "y"]:
         raise ValueError("Unsupported GAR domain/frequency")
     if not label or any(char not in "0123456789-" for char in label):
         raise ValueError("Period label must be numeric ISO date or year")
-    name = "d10km" if domain == 1 else "d02km"
+    name = DOMAIN_NAMES[domain]
     coordinates = (
         native_coordinates(source)
         if source is not None
         else {k: dataset[k] for k in ["x", "y", "lon", "lat", "crs"] if k in dataset}
     )
-    paths = []
+    planned = []
     for variable, value in dataset.data_vars.items():
         variable = str(variable)
         if variable in ["time_bounds", "crs"] or variable.endswith("_valid_fraction"):
             continue
-        companions = ["inversion_profile_valid", "inversion_interval_present"]
         main_variable = dataset.attrs.get("VARNAME")
-        if variable in companions and main_variable and main_variable != variable:
+        if variable in INVERSION_COMPANIONS and main_variable and main_variable != variable:
             continue
         category = (
             "3d_press"
@@ -537,20 +557,12 @@ def write_products(
             / category
             / f"GAR_{name}_{frequency}_{category}_{variable}_{label}.nc"
         )
-        path.parent.mkdir(parents=True, exist_ok=True)
-        if path.exists():
-            raise FileExistsError(f"Product candidate already exists: {path}")
         applicable = {
             key: coord for key, coord in coordinates.items() if set(coord.dims).issubset(value.dims)
         }
         product = value.to_dataset(name=variable).assign_coords(applicable)
-        if variable in [
-            "inversion_base",
-            "inversion_top",
-            "inversion_delta_t",
-            "inversion_gradient",
-        ]:
-            for companion in companions:
+        if variable in INVERSION_DESCRIPTORS:
+            for companion in INVERSION_COMPANIONS:
                 if companion in dataset:
                     product[companion] = dataset[companion]
         if "time_bounds" in dataset:
@@ -571,7 +583,7 @@ def write_products(
             product[variable].attrs["grid_mapping"] = "crs"
             product.attrs["pyproj_srs"] = coordinates["crs"].attrs["pyproj_srs"]
         for key, item in list(product.attrs.items()):
-            if isinstance(item, (dict, bool)):
+            if isinstance(item, (dict, list, bool)):
                 product.attrs[key] = json.dumps(item)
         dims = [
             d
@@ -595,28 +607,56 @@ def write_products(
             }
             if "time_bounds" in product:
                 encoding["time_bounds"] = encoding["time"].copy()
-        temporary = path.with_name(f".{path.name}.{uuid4().hex}.tmp")
-        try:
-            product.to_netcdf(temporary, engine="netcdf4", encoding=encoding)
-            # POSIX link publication is atomic and refuses an existing destination.
-            os.link(temporary, path)
-        finally:
-            temporary.unlink(missing_ok=True)
-        paths.append(path)
-    return paths
+        planned.append((path, product, encoding))
+    return planned
+
+
+def write_products(  # noqa: PLR0913
+    dataset: xr.Dataset,
+    destination: Path,
+    domain: int,
+    label: str,
+    frequency: str = "h",
+    source: xr.Dataset | None = None,
+    *,
+    provenance: dict | None = None,
+    retry: Literal["refuse", "verify-identical"] = "refuse",
+) -> list[Path]:
+    """Write one variable per NetCDF4 product candidate; explicit period label.
+
+    Every product is published through :func:`darwin.publisher.immutable.staged_artifact`.
+    With ``provenance`` (``{builder, sources, recipe?, parameters?}``, as
+    :func:`derive_products` and :func:`aggregate_products` pass it) each product
+    gets a ``darwin.artifact-identity/1`` record and can be bound by a handoff;
+    without it products are unbound candidates. The whole set is planned and,
+    under ``retry="refuse"``, every target checked before the first write, so an
+    existing product or an invalid variable leaves nothing new behind. A crash
+    mid-set is completed by rerunning with ``retry="verify-identical"``:
+    products are written deterministically, so finished ones match byte for byte.
+    """
+    planned = _render(dataset, Path(destination), domain, label, frequency, source)
+    if retry == "refuse":
+        for path, _, _ in planned:
+            for target in (path, identity_path(path)):
+                if os.path.lexists(target):
+                    raise FileExistsError(f"Product candidate already exists: {target}")
+    for path, product, encoding in planned:
+        with staged_artifact(path, provenance=provenance, retry=retry) as staged:
+            product.to_netcdf(staged, engine="netcdf4", encoding=encoding)
+    return [path for path, _, _ in planned]
 
 
 def _file_sha256(path: Path) -> str:
-    import hashlib  # noqa: PLC0415
-
     with Path(path).open("rb") as stream:
         return hashlib.file_digest(stream, "sha256").hexdigest()
 
 
 def _software() -> dict[str, str]:
-    from importlib.metadata import version  # noqa: PLC0415
-
-    return {"product_contract": CONTRACT, "darwin_version": version("darwin")}
+    try:
+        darwin_version = version("darwin")
+    except PackageNotFoundError:  # pragma: no cover - source tree without metadata
+        darwin_version = "unknown"
+    return {"product_contract": CONTRACT, "darwin_version": darwin_version}
 
 
 def derive_products(  # noqa: PLR0913
@@ -631,21 +671,41 @@ def derive_products(  # noqa: PLR0913
     """Read one WRF history file, derive diagnostics and write one candidate per variable.
 
     Same as ``python -m darwin.wrf_products derive``. Records the source byte
-    identity (``source_sha256``), never its deployment path. Run-layout checks such
-    as CJC's retained-day rule belong to the executing system, not to this function.
+    identity (``source_sha256``), never its deployment path, and binds every
+    product to it in an identity record. Run-layout checks such as CJC's
+    retained-day rule belong to the executing system, not to this function.
     """
+    source = Path(source)
+    variables = variables or DEFAULT_VARIABLES
     with xr.open_dataset(source) as dataset:
         normalized = normalize_wrf(dataset)
         product = derive(
             normalized,
-            variables or DEFAULT_VARIABLES,
+            variables,
             native_library,
             pressure_levels=pressure_levels,
         )
-        product.attrs["source_sha256"] = _file_sha256(source)
-        product.attrs.update(_software())
+        digest = _file_sha256(source)
+        product.attrs["source_sha256"] = digest
+        software = _software()
+        product.attrs.update(software)
         label = label or str(product.time.values[0].astype("datetime64[D]"))
-        return write_products(product, Path(destination), domain, label, source=normalized)
+        provenance = {
+            "builder": "darwin.wrf_products.derive_products",
+            "sources": [{"id": source.name, "sha256": digest}],
+            "recipe": {
+                "operation": "derive",
+                "definition_version": DEFINITION_VERSION,
+                "variables": list(variables),
+                "pressure_levels": pressure_levels,
+                "native_library": native_library is not None,
+            },
+            "parameters": {"domain": domain, "label": label},
+            "software": software,
+        }
+        return write_products(
+            product, Path(destination), domain, label, source=normalized, provenance=provenance
+        )
 
 
 def aggregate_products(  # noqa: PLR0913
@@ -659,19 +719,52 @@ def aggregate_products(  # noqa: PLR0913
 ) -> list[Path]:
     """Strictly aggregate native fragments of one variable and write the candidates.
 
-    Same as ``python -m darwin.wrf_products aggregate``.
+    Same as ``python -m darwin.wrf_products aggregate``. The products name every
+    fragment by exact sha256, in the given order, plus the aggregation recipe;
+    attributes that differ between fragments (such as each fragment's own source
+    identity) are dropped rather than inherited from the first.
     """
+    sources = [Path(path) for path in sources]
+    fragments = [{"id": path.name, "sha256": _file_sha256(path)} for path in sources]
+    recipe = {
+        "operation": "aggregate",
+        "start": start,
+        "end": end,
+        "frequency": frequency,
+        "cadence_minutes": cadence_minutes,
+    }
     opened = [xr.open_dataset(path) for path in sources]
     try:
         combined = xr.concat(
-            opened, dim="time", data_vars="minimal", coords="minimal", compat="equals"
+            opened,
+            dim="time",
+            data_vars="minimal",
+            coords="minimal",
+            compat="equals",
+            combine_attrs="drop_conflicts",
         ).sortby("time")
         reduced = aggregate(combined, start, end, frequency, cadence_minutes)
         coordinates = {k: combined[k] for k in ["x", "y", "lon", "lat", "crs"] if k in combined}
         reduced = reduced.assign_coords(coordinates)
-        reduced.attrs.update(_software())
-        level = {"D": "d", "MS": "m", "YS": "y"}[frequency]
-        return write_products(reduced, Path(destination), domain, start, level)
+        software = _software()
+        reduced.attrs.update(software)
+        reduced.attrs["sources"] = fragments
+        reduced.attrs["recipe"] = recipe
+        provenance = {
+            "builder": "darwin.wrf_products.aggregate_products",
+            "sources": fragments,
+            "recipe": recipe,
+            "parameters": {"domain": domain},
+            "software": software,
+        }
+        return write_products(
+            reduced,
+            Path(destination),
+            domain,
+            start,
+            PRODUCT_LEVELS[frequency],
+            provenance=provenance,
+        )
     finally:
         for dataset in opened:
             dataset.close()
@@ -769,6 +862,8 @@ def inventory() -> dict:
 
 
 def _error_code(error: Exception) -> str:
+    if isinstance(error, ImportError):
+        return "missing_dependency"
     return "destination_exists" if isinstance(error, FileExistsError) else "invalid_input"
 
 
@@ -829,8 +924,10 @@ def main(argv: list[str] | None = None) -> None:
 
             library = build_native(args.destination)
             report = {"library": str(library), "receipt": verify_native(library)}
-    except (OSError, ValueError, KeyError, TypeError, RuntimeError) as error:
+    except (OSError, ValueError, KeyError, TypeError, RuntimeError, ImportError) as error:
         message = error.args[0] if isinstance(error, KeyError) and error.args else str(error)
+        if isinstance(error, ImportError):
+            message = f"{message}; install the Darwin 'native' extra for this product writer"
         print(json.dumps({"code": _error_code(error), "message": str(message)}), file=sys.stderr)
         raise SystemExit(2) from error
     print(json.dumps(report, sort_keys=True))

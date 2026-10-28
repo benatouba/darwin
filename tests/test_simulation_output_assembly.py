@@ -108,6 +108,8 @@ def test_partial_status_and_gaps_are_preserved_not_filled(tmp_path):
     assert len(coverage["missing_times"]) == 10
     assert [v["status"] for v in coverage["views"]] == ["partial", "failed", "missing"]
     assert coverage["views"][0]["reason"].startswith("segment p2 failed")
+    # A partial assembly must never read as a complete execution downstream.
+    assert report["execution_completeness"] == "partial"
     with xr.open_dataset(tmp_path / "product" / "data.nc") as product:
         assert product.sizes["Time"] == 2
         assert product.attrs["source_coverage_status"] == "partial"
