@@ -39,6 +39,7 @@ def stores(tmp_path):
             "variable": variable,
             "product_id": key,
             "version": "v1",
+            "units": "mm h-1" if key == "rate" else "m s-1",
         }
     return locations
 
@@ -233,3 +234,125 @@ def test_cli_matches_public_python_and_structured_error(stores, tmp_path):
     failed = subprocess.run(command, capture_output=True, text=True, check=False)
     assert failed.returncode == 2
     assert json.loads(failed.stderr)["code"] == "software_mismatch"
+
+
+def test_temporal_differential_against_frozen_legacy_definition(stores):
+    # Frozen oracle from dashboard downloads.py at 16de248: do not replace this
+    # with calls to the implementation under test. Unequal durations distinguish
+    # this definition from a nanmean, trapezoid, or an unweighted depth sum.
+    rng = np.random.default_rng(42)
+    original = rng.normal(size=(3, 2, 4))
+    zarr.open_group(stores["rate"]["path"], mode="a")["prcp"][:] = original
+    times = [0.0, 24.0, 72.0]
+    for start, end in ((0, 1), (0, 2), (1, 2)):
+        window = original[start : end + 1]
+        durations = [times[i + 1] - times[i] for i in range(start, end)]
+        if end + 1 < len(times):
+            durations.append(times[end + 1] - times[end])
+        elif durations:
+            durations.append(durations[-1])
+        weighted = window * np.asarray(durations, dtype="f8")[:, None, None]
+        for method, expected in (
+            ("mean", window.mean(axis=0)),
+            ("depth_sum", weighted.sum(axis=0)),
+        ):
+            actual = run(
+                stores,
+                recipe(
+                    stores,
+                    {
+                        "name": "aggregate",
+                        "method": method,
+                        "start": start,
+                        "end": end,
+                        "missing_data": "propagate",
+                    },
+                ),
+            )
+            np.testing.assert_array_equal(actual["values"], expected)
+
+
+def test_static_native_layer_and_store_end_duration_refusal(stores):
+    static = run(stores, recipe(stores, {"name": "layer"}, ("mask",)))
+    np.testing.assert_array_equal(static["values"], [[1.0, 0.0, 1.0, 1.0], [1.0, 1.0, 0.0, 1.0]])
+    with pytest.raises(grid.GridError) as exc:
+        run(stores, recipe(stores, {"name": "layer", "timestep": 0}, ("mask",)))
+    assert exc.value.code == "timestep"
+    with pytest.raises(grid.GridError) as exc:
+        run(
+            stores,
+            recipe(
+                stores,
+                {
+                    "name": "aggregate",
+                    "method": "depth_sum",
+                    "start": 2,
+                    "end": 2,
+                    "missing_data": "propagate",
+                },
+            ),
+        )
+    assert exc.value.code == "step_duration"
+
+
+def test_unknown_completeness_is_not_promoted_or_fabricated(stores):
+    spec = recipe(stores, {"name": "subset"})
+    spec["scientific_status"]["sources"]["rate"]["execution_completeness"] = "unreported"
+    assert run(stores, spec)["execution_completeness"] == "unreported"
+    spec["scientific_status"]["sources"]["rate"]["execution_completeness"] = "complete"
+    assert run(stores, spec)["execution_completeness"] == "complete"
+
+
+@pytest.mark.parametrize("malformed", [None, [], {}, {"contract": grid.CONTRACT}])
+def test_malformed_recipes_have_structured_errors(malformed):
+    with pytest.raises(grid.GridError):
+        grid.replay(malformed, {})
+
+
+def test_result_receipt_binds_science_and_recipe(stores):
+    result = run(stores, recipe(stores, {"name": "subset"}))
+    grid.validate_result(result)
+    assert result["receipt"]["contract"] == "darwin.grid-operation-result/1"
+    result["values"][0, 0, 0] += 1.0
+    with pytest.raises(grid.GridError) as exc:
+        grid.validate_result(result)
+    assert exc.value.code == "result_mismatch"
+
+
+def test_declared_native_interval_replayed_in_darwin(stores):
+    op = {
+        "name": "aggregate",
+        "method": "mean",
+        "start": 0,
+        "end": 2,
+        "missing_data": "propagate",
+        "declared_intervals": ["daily"],
+    }
+    with pytest.raises(grid.GridError) as exc:
+        run(stores, recipe(stores, op))
+    assert exc.value.code == "interval"  # 48-hour steps cannot satisfy daily
+    group = zarr.open_group(stores["rate"]["path"], mode="a")
+    group["time"][:] = [0.0, 24.0, 48.0]
+    run(stores, recipe(stores, op))
+    assert grid.window_satisfies_interval(
+        [0.0, 744.0, 1440.0], "hours since 2020-01-01", 0, 2, "monthly"
+    )
+
+
+@pytest.mark.parametrize("name", ["regional_summary", "subset", "layer", "aggregate"])
+@pytest.mark.parametrize(
+    "axis", [None, [0.0, 24.0], [0.0, float("nan"), 48.0], [0.0, 0.0, 48.0], [48.0, 24.0, 0.0]]
+)
+def test_native_operations_refuse_missing_or_invalid_time(stores, name, axis):
+    group = zarr.open_group(stores["rate"]["path"], mode="a")
+    del group["time"]
+    if axis is not None:
+        group.create_array("time", data=np.asarray(axis))
+    operation = {"name": name}
+    if name == "regional_summary":
+        operation["mode"] = "whole-domain"
+    elif name == "aggregate":
+        operation.update(method="mean", start=0, end=2, missing_data="propagate")
+    with pytest.raises(grid.GridError) as exc:
+        run(stores, recipe(stores, operation))
+    assert exc.value.code == "time"

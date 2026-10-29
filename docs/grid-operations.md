@@ -8,12 +8,19 @@ python -m darwin.grid_operations recipe.json --locations locations.json
 
 `make_recipe(sources, operation, scientific_status=labels)` pins the recipe;
 `replay(recipe, locations)` executes it. Source descriptors contain a local `path`,
-`variable`, `product_id`, and exact `version`. Locations are deliberately excluded
+`variable`, declared `units`, `product_id`, and exact `version`. Locations are deliberately excluded
 from recipes: replay receives `{source_id: staged_directory}` separately. The CLI
 prints the same result as Python, encoding arrays as lists and missing values as
 JSON null. It reports `{code,message}` on stderr with exit status 2 on refusal.
 Python raises `GridError` with the same code. Encoding NetCDF/GeoTIFF and HTTP
 access decisions remain consumer responsibilities.
+
+Results include a `darwin.grid-operation-result/1` receipt, verified by
+`validate_result(result)`. It binds the recipe (sorted-key, two-space-indented JSON
+plus newline) and science result (all fields except receipt, sorted-key compact
+JSON, arrays as lists and nonfinite values as null), each by SHA-256. It records
+execution completeness and derived status `unassessed`. A delivery encoder may
+add a separate hash of its file bytes; that is not the science-result digest.
 
 ## Contract
 
@@ -37,6 +44,9 @@ curvilinear geographic crop, resampling, reconciliation or time fabrication occu
 Polygon clipping is Sutherland-Hodgman plus shoelace area. Native coordinates are
 preserved verbatim. Four-dimensional variables use `(time,level,y,x)`; physical
 level coordinates/attributes/bounds are retained, never inferred from index.
+Every time-dependent operation, including summaries and individual layers, requires
+a matching nonempty numeric time axis with finite, unique, increasing values.
+Missing or malformed native times are refused before any result or receipt is created.
 
 | `name` | Explicit parameters and definition |
 | --- | --- |
@@ -49,8 +59,18 @@ Unknown fields/operations and incompatible sources are structured refusals. No
 implicit conversion or source substitution is performed. Source acceptance labels
 are caller-reported provenance, not independently verified acceptance evidence.
 Derived acceptance is always `unassessed`. Execution completeness is complete only
-if every supplied source explicitly reports complete; otherwise it stays partial.
+if every supplied source explicitly reports complete. Any partial source keeps the
+result partial; otherwise unknown source completeness stays unreported.
 Consumers remain responsible for access and binding catalogue labels to versions.
+
+Depth sums require declared `prcp` units `mm h-1`; wind requires component units
+`m s-1`. Output units are recorded (`mm` for depth sums), not inherited from a rate
+attribute. Optional explicit `declared_intervals` on aggregations reproduces the
+legacy interval gate: daily 23..25 hours, monthly 672..744 hours, annual a January
+start and a multiple of twelve monthly steps. At least one named interval must
+match. This gate is also exposed as `window_satisfies_interval`. It never resamples
+or creates a time axis. The dashboard pins all matching publisher declarations;
+standalone operations without that constraint are explicit native-index reductions.
 
 Golden tests cover each definition, exact source/metadata/software mutation,
 multi-source alignment, missing-data rules, level metadata and Python/CLI equality.

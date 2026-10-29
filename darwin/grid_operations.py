@@ -11,6 +11,7 @@ import argparse
 import hashlib
 import json
 import math
+from datetime import datetime, timedelta
 from importlib.metadata import version
 from pathlib import Path
 
@@ -21,6 +22,7 @@ from darwin.errors import CodedError, emit_error
 
 CONTRACT = "darwin.grid-operations/1"
 DEFINITION = "dashboard-native-grid/1"
+RESULT_CONTRACT = "darwin.grid-operation-result/1"
 
 
 class GridError(CodedError):
@@ -96,6 +98,7 @@ def validate_recipe(recipe: dict) -> None:
 
 
 def _validate_recipe(recipe: dict) -> None:
+    json.dumps(recipe, allow_nan=False)
     if set(recipe) != {
         "contract",
         "definition",
@@ -141,13 +144,15 @@ def _validate_recipe(recipe: dict) -> None:
     extra = {
         "subset": set(),
         "layer": {"timestep"},
-        "aggregate": {"method", "start", "end", "missing_data", "partner"},
+        "aggregate": {"method", "start", "end", "missing_data", "partner", "declared_intervals"},
         "regional_summary": {"mode", "mask"},
     }[name]
     if set(op) - common - extra:
         raise GridError("unsupported_parameter", "Operation contains undeclared parameters")
     if op.get("source") not in ids:
         raise GridError("recipe", "Operation source must name a pinned source")
+    if op.get("level") is not None and (type(op["level"]) is not int or op["level"] < 0):
+        raise GridError("level", "Choose a nonnegative native level index")
     bbox = op.get("bbox")
     if (
         not isinstance(bbox, list)
@@ -168,12 +173,32 @@ def _validate_recipe(recipe: dict) -> None:
                 "geometry", "Only one finite polygon exterior without holes is supported"
             )
     if name == "aggregate":
+        if "declared_intervals" in op and (
+            not isinstance(op["declared_intervals"], list)
+            or not op["declared_intervals"]
+            or not all(isinstance(v, str) for v in op["declared_intervals"])
+        ):
+            raise GridError("interval", "Declared intervals must be a nonempty list of names")
         if op.get("method") not in ("mean", "depth_sum", "component_mean"):
             raise GridError("unsupported_method", "Choose mean, depth_sum or component_mean")
         if op.get("missing_data") not in ("require-complete", "propagate"):
             raise GridError("missing_data", "Declare require-complete or propagate explicitly")
         if op.get("method") == "component_mean" and op.get("partner") not in ids:
             raise GridError("recipe", "component_mean requires a pinned partner")
+        sources_by_id = {s["id"]: s for s in sources}
+        if op.get("method") == "depth_sum":
+            source = sources_by_id[op["source"]]
+            if source["variable"] != "prcp" or source.get("units") != "mm h-1":
+                raise GridError(
+                    "rate_units", "depth_sum requires explicitly declared prcp in mm h-1"
+                )
+        if op.get("method") == "component_mean":
+            if any(
+                sources_by_id[key].get("units") != "m s-1" for key in (op["source"], op["partner"])
+            ):
+                raise GridError(
+                    "wind_units", "component_mean requires declared component units m s-1"
+                )
     if name == "regional_summary":
         if op.get("mode") not in ("land-only", "whole-domain"):
             raise GridError("mode", "Declare land-only or whole-domain explicitly")
@@ -203,6 +228,46 @@ def polygon_rect_fraction(ring, cell) -> float:
             return 0.0
     area = abs(sum(a[0] * b[1] - b[0] * a[1] for a, b in zip(poly, poly[1:] + poly[:1]))) / 2.0
     return area / ((x1 - x0) * (y1 - y0))
+
+
+def window_satisfies_interval(times, time_units, start, end, interval) -> bool:
+    """Legacy native-interval gate, without resampling or fabricated timestamps.
+
+    Daily durations are 23..25 hours, monthly 672..744 hours; annual requires a
+    January start, a multiple of 12 native steps and monthly durations throughout.
+    The last store step repeats its predecessor; a single-step store is vacuous.
+    """
+    amount, _, base = time_units.partition(" since ")
+    scale = {"days": 1.0, "hours": 1.0 / 24.0, "seconds": 1.0 / 86400.0}
+    if not base or amount.strip() not in scale:
+        raise GridError("time_units", "Store has no readable time axis")
+    origin = datetime.fromisoformat(base.strip())
+    moments = [origin + timedelta(days=float(v) * scale[amount.strip()]) for v in times]
+    if not 0 <= start <= end < len(moments):
+        raise GridError("time_selection", "Choose inclusive native start/end indices")
+    if len(moments) == 1:
+        return True
+    spans = []
+    for i in range(start, end + 1):
+        spans.append(
+            (
+                (moments[i + 1] - moments[i])
+                if i + 1 < len(moments)
+                else (moments[i] - moments[i - 1])
+            ).total_seconds()
+            / 3600.0
+        )
+    if interval == "daily":
+        return all(23.0 <= hours <= 25.0 for hours in spans)
+    if interval == "monthly":
+        return all(672.0 <= hours <= 744.0 for hours in spans)
+    if interval == "annual":
+        return (
+            moments[start].month == 1
+            and (end - start + 1) % 12 == 0
+            and all(672.0 <= hours <= 744.0 for hours in spans)
+        )
+    return False
 
 
 def inside_mask(region, xs, ys, dx, dy, i0, j0, nj, ni):
@@ -329,6 +394,12 @@ def _summary(values, weights):
     }
 
 
+def _recipe_digest(recipe: dict) -> str:
+    return hashlib.sha256(
+        (json.dumps(recipe, sort_keys=True, indent=2) + "\n").encode()
+    ).hexdigest()
+
+
 def replay(recipe: dict, locations: dict) -> dict:
     """Execute a pinned recipe; arrays stay NumPy until a delivery adapter encodes them."""
     try:
@@ -345,8 +416,19 @@ def replay(recipe: dict, locations: dict) -> dict:
             s.get("execution_completeness") for s in recipe["scientific_status"]["sources"].values()
         ]
         result["execution_completeness"] = (
-            "complete" if all(v == "complete" for v in completeness) else "partial"
+            "partial"
+            if "partial" in completeness
+            else "complete"
+            if all(v == "complete" for v in completeness)
+            else "unreported"
         )
+        result["receipt"] = {
+            "contract": RESULT_CONTRACT,
+            "recipe_sha256": _recipe_digest(recipe),
+            "science_sha256": _science_digest(result),
+            "execution_completeness": result["execution_completeness"],
+            "scientific_status": "unassessed",
+        }
         return result
     except GridError:
         raise
@@ -383,6 +465,20 @@ def _replay(recipe: dict, locations: dict) -> dict:
         array[:, op["level"], j0:j1, i0:i1] if selected is not None else array[..., j0:j1, i0:i1],
         dtype="f8",
     )
+    times = None
+    if values.ndim == 3:
+        if "time" not in group or group["time"].shape != (len(values),) or not len(values):
+            raise GridError("time", "Operation requires a matching nonempty native time axis")
+        times = np.asarray(group["time"][:])
+        if (
+            times.dtype.kind not in "iuf"
+            or not np.isfinite(times).all()
+            or not (times[1:] > times[:-1]).all()
+        ):
+            raise GridError(
+                "time", "Native times must be finite numeric values, unique and increasing"
+            )
+        times = times.astype("f8")
     weights = np.ones((max(0, j1 - j0), max(0, i1 - i0)))
     for ii in range(weights.shape[1]):
         for jj in range(weights.shape[0]):
@@ -406,6 +502,9 @@ def _replay(recipe: dict, locations: dict) -> dict:
         "time_units": str(group.attrs.get("time_units", "")),
         "scientific_status": recipe["scientific_status"],
         "recipe": recipe,
+        "output_units": next(
+            s.get("units", "") for s in recipe["sources"] if s["id"] == op["source"]
+        ),
     }
     if name == "regional_summary":
         if values.ndim != 3:
@@ -431,9 +530,8 @@ def _replay(recipe: dict, locations: dict) -> dict:
             values = values[t]
         result["values"] = np.where(weights > 0, values, np.nan)
         return result
-    if values.ndim != 3 or "time" not in group or group["time"].shape != (len(values),):
+    if times is None:
         raise GridError("time", "Operation requires a matching native time axis")
-    times = np.asarray(group["time"][:], dtype="f8")
     result["time"] = times.tolist()
     if name == "subset":
         result["values"] = np.where(weights > 0, values, np.nan)
@@ -442,6 +540,11 @@ def _replay(recipe: dict, locations: dict) -> dict:
     if not isinstance(start, int) or not isinstance(end, int) or not 0 <= start <= end < len(times):
         raise GridError("time_selection", "Choose inclusive native start/end indices")
     window = values[start : end + 1]
+    if "declared_intervals" in op and not any(
+        window_satisfies_interval(times, result["time_units"], start, end, interval)
+        for interval in op["declared_intervals"]
+    ):
+        raise GridError("interval", "Correction: aggregation window satisfies no declared interval")
     missing = int(np.isnan(window[:, weights > 0]).sum())
     partner = None
     if op["method"] == "component_mean":
@@ -474,10 +577,17 @@ def _replay(recipe: dict, locations: dict) -> dict:
             "wdir": (np.degrees(np.arctan2(-u, -v)) + 360.0) % 360.0,
         }
         result["layers"] = {k: np.where(weights > 0, val, np.nan) for k, val in layers.items()}
+        result["layer_units"] = {
+            "u_mean": "m s-1",
+            "v_mean": "m s-1",
+            "wspd": "m s-1",
+            "wdir": "degree",
+        }
     else:
         if op["method"] == "mean":
             reduced = window.mean(axis=0)
         else:
+            result["output_units"] = "mm"
             if not result["time_units"].startswith("hours since "):
                 raise GridError(
                     "time_units", "depth_sum requires the published epoch-hours time axis"
@@ -500,6 +610,34 @@ def _replay(recipe: dict, locations: dict) -> dict:
         result["values"] = np.where(weights > 0, reduced, np.nan)
     result["time"] = [float(times[start])]
     return result
+
+
+def _science_digest(result):
+    data = {key: value for key, value in result.items() if key != "receipt"}
+    encoded = json.dumps(_jsonable(data), sort_keys=True, separators=(",", ":"), allow_nan=False)
+    return hashlib.sha256(encoded.encode()).hexdigest()
+
+
+def validate_result(result: dict) -> None:
+    """Verify the producer's science result receipt before a delivery adapter uses it."""
+    try:
+        report = result["receipt"]
+        recipe_digest = _recipe_digest(result["recipe"])
+        if (
+            report["contract"] != RESULT_CONTRACT
+            or report["recipe_sha256"] != recipe_digest
+            or report["science_sha256"] != _science_digest(result)
+            or report["execution_completeness"] != result["execution_completeness"]
+            or report["scientific_status"] != "unassessed"
+            or result["scientific_status"]["derived_acceptance"] != "unassessed"
+        ):
+            raise GridError(
+                "result_mismatch", "Result does not match its exact science recipe and receipt"
+            )
+    except (KeyError, TypeError, ValueError) as exc:
+        if isinstance(exc, GridError):
+            raise
+        raise GridError("result_mismatch", f"Malformed science result receipt: {exc}") from exc
 
 
 def _jsonable(value):

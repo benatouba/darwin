@@ -40,6 +40,15 @@ provides zlib; no wheel, cache or scientific dependency was patched in place.
 
 ## Dashboard general worker migration boundary
 
+Update, 2026-10-29: the limitations inventoried below describe the original audit
+at `e85f028`, not the final worker-local interface. The subsequent
+[`darwin.grid_operations`](grid-operations.md) compatibility migration implements
+native Zarr identities, index/level selection, polygons, regional statistics,
+temporal reductions and vector wind using the preserved dashboard definitions.
+Its standalone Python/CLI recipes and result receipts do not grant scientific
+acceptance. All time-dependent requests now refuse missing, mismatched, nonfinite,
+duplicate or decreasing native time coordinates before producing results.
+
 Current public operations support CF-NetCDF variable select, half-open coordinate
 cut/crop, discrete-amount sums and strict assembly, plus native WRF assembly from
 CJC manifests. This is **not** the dashboard's complete worker science API:
@@ -81,3 +90,8 @@ GAR fixture cache was copied from the existing Darwin checkout and pytest then
 verified its pinned sizes/checksums. Changed Python files pass Ruff E/F/I checks
 and formatting; `git diff --check` passes. No tests are skipped to hide
 unavailable inputs.
+
+Post-migration verification: **607 passed**, 12 warnings, including 20 regression
+cases for malformed native time axes across summary/subset/layer/aggregation.
+Changed grid Python files pass Ruff E/F/I and formatting. Producer artifacts must
+be rebuilt from the final committed source before consumer validation.
