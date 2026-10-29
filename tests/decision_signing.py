@@ -1,29 +1,21 @@
-"""Test-only SSHSIG signing with the setups fixture tree's TEST-ONLY keys.
+"""Test-only SSHSIG signing with in-memory synthetic fixture keys.
 
 Darwin itself only verifies decision signatures. Tests sign records the way a
 reviewer does with ``ssh-keygen -Y sign -n darwin-acceptance``; the output is
 byte-identical (Ed25519 is deterministic, sha512 message hash, 70-column armor).
-The keys are published synthetic fixture keys, never real ones.
+The reproducible identities are public, never real credentials. No private-key
+files are stored. Never trust these identities outside synthetic fixtures.
 """
 
 from __future__ import annotations
 
 import base64
-from pathlib import Path
+import hashlib
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-from cryptography.hazmat.primitives.serialization import load_ssh_private_key
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 from darwin.decision_signature import KEY_TYPE, NAMESPACE
-
-KEYS = (
-    Path(__file__).parent
-    / "fixtures"
-    / "setups-contracts"
-    / "fixtures"
-    / "acceptance-assessment-v1"
-    / "signing-keys"
-)
 
 
 def _string(value: bytes) -> bytes:
@@ -32,7 +24,8 @@ def _string(value: bytes) -> bytes:
 
 def test_key(name: str) -> Ed25519PrivateKey:
     """A TEST-ONLY fixture key: ``reviewer``, ``policy`` or ``unpinned``."""
-    return load_ssh_private_key((KEYS / f"TEST-ONLY-{name}").read_bytes(), password=None)
+    seed = hashlib.sha256(f"darwin-wrf-setups TEST-ONLY signing key: {name}".encode()).digest()
+    return Ed25519PrivateKey.from_private_bytes(seed)
 
 
 test_key.__test__ = False  # a helper, not a pytest test
@@ -70,4 +63,4 @@ def sign(message: bytes, key: str = "reviewer", namespace: str = NAMESPACE) -> b
 
 def public_key(key: str = "reviewer") -> str:
     """The bare ``ssh-ed25519 <base64>`` line of a TEST-ONLY key."""
-    return " ".join((KEYS / f"TEST-ONLY-{key}.pub").read_text().split()[:2])
+    return test_key(key).public_key().public_bytes(Encoding.OpenSSH, PublicFormat.OpenSSH).decode()
